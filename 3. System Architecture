@@ -103,3 +103,10 @@
    │              │ 정산 큐 발행    │                 │
    │              │────────────────────────────────>│ (정산)
    │              │                │                 │
+
+
+
+
+**database string**
+postgresql://postgres:[YOUR-PASSWORD]@db.gdfhomgmwthtttnkgoko.supabase.co:5432/postgres
+
