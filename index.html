@@ -686,23 +686,6 @@
 <script src="assets/js/app.js"></script>
 
 <!-- 로그인 상태에 따른 아바타 표시 추가 스크립트 -->
-<script>
-  // 로그인 상태 실시간 반영
-  document.addEventListener('DOMContentLoaded', function() {
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      const loginBtn = document.getElementById('loginNavBtn');
-      const avatar = document.getElementById('userAvatar');
-      if (session) {
-        if (loginBtn) loginBtn.style.display = 'none';
-        if (avatar) avatar.style.display = 'flex';
-      } else {
-        if (loginBtn) loginBtn.style.display = 'flex';
-        if (avatar) avatar.style.display = 'none';
-      }
-    });
-  });
-</script>
-
   <div class="toast" id="toast"></div>
 
     <!-- ✅ 스크립트 로드 (순서 절대 바꾸지 마세요!) -->
