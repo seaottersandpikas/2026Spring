@@ -20,39 +20,61 @@ const AppState = {
 
 // ── 앱 초기화 ────────────────────────────────────────
 async function initApp() {
-  // 인증 상태 감지
-  Auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      AppState.currentUser = session.user;
-      AppState.currentProfile = await Auth.getProfile();
-      updateUIForLoggedInUser();
-    } else if (event === 'SIGNED_OUT') {
-      AppState.currentUser = null;
-      AppState.currentProfile = null;
-      updateUIForLoggedOutUser();
+
+    // supabaseClient가 준비될 때까지 잠깐 기다림
+    let attempts = 0;
+    while (!window.supabaseClient && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
     }
-  });
 
-  // 현재 사용자 확인
-  const user = await Auth.getUser();
-  if (user) {
-    AppState.currentUser = user;
-    AppState.currentProfile = await Auth.getProfile();
-    updateUIForLoggedInUser();
-  }
+    if (!window.supabaseClient) {
+        console.error('❌ Supabase 초기화 실패 - 페이지를 새로고침해주세요.');
+        showToast('연결 오류가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
+        return;
+    }
 
-  // 최근 매칭 이력 로드
-  loadMatchHistory();
+    console.log('✅ App 초기화 시작');
 
-  // 카테고리 변경 이벤트
-  const bizCategoryEl = document.getElementById('biz-category');
-  if (bizCategoryEl) {
-    bizCategoryEl.addEventListener('change', function() {
-      const hint = AppState.priceHints[this.value];
-      const hintEl = document.getElementById('biz-price-hint');
-      if (hintEl) hintEl.textContent = hint ? '시장 평균 참고가: ' + hint : '카테고리를 선택하면 표시됩니다';
+    // 인증 상태 감지
+    Auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            AppState.currentUser = session.user;
+            AppState.currentProfile = await Auth.getProfile();
+            updateUIForLoggedInUser();
+        } else if (event === 'SIGNED_OUT') {
+            AppState.currentUser = null;
+            AppState.currentProfile = null;
+            updateUIForLoggedOutUser();
+        }
     });
-  }
+
+    // 현재 사용자 확인
+    try {
+        const user = await Auth.getUser();
+        if (user) {
+            AppState.currentUser = user;
+            AppState.currentProfile = await Auth.getProfile();
+            updateUIForLoggedInUser();
+        }
+    } catch (e) {
+        console.log('로그인 상태 아님');
+    }
+
+    // 최근 매칭 이력 로드
+    loadMatchHistory();
+
+    // 카테고리 변경 이벤트
+    const bizCategoryEl = document.getElementById('biz-category');
+    if (bizCategoryEl) {
+        bizCategoryEl.addEventListener('change', function () {
+            const hint = AppState.priceHints[this.value];
+            const hintEl = document.getElementById('biz-price-hint');
+            if (hintEl) hintEl.textContent = hint
+                ? '시장 평균 참고가: ' + hint
+                : '카테고리를 선택하면 표시됩니다';
+        });
+    }
 }
 
 // ── UI 업데이트 함수들 ───────────────────────────────

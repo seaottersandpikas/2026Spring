@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoodsFactory - 굿즈 제작 및 판매 플랫폼</title>
     <!-- Supabase JS SDK (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -704,5 +703,25 @@
   });
 </script>
 
+  <div class="toast" id="toast"></div>
+
+    <!-- ✅ 스크립트 로드 (순서 절대 바꾸지 마세요!) -->
+
+    <!-- 1순위: Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- 2순위: Supabase 클라이언트 초기화 -->
+    <script src="assets/js/supabase-client.js"></script>
+
+    <!-- 3순위: 인증 -->
+    <script src="assets/js/auth.js"></script>
+
+    <!-- 4순위: DB 함수 -->
+    <script src="assets/js/requests.js"></script>
+
+    <!-- 5순위: 앱 메인 -->
+    <script src="assets/js/app.js"></script>
+
 </body>
+
 </html>

@@ -2,68 +2,83 @@
 // 인증(로그인/회원가입) 관련 함수들
 // =====================================================
 
+function getSupabase() {
+    if (!window.supabaseClient) {
+        throw new Error('Supabase가 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
+    return window.supabaseClient;
+}
+
 const Auth = {
 
-  // 현재 로그인된 사용자 가져오기
-  async getUser() {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    return user;
-  },
+    async getUser() {
+        const sb = getSupabase();
+        const { data: { user } } = await sb.auth.getUser();
+        return user;
+    },
 
-  // 현재 사용자 프로필 가져오기
-  async getProfile() {
-    const user = await this.getUser();
-    if (!user) return null;
-    const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    if (error) { console.error('프로필 조회 오류:', error); return null; }
-    return data;
-  },
+    async getProfile() {
+        const sb = getSupabase();
+        const user = await this.getUser();
+        if (!user) return null;
 
-  // 이메일/비밀번호로 회원가입
-  async signUp(email, password, nickname, userType) {
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: { data: { nickname, user_type: userType } }
-    });
-    if (error) throw error;
+        const { data, error } = await sb
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
 
-    // 프로필 업데이트
-    if (data.user) {
-      await supabaseClient.from('profiles').upsert({
-        id: data.user.id,
-        email,
-        nickname,
-        user_type: userType
-      });
+        if (error) {
+            console.error('프로필 조회 오류:', error);
+            return null;
+        }
+        return data;
+    },
+
+    async signUp(email, password, nickname, userType) {
+        const sb = getSupabase();
+
+        const { data, error } = await sb.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { nickname, user_type: userType }
+            }
+        });
+        if (error) throw error;
+
+        if (data.user) {
+            await sb.from('profiles').upsert({
+                id: data.user.id,
+                email,
+                nickname,
+                user_type: userType
+            });
+        }
+        return data;
+    },
+
+    async signIn(email, password) {
+        const sb = getSupabase();
+        const { data, error } = await sb.auth.signInWithPassword({
+            email,
+            password
+        });
+        if (error) throw error;
+        return data;
+    },
+
+    async signOut() {
+        const sb = getSupabase();
+        const { error } = await sb.auth.signOut();
+        if (error) throw error;
+    },
+
+    onAuthStateChange(callback) {
+        const sb = getSupabase();
+        return sb.auth.onAuthStateChange(callback);
     }
-    return data;
-  },
-
-  // 로그인
-  async signIn(email, password) {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-    if (error) throw error;
-    return data;
-  },
-
-  // 로그아웃
-  async signOut() {
-    const { error } = await supabaseClient.auth.signOut();
-    if (error) throw error;
-  },
-
-  // 인증 상태 변경 감지
-  onAuthStateChange(callback) {
-    return supabaseClient.auth.onAuthStateChange(callback);
-  }
 };
 
 window.Auth = Auth;
+console.log('✅ Auth 모듈 로드 완료');
