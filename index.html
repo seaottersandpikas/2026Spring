@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoodsFactory - 굿즈 제작 및 판매 플랫폼</title>
-    <!-- Supabase JS SDK (CDN) -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -18,22 +17,17 @@
             <button onclick="navigateTo('marketplace')">마켓플레이스</button>
         </nav>
         <div class="nav-user">
-            <button class="btn btn-sm btn-secondary" onclick="openModal('notificationModal')">
-                🔔 <span style="width:8px;height:8px;background:var(--accent);border-radius:50%;display:inline-block;"></span>
-            </button>
-            <!-- 로그인 전 버튼 -->
+            <button class="btn btn-sm btn-secondary" onclick="openModal('notificationModal')">🔔</button>
             <button class="btn btn-sm btn-primary" id="loginNavBtn" onclick="openModal('loginModal')">로그인</button>
-            <!-- 로그인 후 아바타 -->
-            <div class="user-avatar" onclick="toggleUserMenu(event)" style="display:none" id="userAvatar">U</div>
+            <div class="user-avatar" onclick="toggleUserMenu(event)" id="userAvatar" style="display:none">U</div>
             <div class="profile-dropdown" id="profileDropdown">
                 <div class="profile-header-info">
-                    <strong style="display:block;color:var(--primary);font-size:15px;">사용자</strong>
-                    <span class="text-xs text-muted">user@goodsfactory.com</span>
+                    <strong id="profileName" style="display:block;color:var(--primary);font-size:15px;">사용자</strong>
+                    <span id="profileEmail" class="text-xs text-muted"></span>
                 </div>
                 <ul class="profile-dropdown-menu">
-                    <li><button onclick="navigateTo('client-personal')">나의 의뢰 관리</button></li>
-                    <li><button>결제 및 정산 내역</button></li>
-                    <li><button>계정 설정</button></li>
+                    <li><button onclick="navigateTo('client-personal');document.getElementById('profileDropdown').classList.remove('show')">나의 의뢰 관리</button></li>
+                    <li><button onclick="document.getElementById('profileDropdown').classList.remove('show')">계정 설정</button></li>
                     <li style="border-top:1px solid #E2E8F0;margin-top:4px;padding-top:4px;">
                         <button style="color:var(--danger)" onclick="handleLogout()">로그아웃</button>
                     </li>
@@ -45,12 +39,12 @@
 
 <div class="page-container">
 
-    <!-- ========== HOME ========== -->
+    <!-- HOME -->
     <section id="page-home" class="page-section active">
         <div class="home-hero">
             <h1>당신의 아이디어를 현실로</h1>
             <p>굿즈 제작부터 판매까지, 생산자와 의뢰자를 연결하는 스마트 플랫폼</p>
-            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;">
+            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;margin:0 auto 40px;">
                 <div class="role-card" onclick="navigateTo('client-select')">
                     <div class="icon" style="background:rgba(0,206,201,0.1)">📋</div>
                     <h3>의뢰자 (Client)</h3>
@@ -66,17 +60,17 @@
                 <div class="stat-card"><div class="stat-num">2,847</div><div class="stat-label">등록 생산자</div></div>
                 <div class="stat-card"><div class="stat-num">15,234</div><div class="stat-label">완료된 의뢰</div></div>
                 <div class="stat-card"><div class="stat-num">8,912</div><div class="stat-label">활성 의뢰자</div></div>
-                <div class="stat-card"><div class="stat-num">₩3.2B</div><div class="stat-label">총 거래액</div></div>
+                <div class="stat-card"><div class="stat-num">&#8361;3.2B</div><div class="stat-label">총 거래액</div></div>
             </div>
         </div>
     </section>
 
-    <!-- ========== CLIENT SELECT ========== -->
+    <!-- CLIENT SELECT -->
     <section id="page-client-select" class="page-section">
         <div class="home-hero" style="padding-top:40px">
             <h1 style="font-size:36px">의뢰자 유형 선택</h1>
             <p>사업자 또는 개인으로 의뢰하세요</p>
-            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;">
+            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;margin:0 auto;">
                 <div class="role-card" onclick="navigateTo('client-business')">
                     <div class="icon" style="background:rgba(0,206,201,0.1)">🏢</div>
                     <h3>사업자 의뢰</h3>
@@ -91,13 +85,13 @@
         </div>
     </section>
 
-    <!-- ========== CLIENT BUSINESS ========== -->
+    <!-- CLIENT BUSINESS -->
     <section id="page-client-business" class="page-section">
         <div class="dashboard-layout">
             <aside class="sidebar">
                 <div style="padding:12px 14px;margin-bottom:8px">
                     <span class="text-xs text-muted">사업자 의뢰자</span>
-                    <h4>ABC 스튜디오</h4>
+                    <h4 id="biz-sidebar-name">사용자</h4>
                 </div>
                 <ul class="sidebar-menu">
                     <li><button class="active" onclick="showBizTab('dashboard',this)">📊 대시보드</button></li>
@@ -108,36 +102,14 @@
                 </ul>
             </aside>
             <div class="main-content">
-
-                <!-- Dashboard -->
                 <div id="biz-dashboard" class="tab-content active">
                     <h2 class="section-title">📊 대시보드</h2>
-                    <div class="summary-grid">
-                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('all')">
-                            <div class="sum-num" style="color:var(--primary)">-</div>
-                            <div class="sum-label">전체 의뢰</div>
-                        </div>
-                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('bidding')">
-                            <div class="sum-num" style="color:var(--warning)">-</div>
-                            <div class="sum-label">입찰 진행중</div>
-                        </div>
-                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('producing')">
-                            <div class="sum-num" style="color:var(--secondary)">-</div>
-                            <div class="sum-label">제작 진행중</div>
-                        </div>
-                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('completed')">
-                            <div class="sum-num" style="color:var(--success)">-</div>
-                            <div class="sum-label">완료</div>
-                        </div>
-                    </div>
                     <div class="alert alert-info">
                         <span>💡</span>
                         <div>의뢰를 생성하면 생산자들이 입찰을 시작합니다.<br>
                         <a href="#" onclick="showBizTab('create',null);return false;" style="color:var(--primary)">첫 의뢰 만들기 →</a></div>
                     </div>
                 </div>
-
-                <!-- Create Request -->
                 <div id="biz-create" class="tab-content">
                     <h2 class="section-title">➕ 새 의뢰 생성 <span class="badge">사업자</span></h2>
                     <div class="stepper" id="bizStepper">
@@ -147,12 +119,11 @@
                         <div class="step-line"></div>
                         <div class="step" data-step="3"><div class="step-circle">3</div><span>확인/등록</span></div>
                     </div>
-                    <!-- Step 1 -->
                     <div id="biz-step-1" class="card">
                         <h4 class="mb-16">📝 기본 정보</h4>
                         <div class="form-group" id="fg-biz-title">
                             <label>아이템 명칭 *</label>
-                            <input type="text" placeholder="예: 아크릴 키링, 커스텀 티셔츠 등" id="biz-title">
+                            <input type="text" placeholder="예: 아크릴 키링" id="biz-title">
                             <div class="form-error">아이템 명칭을 입력해주세요.</div>
                         </div>
                         <div class="form-row">
@@ -174,9 +145,9 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group" id="fg-biz-price">
-                                <label>희망 단가 (₩) *</label>
+                                <label>희망 단가 (원) *</label>
                                 <input type="number" placeholder="예: 2500" id="biz-price">
-                                <div class="form-hint" id="biz-price-hint">시장 평균 참고가: 카테고리를 선택하면 표시됩니다</div>
+                                <div class="form-hint" id="biz-price-hint">카테고리를 선택하면 시장 평균가가 표시됩니다</div>
                                 <div class="form-error">희망 단가를 입력해주세요.</div>
                             </div>
                             <div class="form-group" id="fg-biz-deadline">
@@ -189,7 +160,6 @@
                             <button class="btn btn-primary" onclick="bizStepNext(1)">다음 단계 →</button>
                         </div>
                     </div>
-                    <!-- Step 2 -->
                     <div id="biz-step-2" class="card" style="display:none">
                         <h4 class="mb-16">🎨 디자인 및 상세 요청</h4>
                         <div class="form-group">
@@ -200,7 +170,7 @@
                             <label>디자인 파일 첨부</label>
                             <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:32px;text-align:center;cursor:pointer;" onclick="document.getElementById('biz-file-input').click()" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='#E2E8F0'">
                                 <div style="font-size:32px;margin-bottom:8px">📁</div>
-                                <p class="text-sm text-muted">클릭하거나 파일을 드래그하세요</p>
+                                <p class="text-sm text-muted">클릭하여 파일 선택</p>
                                 <p class="text-xs text-muted">AI, PSD, PNG, PDF (최대 50MB)</p>
                                 <input type="file" multiple id="biz-file-input" style="display:none" onchange="showUploadedFiles(this,'biz-file-list')">
                             </div>
@@ -208,21 +178,17 @@
                         </div>
                         <div class="form-group">
                             <label>상세 요청 사항</label>
-                            <textarea placeholder="납품 일정, 포장 방식, 검수 기준 등 추가 요청사항을 적어주세요." id="biz-detail-note"></textarea>
+                            <textarea placeholder="납품 일정, 포장 방식 등 추가 요청사항을 적어주세요." id="biz-detail-note"></textarea>
                         </div>
                         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
                             <button class="btn btn-secondary" onclick="bizStepBack(2)">← 이전</button>
                             <button class="btn btn-primary" onclick="bizStepNext(2)">다음 단계 →</button>
                         </div>
                     </div>
-                    <!-- Step 3 -->
                     <div id="biz-step-3" class="card" style="display:none">
                         <h4 class="mb-16">✅ 의뢰 내용 확인</h4>
-                        <div class="alert alert-info">
-                            <span>ℹ️</span>
-                            <span>등록 전 내용을 한 번 더 확인해주세요.</span>
-                        </div>
-                        <table class="data-table" id="biz-confirm-table">
+                        <div class="alert alert-info"><span>ℹ️</span><span>등록 전 내용을 한 번 더 확인해주세요.</span></div>
+                        <table class="data-table">
                             <tr><td style="width:140px;font-weight:600">아이템명</td><td id="confirm-title">-</td></tr>
                             <tr><td style="font-weight:600">카테고리</td><td id="confirm-category">-</td></tr>
                             <tr><td style="font-weight:600">희망 수량</td><td id="confirm-qty">-</td></tr>
@@ -239,8 +205,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Manage Requests -->
                 <div id="biz-manage" class="tab-content">
                     <div class="flex-between mb-16">
                         <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
@@ -252,44 +216,33 @@
                         <button class="pill-filter" onclick="filterBizStatus('producing',this)">제작중</button>
                         <button class="pill-filter" onclick="filterBizStatus('completed',this)">완료</button>
                     </div>
-                    <!-- 동적으로 채워지는 영역 -->
                     <div id="biz-manage-list">
-                        <div class="empty-state">
-                            <div class="empty-icon">📋</div>
-                            <p>의뢰 목록을 로딩 중입니다...</p>
-                        </div>
+                        <div class="empty-state"><div class="empty-icon">📋</div><p>로딩 중...</p></div>
                     </div>
                 </div>
-
-                <!-- Recent Matchings -->
                 <div id="biz-recent-match" class="tab-content">
                     <h2 class="section-title">✅ 최근 매칭 조회</h2>
                     <p class="text-sm text-muted mb-16">다른 의뢰자들의 매칭 가격을 참고하세요.</p>
                     <table class="data-table">
                         <thead><tr><th>아이템</th><th>카테고리</th><th>수량</th><th>희망단가</th><th>매칭단가</th><th>절감율</th><th>매칭일</th></tr></thead>
-                        <tbody><tr><td colspan="7" style="text-align:center">로딩 중...</td></tr></tbody>
+                        <tbody id="biz-match-tbody"><tr><td colspan="7" style="text-align:center">로딩 중...</td></tr></tbody>
                     </table>
                 </div>
-
-                <!-- Payments -->
                 <div id="biz-payments" class="tab-content">
                     <h2 class="section-title">💳 결제 / 정산 내역</h2>
-                    <div class="empty-state">
-                        <div class="empty-icon">💳</div>
-                        <p>결제 내역이 없습니다.</p>
-                    </div>
+                    <div class="empty-state"><div class="empty-icon">💳</div><p>결제 내역이 없습니다.</p></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ========== CLIENT PERSONAL ========== -->
+    <!-- CLIENT PERSONAL -->
     <section id="page-client-personal" class="page-section">
         <div class="dashboard-layout">
             <aside class="sidebar">
                 <div style="padding:12px 14px;margin-bottom:8px">
                     <span class="text-xs text-muted">개인 의뢰자</span>
-                    <h4>사용자</h4>
+                    <h4 id="personal-sidebar-name">사용자</h4>
                 </div>
                 <ul class="sidebar-menu">
                     <li><button class="active" onclick="showPersonalTab('dashboard',this)">📊 대시보드</button></li>
@@ -301,8 +254,6 @@
                 </ul>
             </aside>
             <div class="main-content">
-
-                <!-- Dashboard -->
                 <div id="personal-dashboard" class="tab-content active">
                     <h2 class="section-title">📊 대시보드</h2>
                     <div class="alert alert-info">
@@ -311,32 +262,30 @@
                         <a href="#" onclick="showPersonalTab('individual',null);return false;" style="color:var(--primary)">개인 의뢰 만들기 →</a></div>
                     </div>
                 </div>
-
-                <!-- Individual Request -->
                 <div id="personal-individual" class="tab-content">
                     <h2 class="section-title">🎯 개인 의뢰 생성</h2>
                     <div class="card">
                         <div class="form-group">
                             <label>의뢰 방식 *</label>
-                            <div style="display:flex;gap:16px">
-                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid var(--primary);border-radius:8px;transition:all 0.2s;" id="radio-bidding">
+                            <div style="display:flex;gap:16px;flex-wrap:wrap">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid var(--primary);border-radius:8px;" id="radio-bidding">
                                     <input type="radio" name="request-type" value="bidding" checked onchange="toggleDirectMfg(this)">
                                     <div><strong>입찰(Bidding)</strong><br><span class="text-xs text-muted">생산자들의 견적을 비교</span></div>
                                 </label>
-                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;transition:all 0.2s;" id="radio-direct">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;" id="radio-direct">
                                     <input type="radio" name="request-type" value="direct" onchange="toggleDirectMfg(this)">
                                     <div><strong>직접 의뢰</strong><br><span class="text-xs text-muted">특정 생산자에게 직접 요청</span></div>
                                 </label>
                             </div>
                         </div>
                         <div class="form-group" id="directMfgField" style="display:none">
-                            <label>생산자 ID 입력 *</label>
-                            <input type="text" placeholder="예: MFG-20240001">
-                            <div class="form-hint">마켓플레이스 > 생산자 홍보에서 메시지를 통해 생산자 ID를 받을 수 있습니다.</div>
+                            <label>생산자 ID *</label>
+                            <input type="text" id="directMfgId" placeholder="예: MFG-20240001">
+                            <div class="form-hint">마켓플레이스에서 생산자 ID를 확인하세요.</div>
                         </div>
                         <div class="form-group">
                             <label>아이템 명칭 *</label>
-                            <input type="text" placeholder="예: 아크릴 키링, 폰케이스 등" id="personalItemName">
+                            <input type="text" placeholder="예: 아크릴 키링" id="personalItemName">
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -355,7 +304,7 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label>희망 단가 (₩) *</label>
+                                <label>희망 단가 (원) *</label>
                                 <input type="number" placeholder="예: 3000" id="personalPrice">
                             </div>
                             <div class="form-group">
@@ -371,7 +320,7 @@
                             <label>디자인 파일 첨부</label>
                             <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById('personal-file-input').click()">
                                 <div style="font-size:24px;margin-bottom:6px">📁</div>
-                                <p class="text-xs text-muted">파일을 선택하세요 (AI, PSD, PNG, PDF)</p>
+                                <p class="text-xs text-muted">파일을 선택하세요</p>
                                 <input type="file" multiple id="personal-file-input" style="display:none" onchange="showUploadedFiles(this,'personal-file-list')">
                             </div>
                             <div id="personal-file-list" class="mt-8"></div>
@@ -385,18 +334,13 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Group Purchase -->
                 <div id="personal-group" class="tab-content">
                     <h2 class="section-title">👥 공동제작 의뢰 생성</h2>
-                    <div class="alert alert-info">
-                        <span>💡</span>
-                        <div>공동제작 의뢰는 마켓플레이스에 등록되어 참여자를 모집합니다.<br>최소 수량이 채워진 후에만 생산자에게 입찰이 요청됩니다.</div>
-                    </div>
-                    <div class="card" id="group-form">
+                    <div class="alert alert-info"><span>💡</span><div>최소 수량이 채워진 후에만 생산자에게 입찰이 요청됩니다.</div></div>
+                    <div class="card">
                         <div class="form-group">
                             <label>의뢰 방식 *</label>
-                            <div style="display:flex;gap:16px">
+                            <div style="display:flex;gap:16px;flex-wrap:wrap">
                                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
                                     <input type="radio" name="group-type" value="bidding" checked onchange="toggleGroupDirectMfg(this)"> <strong>입찰 방식</strong>
                                 </label>
@@ -406,13 +350,10 @@
                             </div>
                         </div>
                         <div class="form-group" id="groupDirectMfgField" style="display:none">
-                            <label>생산자 ID 입력 *</label>
-                            <input type="text" id="group-direct-id" placeholder="생산자의 고유 ID를 입력하세요">
+                            <label>생산자 ID *</label>
+                            <input type="text" id="group-direct-id" placeholder="생산자의 고유 ID">
                         </div>
-                        <div class="form-group">
-                            <label>아이템 명칭 *</label>
-                            <input type="text" id="group-title" placeholder="예: 아크릴 키링 공동구매">
-                        </div>
+                        <div class="form-group"><label>아이템 명칭 *</label><input type="text" id="group-title" placeholder="예: 아크릴 키링 공동구매"></div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label>카테고리 *</label>
@@ -423,98 +364,56 @@
                                     <option>생활용품</option><option>기타</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>총 목표 수량 *</label>
-                                <input type="number" id="group-total-qty" placeholder="예: 200">
-                            </div>
+                            <div class="form-group"><label>총 목표 수량 *</label><input type="number" id="group-total-qty" placeholder="예: 200"></div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label>최소 모집 수량 *</label>
                                 <input type="number" id="group-min-qty" placeholder="예: 100">
-                                <div class="form-hint">이 수량이 채워져야 생산 의뢰가 진행됩니다.</div>
+                                <div class="form-hint">이 수량이 채워져야 진행됩니다.</div>
                             </div>
-                            <div class="form-group">
-                                <label>희망 단가 (₩) *</label>
-                                <input type="number" id="group-price" placeholder="예: 2000">
-                            </div>
+                            <div class="form-group"><label>희망 단가 (원) *</label><input type="number" id="group-price" placeholder="예: 2000"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>공동구매 모집 마감일 *</label>
-                                <input type="date" id="group-recruit-deadline">
-                            </div>
-                            <div class="form-group">
-                                <label>입찰 마감일</label>
-                                <input type="date" id="group-bid-deadline">
-                            </div>
+                            <div class="form-group"><label>모집 마감일 *</label><input type="date" id="group-recruit-deadline"></div>
+                            <div class="form-group"><label>입찰 마감일</label><input type="date" id="group-bid-deadline"></div>
                         </div>
-                        <div class="form-group">
-                            <label>디자인 가이드라인</label>
-                            <textarea id="group-design-guide" placeholder="디자인 요구사항을 상세히 적어주세요."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>디자인 파일 첨부</label>
-                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById('group-file-input').click()">
-                                <div style="font-size:24px;margin-bottom:6px">📁</div>
-                                <p class="text-xs text-muted">파일을 선택하세요</p>
-                                <input type="file" multiple id="group-file-input" style="display:none" onchange="showUploadedFiles(this,'group-file-list')">
-                            </div>
-                            <div id="group-file-list" class="mt-8"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>공동구매 상세 설명</label>
-                            <textarea id="group-detail-note" placeholder="옵션, 사이즈, 색상 등 상세 계획을 적어주세요."></textarea>
-                        </div>
+                        <div class="form-group"><label>디자인 가이드라인</label><textarea id="group-design-guide" placeholder="디자인 요구사항을 적어주세요."></textarea></div>
+                        <div class="form-group"><label>상세 설명</label><textarea id="group-detail-note" placeholder="옵션, 사이즈, 색상 등 상세 계획을 적어주세요."></textarea></div>
                         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
                             <button class="btn btn-primary" onclick="submitGroupRequest()">🚀 공동구매 등록</button>
                         </div>
                     </div>
                 </div>
-
-                <!-- My Orders -->
                 <div id="personal-myorders" class="tab-content">
-                    <div class="flex-between mb-16">
-                        <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
-                    </div>
+                    <h2 class="section-title" style="margin-bottom:16px">📁 내 의뢰 관리</h2>
                     <div class="pill-filters">
                         <button class="pill-filter active" onclick="filterPillActive(this)">전체</button>
                         <button class="pill-filter" onclick="filterPillActive(this)">입찰중</button>
                         <button class="pill-filter" onclick="filterPillActive(this)">공동구매</button>
                         <button class="pill-filter" onclick="filterPillActive(this)">완료</button>
                     </div>
-                    <!-- 동적으로 채워지는 영역 -->
                     <div id="personal-myorders-list">
-                        <div class="empty-state">
-                            <div class="empty-icon">📋</div>
-                            <p>의뢰 목록을 로딩 중입니다...</p>
-                        </div>
+                        <div class="empty-state"><div class="empty-icon">📋</div><p>로딩 중...</p></div>
                     </div>
                 </div>
-
-                <!-- Recent Match -->
                 <div id="personal-recent-match" class="tab-content">
                     <h2 class="section-title">✅ 최근 매칭 조회</h2>
                     <p class="text-sm text-muted mb-16">다른 개인 의뢰자들의 매칭 가격을 참고하세요.</p>
                     <table class="data-table">
                         <thead><tr><th>아이템</th><th>수량</th><th>희망단가</th><th>매칭단가</th><th>유형</th><th>매칭일</th></tr></thead>
-                        <tbody><tr><td colspan="6" style="text-align:center">로딩 중...</td></tr></tbody>
+                        <tbody id="personal-match-tbody"><tr><td colspan="6" style="text-align:center">로딩 중...</td></tr></tbody>
                     </table>
                 </div>
-
-                <!-- Payments -->
                 <div id="personal-payments" class="tab-content">
                     <h2 class="section-title">💳 결제 / 정산 내역</h2>
-                    <div class="empty-state">
-                        <div class="empty-icon">💳</div>
-                        <p>결제 내역이 없습니다.</p>
-                    </div>
+                    <div class="empty-state"><div class="empty-icon">💳</div><p>결제 내역이 없습니다.</p></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ========== MARKETPLACE ========== -->
+    <!-- MARKETPLACE -->
     <section id="page-marketplace" class="page-section">
         <div class="empty-state">
             <div class="empty-icon">🛒</div>
@@ -524,9 +423,7 @@
     </section>
 </div>
 
-<!-- ========== MODALS ========== -->
-
-<!-- 로그인 모달 -->
+<!-- MODALS -->
 <div class="modal-overlay" id="loginModal">
     <div class="modal" style="max-width:440px">
         <button class="modal-close" onclick="closeModal('loginModal')">×</button>
@@ -548,7 +445,6 @@
     </div>
 </div>
 
-<!-- 회원가입 모달 -->
 <div class="modal-overlay" id="signupModal">
     <div class="modal" style="max-width:440px">
         <button class="modal-close" onclick="closeModal('signupModal')">×</button>
@@ -583,56 +479,33 @@
     </div>
 </div>
 
-<!-- Match Confirm Modal -->
 <div class="modal-overlay" id="matchConfirmModal">
     <div class="modal">
         <button class="modal-close" onclick="closeModal('matchConfirmModal')">×</button>
         <h3>✅ 매칭 확정</h3>
-        <div class="alert alert-warning">
-            <span>⚠️</span>
-            <span>매칭을 확정하면 취소가 어렵습니다. 견적 내용을 확인 후 진행해주세요.</span>
-        </div>
+        <div class="alert alert-warning"><span>⚠️</span><span>매칭을 확정하면 취소가 어렵습니다.</span></div>
         <div class="payment-summary">
             <h4>최종 결제 예정 금액</h4>
-            <div class="pay-amount">계산 중...</div>
-            <div class="pay-detail"></div>
+            <div class="pay-amount" id="matchPayAmount">계산 중...</div>
+            <div class="pay-detail" id="matchPayDetail"></div>
         </div>
         <div class="form-group">
-            <label>결제 방법 선택 *</label>
-            <select>
-                <option>신용카드</option>
-                <option>계좌이체</option>
-                <option>카카오페이</option>
-                <option>토스페이</option>
+            <label>결제 방법 *</label>
+            <select id="matchPayMethod">
+                <option>신용카드</option><option>계좌이체</option><option>카카오페이</option><option>토스페이</option>
             </select>
         </div>
         <div style="display:flex;gap:12px;justify-content:flex-end">
             <button class="btn btn-secondary" onclick="closeModal('matchConfirmModal')">취소</button>
-            <button class="btn btn-success" onclick="executeSelectBid()">💳 결제 및 매칭 확정</button>
+            <button class="btn btn-success" id="matchConfirmBtn" onclick="executeSelectBid()">💳 결제 및 매칭 확정</button>
         </div>
     </div>
 </div>
 
-<!-- Client Estimate Modal -->
-<div class="modal-overlay" id="clientEstimateModal">
-    <div class="modal">
-        <button class="modal-close" onclick="closeModal('clientEstimateModal')">×</button>
-        <h3>📄 생산자 견적서</h3>
-        <div class="alert alert-info">
-            <span>ℹ️</span>
-            <span>상세 견적 내용을 확인하고 매칭을 진행하세요.</span>
-        </div>
-        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
-            <button class="btn btn-secondary" onclick="closeModal('clientEstimateModal')">닫기</button>
-        </div>
-    </div>
-</div>
-
-<!-- Write Review Modal -->
 <div class="modal-overlay" id="writeReviewModal">
     <div class="modal">
         <button class="modal-close" onclick="closeModal('writeReviewModal')">×</button>
-        <h3>✍️ 의뢰 후기 작성</h3>
+        <h3>✍️ 후기 작성</h3>
         <div class="form-group">
             <label>만족도</label>
             <div style="display:flex;gap:8px;font-size:28px;cursor:pointer" id="starRating">
@@ -641,10 +514,7 @@
                 <span onclick="setRating(5)" style="opacity:0.3">⭐</span>
             </div>
         </div>
-        <div class="form-group">
-            <label>후기 내용</label>
-            <textarea placeholder="품질, 소통, 납기 등에 대한 후기를 남겨주세요."></textarea>
-        </div>
+        <div class="form-group"><label>후기 내용</label><textarea placeholder="품질, 소통, 납기 등에 대한 후기를 남겨주세요."></textarea></div>
         <div style="display:flex;gap:12px;justify-content:flex-end">
             <button class="btn btn-secondary" onclick="closeModal('writeReviewModal')">취소</button>
             <button class="btn btn-primary" onclick="closeModal('writeReviewModal');showToast('후기가 등록되었습니다!','success')">등록</button>
@@ -652,13 +522,12 @@
     </div>
 </div>
 
-<!-- Co-Purchase Recommendation Popup -->
 <div class="modal-overlay" id="coPurchasePopup">
     <div class="modal" style="max-width:480px">
         <button class="modal-close" onclick="closeModal('coPurchasePopup')">×</button>
         <h3>💡 공동구매를 추천합니다!</h3>
         <div id="coPurchaseReason" style="background:rgba(253,203,110,0.15);border:1px solid rgba(253,203,110,0.3);border-radius:8px;padding:14px;margin-bottom:16px"></div>
-        <p class="text-sm mb-16">공동구매로 진행하면 더 많은 사람들과 함께 제작하여 단가를 낮출 수 있습니다.</p>
+        <p class="text-sm mb-16">공동구매로 진행하면 단가를 낮출 수 있습니다.</p>
         <div style="display:flex;gap:12px;justify-content:flex-end">
             <button class="btn btn-secondary" onclick="closeModal('coPurchasePopup');doSubmitPersonalRequest()">개인 의뢰 유지</button>
             <button class="btn btn-primary" onclick="closeModal('coPurchasePopup');showPersonalTab('group',null)">공동구매로 전환 →</button>
@@ -666,45 +535,22 @@
     </div>
 </div>
 
-<!-- Notification Modal -->
 <div class="modal-overlay" id="notificationModal">
     <div class="modal" style="max-width:480px">
         <button class="modal-close" onclick="closeModal('notificationModal')">×</button>
         <h3>🔔 알림</h3>
-        <div style="padding:20px 0;text-align:center;color:var(--gray)">
-            <p>새로운 알림이 없습니다.</p>
-        </div>
+        <div style="padding:20px 0;text-align:center;color:var(--gray)"><p>새로운 알림이 없습니다.</p></div>
     </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<!-- JS 파일 로드 순서 중요! -->
+<!-- 스크립트: 반드시 이 순서대로! -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/auth.js"></script>
 <script src="assets/js/requests.js"></script>
 <script src="assets/js/app.js"></script>
 
-<!-- 로그인 상태에 따른 아바타 표시 추가 스크립트 -->
-  <div class="toast" id="toast"></div>
-
-    <!-- ✅ 스크립트 로드 (순서 절대 바꾸지 마세요!) -->
-
-    <!-- 1순위: Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- 2순위: Supabase 클라이언트 초기화 -->
-    <script src="assets/js/supabase-client.js"></script>
-
-    <!-- 3순위: 인증 -->
-    <script src="assets/js/auth.js"></script>
-
-    <!-- 4순위: DB 함수 -->
-    <script src="assets/js/requests.js"></script>
-
-    <!-- 5순위: 앱 메인 -->
-    <script src="assets/js/app.js"></script>
-
 </body>
-
 </html>
