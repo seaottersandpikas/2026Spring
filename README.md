@@ -15,6 +15,8 @@ Project Timeline:
     ; 의뢰자 부문 backend 구축
     
     ; front-back 연동
+
+    ; URL: https://seaottersandpikas.github.io/2026Spring/ 
     
   . 5/2: 생산자 및 마켓플레이스 구축
   
