@@ -2,6 +2,10 @@
 
 굿즈 제작·유통 플랫폼: "굿즈 팩토리(가칭)"
 
+    ; URL: https://seaottersandpikas.github.io/2026Spring/
+
+    ; user id: test@test.com // PW: test123456 -> 개인 이메일 기입 후 회원 가입 가능
+
 **Project Timeline:**
 
   . 4/3: 사업 아이템 구상
@@ -34,7 +38,7 @@
 
     ; user id: test@test.com // PW: test123456
 
-    ; 회원가입/로그인 구축 완료
+    ; 회원가입/로그인 기능 구축 완료
 
     ; 의뢰자 탭 구현 완료 - 대량 생산 의뢰 및 개인 의뢰 탭 구현 완료
 
