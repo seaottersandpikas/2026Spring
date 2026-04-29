@@ -2,21 +2,52 @@
 
 굿즈 제작·유통 플랫폼: "굿즈 팩토리(가칭)"
 
-Project Timeline: 
+    ; URL: https://seaottersandpikas.github.io/2026Spring/
+
+    ; user id: test@test.com // PW: test123456 -> 개인 이메일 기입하여 회원가입 후 이용도 가능
+
+**Project Timeline:**
 
   . 4/3: 사업 아이템 구상
   
   . 4/17: 사업 아이템 확정 및 frontend 구축
   
-  . 5/1 (중간고사): 외뢰자 부문 frontend-backend 연동
+  . 4/17-5/1 (중간고사): 외뢰자 부문 frontend-backend 연동
   
     ; 기 완성된 frontend에서 의뢰자 부문만 추출
     
     ; 의뢰자 부문 backend 구축
     
-    ; front-back 연동
+    ; front-back 연동 (github codespace)
     
-  . 5/2: 생산자 및 마켓플레이스 구축
+  . 5/2-6/15: 생산자 및 마켓플레이스 구축
   
   . 6/15 (기말고사): 프로젝트 완성
 
+***프로젝트 진행 내역***
+
+  . 4/17-4/20: 프론트엔드 구축 완료
+
+  . 4/20-4/22: 데이터베이스 구축 완료
+
+    ; Supadata (무료 계정) 활용
+
+  . 4/21-4/25: 백엔드 구축 완료
+
+    ; URL: https://seaottersandpikas.github.io/2026Spring/
+
+    ; user id: test@test.com // PW: test123456
+
+    ; 회원가입/로그인 기능 구축 완료
+
+    ; 의뢰자 탭 구현 완료 - 대량 생산 의뢰 및 개인 의뢰 탭 구현 완료
+
+  . 4/25-5/1: 기능 추가 및 코드 수정
+  
+    ; 대량 생산 의뢰 생성 후 상세 보기가 되지 않는 문제
+
+    ; 로그인 이후 로그아웃 불가한 문제
+
+    ; JS 파일 중복 로드 문제
+
+    ; 생산자 Bidding 샘플 데이터 생성 -> 의뢰 생성 시 자동 반영
