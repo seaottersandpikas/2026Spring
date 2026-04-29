@@ -271,7 +271,7 @@ function renderRequestCard(req) {
         var rc=['gold','silver','bronze'];
         bidsHtml='<div class="divider"></div><h5 class="mb-8">📊 입찰 현황 ('+bidCount+'건) <span class="text-xs text-muted">· 클릭하면 견적 확인</span></h5>'+
             bids.slice(0,3).map(function(bid,i){
-                var mk=getMakerInfo(bid.manufacturer_id);
+                var mk=getMakerInfo(bid);
                 return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">'+
                     '<div class="bid-info">'+
                     '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>'+
@@ -322,12 +322,13 @@ function renderRequestCard(req) {
         '</div></div>';
 }
 
-// 생산자 정보 헬퍼
-function getMakerInfo(manufacturerId) {
-    if (!window.DummyBids) return {specialty:'종합 굿즈',rating:'4.5',completedCount:'-'};
-    var all=Object.values(DummyBids.manufacturers).flat();
-    var found=all.find(function(m){return m.id===manufacturerId;});
-    return found||{specialty:'종합 굿즈',rating:'4.5',completedCount:'-'};
+// 생산자 정보 헬퍼 (bid 객체에서 직접 읽기)
+function getMakerInfo(bid) {
+    return {
+        specialty:     bid.manufacturer_specialty || '종합 굿즈',
+        rating:        bid.manufacturer_rating    || '4.5',
+        completedCount:bid.manufacturer_completed || '-'
+    };
 }
 
 // ── 입찰 상세 보기 ─────────────────────────────────────
@@ -343,7 +344,7 @@ async function openBidDetail(bidId, requestId) {
         var bid=bids.find(function(b){return b.id===bidId;});
         if(!bid) throw new Error('입찰 정보를 찾을 수 없습니다.');
 
-        var mk=getMakerInfo(bid.manufacturer_id);
+        var mk=getMakerInfo(bid);
         var rank=bids.findIndex(function(b){return b.id===bidId;})+1;
         if(titleEl) titleEl.textContent='📄 '+escHtml(bid.manufacturer_name)+' 견적서';
 
@@ -421,7 +422,7 @@ async function openRequestDetail(requestId) {
             var rc=['gold','silver','bronze'];
             bidsSection='<div class="divider"></div><h5 style="margin-bottom:12px">📊 전체 입찰 목록 ('+bids.length+'건) - 단가 낮은 순</h5>'+
                 bids.map(function(bid,i){
-                    var mk=getMakerInfo(bid.manufacturer_id);
+                    var mk=getMakerInfo(bid);
                     return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">'+
                         '<div class="bid-info">'+
                         '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>'+
