@@ -13,7 +13,6 @@ var AppState = {
 
 // ── 앱 초기화 ──────────────────────────────────────────
 async function initApp() {
-    // supabaseClient 준비 대기
     for (var i = 0; i < 30; i++) {
         if (window.supabaseClient) break;
         await new Promise(function(r){ setTimeout(r, 100); });
@@ -24,48 +23,40 @@ async function initApp() {
     }
     console.log('✅ App 초기화 시작');
 
-    // 인증 상태 변경 감지
     Auth.onAuthStateChange(async function(event, session) {
         console.log('🔔 Auth 이벤트:', event);
         if (event === 'SIGNED_IN' && session) {
-            AppState.currentUser = session.user;
+            AppState.currentUser    = session.user;
             AppState.currentProfile = await Auth.getProfile();
             updateUILoggedIn();
         } else if (event === 'SIGNED_OUT') {
-            AppState.currentUser = null;
+            AppState.currentUser    = null;
             AppState.currentProfile = null;
             updateUILoggedOut();
         }
     });
 
-    // 현재 로그인 상태 확인
     try {
         var user = await Auth.getUser();
         if (user) {
-            AppState.currentUser = user;
+            AppState.currentUser    = user;
             AppState.currentProfile = await Auth.getProfile();
             updateUILoggedIn();
-            console.log('✅ 로그인 상태 복원:', user.email);
         }
-    } catch(e) { console.log('비로그인 상태'); }
+    } catch(e) {}
 
-    // 매칭 이력 로드
     loadMatchHistoryBiz();
     loadMatchHistoryPersonal();
 
-    // 카테고리 변경 시 가격 힌트
     var bizCat = document.getElementById('biz-category');
     if (bizCat) {
         bizCat.addEventListener('change', function() {
             var hint = AppState.priceHints[this.value];
-            var el = document.getElementById('biz-price-hint');
-            if (el) el.textContent = hint
-                ? '시장 평균 참고가: ' + hint
-                : '카테고리를 선택하면 표시됩니다';
+            var el   = document.getElementById('biz-price-hint');
+            if (el) el.textContent = hint ? '시장 평균 참고가: ' + hint : '카테고리를 선택하면 표시됩니다';
         });
     }
 
-    // 모달 외부 클릭 시 닫기
     document.querySelectorAll('.modal-overlay').forEach(function(o) {
         o.addEventListener('click', function(e) {
             if (e.target === this) this.classList.remove('show');
@@ -78,16 +69,14 @@ function updateUILoggedIn() {
     var p     = AppState.currentProfile;
     var name  = (p && p.nickname) ? p.nickname : '사용자';
     var email = (p && p.email)    ? p.email    : '';
-
     var loginBtn = document.getElementById('loginNavBtn');
     var avatar   = document.getElementById('userAvatar');
     if (loginBtn) loginBtn.style.display = 'none';
     if (avatar)  { avatar.style.display = 'flex'; avatar.textContent = name[0].toUpperCase(); }
-
-    setEl('profileName',          name);
-    setEl('profileEmail',         email);
-    setEl('biz-sidebar-name',     name);
-    setEl('personal-sidebar-name',name);
+    setEl('profileName',           name);
+    setEl('profileEmail',          email);
+    setEl('biz-sidebar-name',      name);
+    setEl('personal-sidebar-name', name);
 }
 
 function updateUILoggedOut() {
@@ -101,15 +90,11 @@ function updateUILoggedOut() {
 async function handleLogin() {
     var email    = document.getElementById('loginEmail').value.trim();
     var password = document.getElementById('loginPassword').value;
-    if (!email || !password) {
-        showToast('이메일과 비밀번호를 입력하세요.', 'error');
-        return;
-    }
+    if (!email || !password) { showToast('이메일과 비밀번호를 입력하세요.', 'error'); return; }
     var btn = document.getElementById('loginSubmitBtn');
     if (btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
     try {
         await Auth.signIn(email, password);
-        // onAuthStateChange 에서 UI 업데이트 처리
         closeModal('loginModal');
         document.getElementById('loginEmail').value    = '';
         document.getElementById('loginPassword').value = '';
@@ -117,7 +102,7 @@ async function handleLogin() {
     } catch(e) {
         var msg = e.message || '';
         if (msg.includes('Invalid login credentials')) msg = '이메일 또는 비밀번호가 올바르지 않습니다.';
-        else if (msg.includes('Email not confirmed'))  msg = '이메일 인증이 필요합니다. 받은 편지함을 확인해주세요.';
+        else if (msg.includes('Email not confirmed'))  msg = '이메일 인증이 필요합니다.';
         else if (msg.includes('Too many requests'))    msg = '잠시 후 다시 시도해주세요.';
         showToast('로그인 실패: ' + msg, 'error');
     } finally {
@@ -130,22 +115,18 @@ async function handleSignUp() {
     var password = document.getElementById('signupPassword').value;
     var nickname = document.getElementById('signupNickname').value.trim();
     var userType = document.getElementById('signupUserType').value;
-    if (!email || !password || !nickname || !userType) {
-        showToast('모든 항목을 입력해주세요.', 'error'); return;
-    }
-    if (password.length < 6) {
-        showToast('비밀번호는 6자 이상이어야 합니다.', 'error'); return;
-    }
+    if (!email||!password||!nickname||!userType) { showToast('모든 항목을 입력해주세요.','error'); return; }
+    if (password.length < 6) { showToast('비밀번호는 6자 이상이어야 합니다.','error'); return; }
     var btn = document.getElementById('signupSubmitBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '가입 중...'; }
+    if (btn) { btn.disabled=true; btn.textContent='가입 중...'; }
     try {
         await Auth.signUp(email, password, nickname, userType);
         closeModal('signupModal');
-        showToast('회원가입 완료! 이메일 인증 후 로그인해주세요.', 'success');
+        showToast('회원가입 완료! 이메일 인증 후 로그인해주세요.','success');
     } catch(e) {
-        showToast('회원가입 실패: ' + e.message, 'error');
+        showToast('회원가입 실패: '+e.message,'error');
     } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '회원가입'; }
+        if (btn) { btn.disabled=false; btn.textContent='회원가입'; }
     }
 }
 
@@ -153,81 +134,63 @@ async function handleLogout() {
     closeDropdown();
     try {
         await Auth.signOut();
-        AppState.currentUser    = null;
-        AppState.currentProfile = null;
-        updateUILoggedOut();
-        navigateTo('home');
-        showToast('로그아웃 되었습니다.', 'success');
     } catch(e) {
-        // Lock 오류는 무시하고 강제 로그아웃 처리
+        console.warn('로그아웃 경고 (무시됨):', e.message);
+    } finally {
         AppState.currentUser    = null;
         AppState.currentProfile = null;
         updateUILoggedOut();
         navigateTo('home');
         showToast('로그아웃 되었습니다.', 'success');
-        console.warn('로그아웃 경고 (무시됨):', e.message);
     }
 }
 
 // ── 네비게이션 ─────────────────────────────────────────
 function navigateTo(page) {
-    document.querySelectorAll('.page-section').forEach(function(el) {
-        el.classList.remove('active');
-    });
-    var target = document.getElementById('page-' + page);
+    document.querySelectorAll('.page-section').forEach(function(el){ el.classList.remove('active'); });
+    var target = document.getElementById('page-'+page);
     if (target) target.classList.add('active');
-
-    document.querySelectorAll('#mainNav button').forEach(function(b) {
-        b.classList.remove('active');
-    });
-    var map = { home:0,'client-select':1,'client-business':1,'client-personal':1,marketplace:2 };
+    document.querySelectorAll('#mainNav button').forEach(function(b){ b.classList.remove('active'); });
+    var map = {home:0,'client-select':1,'client-business':1,'client-personal':1,marketplace:2};
     var idx = map[page];
-    if (idx !== undefined) {
+    if (idx!==undefined) {
         var btns = document.querySelectorAll('#mainNav button');
         if (btns[idx]) btns[idx].classList.add('active');
     }
-    window.scrollTo(0, 0);
+    window.scrollTo(0,0);
 }
 
 // ── 탭 관리 ────────────────────────────────────────────
 function showBizTab(tab, btn) {
-    document.querySelectorAll('#page-client-business .main-content > .tab-content')
-        .forEach(function(el){ el.classList.remove('active'); });
-    var el = document.getElementById('biz-' + tab);
+    document.querySelectorAll('#page-client-business .main-content > .tab-content').forEach(function(el){ el.classList.remove('active'); });
+    var el = document.getElementById('biz-'+tab);
     if (el) el.classList.add('active');
-
-    document.querySelectorAll('#page-client-business .sidebar-menu button')
-        .forEach(function(b){ b.classList.remove('active'); });
-    if (btn) {
-        btn.classList.add('active');
-    } else {
-        var map = { dashboard:0,create:1,manage:2,'recent-match':3,payments:4 };
-        var btns = document.querySelectorAll('#page-client-business .sidebar-menu button');
-        if (btns[map[tab]]) btns[map[tab]].classList.add('active');
+    document.querySelectorAll('#page-client-business .sidebar-menu button').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) { btn.classList.add('active'); }
+    else {
+        var map={dashboard:0,create:1,manage:2,'recent-match':3,payments:4};
+        var btns=document.querySelectorAll('#page-client-business .sidebar-menu button');
+        if(btns[map[tab]])btns[map[tab]].classList.add('active');
     }
-    if (tab === 'manage')       loadMyRequests('business');
-    if (tab === 'recent-match') loadMatchHistoryBiz();
-    if (tab === 'dashboard')    loadBizDashboard();
+    if (tab==='manage')       loadMyRequests('business');
+    if (tab==='recent-match') loadMatchHistoryBiz();
+    if (tab==='dashboard')    loadBizDashboard();
 }
 
 function showPersonalTab(tab, btn) {
-    document.querySelectorAll('#page-client-personal .main-content > .tab-content')
-        .forEach(function(el){ el.classList.remove('active'); });
-    var el = document.getElementById('personal-' + tab);
+    document.querySelectorAll('#page-client-personal .main-content > .tab-content').forEach(function(el){ el.classList.remove('active'); });
+    var el = document.getElementById('personal-'+tab);
     if (el) el.classList.add('active');
-
-    document.querySelectorAll('#page-client-personal .sidebar-menu button')
-        .forEach(function(b){ b.classList.remove('active'); });
-    if (btn) {
-        btn.classList.add('active');
-    } else {
-        var map = { dashboard:0,individual:1,group:2,myorders:3,'recent-match':4,payments:5 };
-        var btns = document.querySelectorAll('#page-client-personal .sidebar-menu button');
-        if (btns[map[tab]]) btns[map[tab]].classList.add('active');
+    document.querySelectorAll('#page-client-personal .sidebar-menu button').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) { btn.classList.add('active'); }
+    else {
+        var map={dashboard:0,individual:1,group:2,myorders:3,'recent-match':4,payments:5};
+        var btns=document.querySelectorAll('#page-client-personal .sidebar-menu button');
+        if(btns[map[tab]])btns[map[tab]].classList.add('active');
     }
-    if (tab === 'myorders')     loadMyRequests('personal');
-    if (tab === 'recent-match') loadMatchHistoryPersonal();
-    if (tab === 'dashboard')    loadPersonalDashboard();
+    if (tab==='myorders')     loadMyRequests('personal');
+    if (tab==='recent-match') loadMatchHistoryPersonal();
+    if (tab==='dashboard')    loadPersonalDashboard();
 }
 
 // ── 대시보드 ───────────────────────────────────────────
@@ -235,7 +198,7 @@ async function loadBizDashboard() {
     if (!AppState.currentUser) return;
     try {
         var reqs = await Requests.getMyRequests();
-        var biz  = reqs.filter(function(r){ return r.request_type === 'business'; });
+        var biz  = reqs.filter(function(r){ return r.request_type==='business'; });
         setEl('biz-count-all',       biz.length);
         setEl('biz-count-bidding',   biz.filter(function(r){ return r.status==='bidding'; }).length);
         setEl('biz-count-producing', biz.filter(function(r){ return r.status==='producing'; }).length);
@@ -257,34 +220,28 @@ async function loadPersonalDashboard() {
 
 // ── 의뢰 목록 로드 ─────────────────────────────────────
 async function loadMyRequests(type) {
-    var cid       = type === 'business' ? 'biz-manage-list' : 'personal-myorders-list';
+    var cid       = type==='business' ? 'biz-manage-list' : 'personal-myorders-list';
     var container = document.getElementById(cid);
     if (!container) return;
-
     if (!AppState.currentUser) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><p>로그인 후 의뢰를 확인할 수 있습니다.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">로그인</button></div>';
         return;
     }
-
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
-
     try {
         var all  = await Requests.getMyRequests();
         var list = all.filter(function(r){
-            return type === 'business'
-                ? r.request_type === 'business'
-                : r.request_type === 'personal' || r.request_type === 'group';
+            return type==='business' ? r.request_type==='business' : (r.request_type==='personal'||r.request_type==='group');
         });
-
-        if (list.length === 0) {
-            var fn = type === 'business' ? "showBizTab('create',null)" : "showPersonalTab('individual',null)";
+        if (list.length===0) {
+            var fn = type==='business' ? "showBizTab('create',null)" : "showPersonalTab('individual',null)";
             container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>아직 등록된 의뢰가 없습니다.</p><button class="btn btn-primary" onclick="'+fn+'">첫 의뢰 만들기</button></div>';
             return;
         }
         container.innerHTML = list.map(renderRequestCard).join('');
     } catch(e) {
         console.error(e);
-        container.innerHTML = '<div class="empty-state"><p>오류: ' + escHtml(e.message) + '</p></div>';
+        container.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
     }
 }
 
@@ -299,44 +256,55 @@ function renderRequestCard(req) {
         completed:{label:'배송 완료',   cls:'status-completed'},
         cancelled:{label:'취소됨',      cls:'status-draft'}
     };
-    var s        = sMap[req.status] || {label:req.status, cls:''};
+    var s        = sMap[req.status]||{label:req.status,cls:''};
     var bids     = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
     var bidCount = bids.length;
     var created  = new Date(req.created_at).toLocaleDateString('ko-KR');
-
-    var ddText = '';
+    var ddText   = '';
     if (req.bid_deadline) {
         var diff = Math.ceil((new Date(req.bid_deadline)-new Date())/86400000);
-        ddText = req.bid_deadline + (diff>=0?' (D-'+diff+')':' (마감)');
+        ddText = req.bid_deadline+(diff>=0?' (D-'+diff+')':' (마감)');
     }
 
-    // 입찰 현황
+    // 입찰 현황 HTML
     var bidsHtml = '';
-    if (req.status === 'bidding' && bidCount > 0) {
+    if (req.status==='bidding' && bidCount>0) {
         var rc = ['gold','silver','bronze'];
-        bidsHtml = '<div class="divider"></div><h5 class="mb-8">📊 입찰 현황 ('+bidCount+'건)</h5>' +
+        bidsHtml = '<div class="divider"></div>' +
+            '<h5 class="mb-8">📊 입찰 현황 ('+bidCount+'건) <span class="text-xs text-muted">· 클릭하면 상세 견적 확인</span></h5>' +
             bids.slice(0,3).map(function(bid,i){
-                return '<div class="bid-item '+(i===0?'top-bid':'')+'">' +
+                return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">' +
                     '<div class="bid-info">' +
                     '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>' +
-                    '<div><strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>' +
-                    '<p class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일</p></div>' +
+                    '<div>' +
+                    '<strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>' +
+                    '<p class="text-xs text-muted">' +
+                    (bid.note ? escHtml(bid.note.split('·')[0].trim()) : '') +
+                    ' | ⭐'+getRating(bid.manufacturer_id)+' | '+getCompletedCount(bid.manufacturer_id)+'건 완료' +
+                    '</p></div>' +
                     '</div>' +
                     '<div style="display:flex;align-items:center;gap:12px">' +
+                    '<div>' +
                     '<div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>' +
-                    '<button class="btn '+(i===0?'btn-success':'btn-outline')+' btn-sm" ' +
-                    'onclick="confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">' +
-                    (i===0?'✓ 선택':'Override')+'</button>' +
+                    '<div class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일</div>' +
+                    '</div>' +
+                    (i===0
+                        ? '<button class="btn btn-success btn-sm" onclick="event.stopPropagation();confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">✓ 선택</button>'
+                        : '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">Override</button>'
+                    ) +
                     '</div></div>';
-            }).join('') +
-            '<p class="text-xs text-muted mt-8">⚠️ 마감일 경과 시 최저가 입찰자에게 자동 매칭됩니다.</p>';
-    } else if (req.status === 'bidding') {
-        bidsHtml = '<div class="alert alert-info" style="margin-top:12px"><span>⏳</span><span>아직 입찰한 생산자가 없습니다.</span></div>';
+            }).join('');
+        if (bidCount > 3) {
+            bidsHtml += '<p class="text-xs text-muted mt-8" style="text-align:center;cursor:pointer;color:var(--primary)" onclick="openRequestDetail(\''+req.id+'\')">+' + (bidCount-3) + '건 더 보기 →</p>';
+        }
+        bidsHtml += '<p class="text-xs text-muted mt-8">⚠️ 마감일 경과 시 최저가 입찰자에게 자동 매칭됩니다.</p>';
+    } else if (req.status==='bidding') {
+        bidsHtml = '<div class="alert alert-info" style="margin-top:12px"><span>⏳</span><span>입찰을 준비 중입니다. 잠시 후 새로고침해보세요.</span></div>';
     }
 
     // 공동구매 진행률
     var groupHtml = '';
-    if (req.request_type === 'group' && req.min_quantity) {
+    if (req.request_type==='group' && req.min_quantity) {
         var pct = Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100));
         groupHtml = '<div class="co-purchase-info">' +
             '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+req.min_quantity+'개 (최소)</strong></div>' +
@@ -364,6 +332,106 @@ function renderRequestCard(req) {
         '</div></div>';
 }
 
+// 더미 데이터에서 생산자 정보 조회 헬퍼
+function getRating(manufacturerId) {
+    if (!window.DummyBids) return '4.5';
+    var allMakers = Object.values(DummyBids.manufacturers).flat();
+    var found = allMakers.find(function(m){ return m.id===manufacturerId; });
+    return found ? found.rating : '4.5';
+}
+
+function getCompletedCount(manufacturerId) {
+    if (!window.DummyBids) return '-';
+    var allMakers = Object.values(DummyBids.manufacturers).flat();
+    var found = allMakers.find(function(m){ return m.id===manufacturerId; });
+    return found ? found.completedCount : '-';
+}
+
+// ── 입찰 상세 보기 ─────────────────────────────────────
+async function openBidDetail(bidId, requestId) {
+    // 해당 의뢰 조회
+    var req = await Requests.getById(requestId);
+    if (!req) { showToast('의뢰 정보를 불러올 수 없습니다.', 'error'); return; }
+
+    var bids = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
+    var bid  = bids.find(function(b){ return b.id===bidId; });
+    if (!bid) { showToast('입찰 정보를 찾을 수 없습니다.', 'error'); return; }
+
+    // 생산자 정보
+    var allMakers  = window.DummyBids ? Object.values(DummyBids.manufacturers).flat() : [];
+    var makerInfo  = allMakers.find(function(m){ return m.id===bid.manufacturer_id; });
+    var rating     = makerInfo ? makerInfo.rating     : '4.5';
+    var completed  = makerInfo ? makerInfo.completedCount : '-';
+    var specialty  = makerInfo ? makerInfo.specialty  : '종합 굿즈';
+    var rank       = bids.findIndex(function(b){ return b.id===bidId; }) + 1;
+    var isLowest   = rank === 1;
+
+    var titleEl = document.getElementById('detail-modal-title');
+    var body    = document.getElementById('detail-modal-body');
+    if (titleEl) titleEl.textContent = '📄 ' + escHtml(bid.manufacturer_name) + ' 견적서';
+
+    body.innerHTML =
+        // 생산자 정보
+        '<div style="display:flex;align-items:center;gap:12px;background:var(--bg);padding:14px;border-radius:8px;margin-bottom:16px">' +
+        '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px">'+escHtml(bid.manufacturer_name[0])+'</div>' +
+        '<div>' +
+        '<div style="font-weight:700;font-size:15px">'+escHtml(bid.manufacturer_name)+'</div>' +
+        '<div class="text-xs text-muted">'+escHtml(specialty)+' | ⭐'+rating+' | 완료 '+completed+'건</div>' +
+        '</div>' +
+        (isLowest ? '<span class="status-badge status-matched" style="margin-left:auto">🏆 최저가</span>' : '<span class="status-badge status-bidding" style="margin-left:auto">'+rank+'위</span>') +
+        '</div>' +
+
+        // 견적 상세 테이블
+        '<table class="estimate-table">' +
+        '<thead><tr><th>항목</th><th>수량</th><th>단가</th><th>금액</th></tr></thead>' +
+        '<tbody>' +
+        '<tr><td>'+escHtml(req.title)+' 제작비</td><td>'+req.quantity.toLocaleString()+'개</td><td>'+bid.unit_price.toLocaleString()+'원</td><td>'+(bid.unit_price*req.quantity).toLocaleString()+'원</td></tr>' +
+        '<tr><td>포장비</td><td>'+req.quantity.toLocaleString()+'개</td><td>포함</td><td>-</td></tr>' +
+        '<tr><td>배송비</td><td>-</td><td>-</td><td>무료</td></tr>' +
+        '</tbody>' +
+        '<tfoot><tr style="font-weight:700"><td colspan="3" style="text-align:right">합계</td><td class="text-primary">'+(bid.unit_price*req.quantity).toLocaleString()+'원</td></tr></tfoot>' +
+        '</table>' +
+
+        // 생산자 메모
+        (bid.note ? '<div class="alert alert-info mt-16"><span>📝</span><span><strong>생산자 메모:</strong> '+escHtml(bid.note)+'</span></div>' : '') +
+
+        // 납기 정보
+        '<div style="background:var(--bg);border-radius:8px;padding:12px 16px;margin-top:12px;display:flex;gap:24px">' +
+        '<div><div class="text-xs text-muted">예상 납기</div><div style="font-weight:700;font-size:16px;color:var(--primary)">'+(bid.delivery_days||'-')+'일</div></div>' +
+        '<div><div class="text-xs text-muted">희망 단가 대비</div><div style="font-weight:700;font-size:16px;color:var(--success)">▼'+Math.round((1-bid.unit_price/req.target_price)*100)+'% 절감</div></div>' +
+        '<div><div class="text-xs text-muted">총 결제 예정액</div><div style="font-weight:700;font-size:16px;color:var(--dark)">'+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>' +
+        '</div>' +
+
+        // 다른 입찰 목록
+        '<div class="divider"></div>' +
+        '<h5 style="margin-bottom:10px">다른 입찰 비교</h5>' +
+        '<div style="display:flex;flex-direction:column;gap:6px">' +
+        bids.map(function(b,i){
+            var isThis = b.id===bidId;
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:'+(isThis?'rgba(108,92,231,0.08)':'var(--bg)')+';border-radius:6px;border:'+(isThis?'1px solid var(--primary-light)':'1px solid transparent')+'">' +
+                '<span class="text-sm"><strong>'+(i+1)+'위</strong> '+escHtml(b.manufacturer_name)+'</span>' +
+                '<div style="display:flex;align-items:center;gap:12px">' +
+                '<span style="font-weight:700;color:var(--primary)">'+b.unit_price.toLocaleString()+'원</span>' +
+                '<span class="text-xs text-muted">납기 '+(b.delivery_days||'-')+'일</span>' +
+                (isThis
+                    ? '<span class="text-xs" style="color:var(--primary)">현재 보는 중</span>'
+                    : '<button class="btn btn-outline btn-sm" onclick="closeModal(\'requestDetailModal\');openBidDetail(\''+b.id+'\',\''+requestId+'\')">보기</button>'
+                ) +
+                '</div></div>';
+        }).join('') +
+        '</div>' +
+
+        // 하단 버튼
+        '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
+        '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>' +
+        (req.status==='bidding'
+            ? '<button class="btn btn-success" onclick="closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name)+'\',' +bid.unit_price+')">이 견적으로 매칭 →</button>'
+            : '') +
+        '</div>';
+
+    openModal('requestDetailModal');
+}
+
 // ── 의뢰 상세 보기 ─────────────────────────────────────
 async function openRequestDetail(requestId) {
     openModal('requestDetailModal');
@@ -373,34 +441,42 @@ async function openRequestDetail(requestId) {
     try {
         var req = await Requests.getById(requestId);
         if (!req) throw new Error('의뢰를 찾을 수 없습니다.');
-        if (titleEl) titleEl.textContent = '📋 ' + req.title;
+        if (titleEl) titleEl.textContent = '📋 '+req.title;
 
         var sMap = {draft:'임시저장',bidding:'입찰중',matched:'매칭완료',producing:'제작 진행중',shipping:'배송중',completed:'배송 완료',cancelled:'취소됨'};
         var tMap = {business:'사업자 의뢰',personal:'개인 의뢰',group:'공동구매 의뢰'};
-        var bids  = req.bids  ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
-        var files = req.request_files || [];
+        var bids  = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
+        var files = req.request_files||[];
 
-        var bidsSection = bids.length > 0
-            ? '<div class="divider"></div><h5 style="margin-bottom:12px">📊 입찰 목록 ('+bids.length+'건)</h5>' +
-              bids.map(function(bid,i){
-                  var rc=['gold','silver','bronze'];
-                  return '<div class="bid-item '+(i===0?'top-bid':'')+'">' +
-                      '<div class="bid-info">' +
-                      '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>' +
-                      '<div><strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>' +
-                      '<p class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일'+(bid.note?' · '+escHtml(bid.note):'')+'</p></div>' +
-                      '</div>' +
-                      '<div style="display:flex;align-items:center;gap:12px">' +
-                      '<div><div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>' +
-                      '<div class="text-xs text-muted">총 '+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>' +
-                      (req.status==='bidding'
-                          ? '<button class="btn '+(i===0?'btn-success':'btn-outline')+' btn-sm" onclick="closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">'+(i===0?'✓ 선택':'Override')+'</button>'
-                          : '') +
-                      '</div></div>';
-              }).join('')
-            : '<div class="divider"></div><div class="alert alert-info"><span>⏳</span><span>아직 입찰한 생산자가 없습니다.</span></div>';
+        var bidsSection = '';
+        if (bids.length>0) {
+            var rc=['gold','silver','bronze'];
+            bidsSection = '<div class="divider"></div><h5 style="margin-bottom:12px">📊 전체 입찰 목록 ('+bids.length+'건) - 단가 낮은 순</h5>' +
+                bids.map(function(bid,i){
+                    var allMakers = window.DummyBids ? Object.values(DummyBids.manufacturers).flat() : [];
+                    var mk = allMakers.find(function(m){return m.id===bid.manufacturer_id;});
+                    return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">' +
+                        '<div class="bid-info">' +
+                        '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>' +
+                        '<div><strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>' +
+                        '<p class="text-xs text-muted">'+(mk?mk.specialty:'종합 굿즈')+' | ⭐'+(mk?mk.rating:'4.5')+' | 완료 '+(mk?mk.completedCount:'-')+'건</p>' +
+                        '</div></div>' +
+                        '<div style="display:flex;align-items:center;gap:12px">' +
+                        '<div><div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>' +
+                        '<div class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일 · 총 '+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>' +
+                        (req.status==='bidding'
+                            ? (i===0
+                                ? '<button class="btn btn-success btn-sm" onclick="event.stopPropagation();closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">✓ 선택</button>'
+                                : '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">Override</button>'
+                              )
+                            : '') +
+                        '</div></div>';
+                }).join('');
+        } else {
+            bidsSection = '<div class="divider"></div><div class="alert alert-info"><span>⏳</span><span>아직 입찰한 생산자가 없습니다.</span></div>';
+        }
 
-        var filesSection = files.length > 0
+        var filesSection = files.length>0
             ? '<div class="divider"></div><h5 style="margin-bottom:8px">📎 첨부 파일</h5>' +
               files.map(function(f){
                   return '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:13px">' +
@@ -419,8 +495,9 @@ async function openRequestDetail(requestId) {
             '<tr><td style="font-weight:600">상태</td><td>'+(sMap[req.status]||req.status)+'</td></tr>' +
             '<tr><td style="font-weight:600">등록일</td><td>'+new Date(req.created_at).toLocaleString('ko-KR')+'</td></tr>' +
             (req.design_guide?'<tr><td style="font-weight:600">디자인 가이드</td><td style="white-space:pre-wrap">'+escHtml(req.design_guide)+'</td></tr>':'') +
-            (req.detail_note ?'<tr><td style="font-weight:600">상세 요청</td><td style="white-space:pre-wrap">'+escHtml(req.detail_note)+'</td></tr>':'') +
-            '</table>' + bidsSection + filesSection +
+            (req.detail_note?'<tr><td style="font-weight:600">상세 요청</td><td style="white-space:pre-wrap">'+escHtml(req.detail_note)+'</td></tr>':'') +
+            '</table>' +
+            bidsSection + filesSection +
             '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
             (req.status==='bidding'?'<button class="btn btn-danger btn-sm" onclick="closeModal(\'requestDetailModal\');cancelRequest(\''+req.id+'\')">의뢰 취소</button>':'') +
             '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>' +
@@ -433,208 +510,206 @@ async function openRequestDetail(requestId) {
 
 // ── 매칭 이력 ──────────────────────────────────────────
 async function loadMatchHistoryBiz() {
-    var tbody = document.getElementById('biz-match-tbody');
-    if (!tbody) return;
+    var tbody=document.getElementById('biz-match-tbody'); if(!tbody)return;
     try {
-        var list = await Requests.getMatchHistory('business', 20);
-        if (!list.length) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';
-            return;
-        }
-        tbody.innerHTML = list.map(function(h){
-            var saving = h.target_price>0 ? Math.round((1-h.matched_price/h.target_price)*100) : 0;
-            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.category||'-')+'</td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td class="text-success">▼'+saving+'%</td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
+        var list=await Requests.getMatchHistory('business',20);
+        if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
+        tbody.innerHTML=list.map(function(h){
+            var s=h.target_price>0?Math.round((1-h.matched_price/h.target_price)*100):0;
+            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.category||'-')+'</td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td class="text-success">▼'+s+'%</td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
         }).join('');
-    } catch(e){ console.error(e); }
+    }catch(e){console.error(e);}
 }
 
 async function loadMatchHistoryPersonal() {
-    var tbody = document.getElementById('personal-match-tbody');
-    if (!tbody) return;
+    var tbody=document.getElementById('personal-match-tbody'); if(!tbody)return;
     try {
-        var list     = await Requests.getMatchHistory(null, 20);
-        var filtered = list.filter(function(h){ return h.request_type!=='business'; });
-        if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';
-            return;
-        }
-        var tMap = {personal:'개인',group:'공동구매'};
-        tbody.innerHTML = filtered.map(function(h){
-            var cls = h.request_type==='group'?'status-recruiting':'status-completed';
+        var list=await Requests.getMatchHistory(null,20);
+        var filtered=list.filter(function(h){return h.request_type!=='business';});
+        if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
+        var tMap={personal:'개인',group:'공동구매'};
+        tbody.innerHTML=filtered.map(function(h){
+            var cls=h.request_type==='group'?'status-recruiting':'status-completed';
             return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td><span class="status-badge '+cls+'">'+(tMap[h.request_type]||h.request_type)+'</span></td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
         }).join('');
-    } catch(e){ console.error(e); }
+    }catch(e){console.error(e);}
 }
 
-// ── 의뢰 생성 ──────────────────────────────────────────
+// ── 의뢰 생성 (더미 입찰 자동 생성 포함) ──────────────
 async function submitBizRequest() {
     if (!AppState.currentUser) { openModal('loginModal'); return; }
-    var btn = document.getElementById('biz-submit-btn');
-    if (btn) { btn.disabled=true; btn.textContent='등록 중...'; }
+    var btn=document.getElementById('biz-submit-btn');
+    if(btn){btn.disabled=true;btn.textContent='등록 중...';}
     try {
+        var category = document.getElementById('biz-category').value;
+        var qty      = parseInt(document.getElementById('biz-qty').value);
+        var price    = parseInt(document.getElementById('biz-price').value);
         var data = {
-            request_type: 'business',
+            request_type:'business',
             title:        document.getElementById('biz-title').value.trim(),
-            category:     document.getElementById('biz-category').value,
-            quantity:     parseInt(document.getElementById('biz-qty').value),
-            target_price: parseInt(document.getElementById('biz-price').value),
-            bid_deadline: document.getElementById('biz-deadline').value || null,
+            category:     category,
+            quantity:     qty,
+            target_price: price,
+            bid_deadline: document.getElementById('biz-deadline').value||null,
             design_guide: document.getElementById('biz-design-guide').value,
             detail_note:  document.getElementById('biz-detail-note').value,
-            status: 'bidding', bidding_type: 'bidding'
+            status:'bidding', bidding_type:'bidding'
         };
-        await Requests.create(data);
-        showToast('의뢰가 등록되었습니다! 🎉', 'success');
+        var newReq = await Requests.create(data);
+
+        // 더미 입찰 자동 생성
+        showToast('의뢰 등록 완료! 생산자 입찰을 생성 중...', 'info');
+        await DummyBids.generateBids(newReq.id, category, price, qty);
+
+        showToast('의뢰가 등록되었습니다! 생산자 '+3+'건의 입찰이 도착했습니다 🎉', 'success');
         resetBizForm();
-        // 목록 탭으로 이동하면서 데이터 새로고침
-        setTimeout(function(){
-            showBizTab('manage', null);
-            loadBizDashboard();
-        }, 600);
+        setTimeout(function(){ showBizTab('manage',null); loadBizDashboard(); }, 800);
     } catch(e) {
-        showToast('오류: '+e.message, 'error');
+        showToast('오류: '+e.message,'error');
     } finally {
-        if (btn) { btn.disabled=false; btn.textContent='🚀 의뢰 등록'; }
+        if(btn){btn.disabled=false;btn.textContent='🚀 의뢰 등록';}
     }
 }
 
 async function submitPersonalRequest() {
     if (!AppState.currentUser) { openModal('loginModal'); return; }
-    var qty   = parseInt(document.getElementById('personalQty').value) || 0;
-    var price = parseInt(document.getElementById('personalPrice').value) || 0;
+    var qty   = parseInt(document.getElementById('personalQty').value)||0;
+    var price = parseInt(document.getElementById('personalPrice').value)||0;
     var name  = document.getElementById('personalItemName').value.trim();
     if (!name||!qty||!price) { showToast('필수 항목을 모두 입력해주세요.','error'); return; }
-    var reasons = [];
-    if (qty > 50)               reasons.push('📦 수량 '+qty+'개는 공동구매로 진행하면 더 유리합니다.');
-    if (price>0 && price<1500)  reasons.push('💰 희망 단가('+price.toLocaleString()+'원)가 낮습니다.');
-    if (reasons.length > 0) {
-        document.getElementById('coPurchaseReason').innerHTML =
-            reasons.map(function(r){ return '<p class="text-sm" style="margin-bottom:8px">'+r+'</p>'; }).join('');
-        openModal('coPurchasePopup'); return;
+    var reasons=[];
+    if(qty>50)             reasons.push('📦 수량 '+qty+'개는 공동구매로 진행하면 더 유리합니다.');
+    if(price>0&&price<1500) reasons.push('💰 희망 단가('+price.toLocaleString()+'원)가 낮습니다.');
+    if(reasons.length>0){
+        document.getElementById('coPurchaseReason').innerHTML=reasons.map(function(r){return '<p class="text-sm" style="margin-bottom:8px">'+r+'</p>';}).join('');
+        openModal('coPurchasePopup');return;
     }
     await doSubmitPersonalRequest();
 }
 
 async function doSubmitPersonalRequest() {
-    var typeEl = document.querySelector('input[name="request-type"]:checked');
-    var bType  = typeEl ? typeEl.value : 'bidding';
+    var typeEl=document.querySelector('input[name="request-type"]:checked');
+    var bType=typeEl?typeEl.value:'bidding';
     try {
+        var category = document.getElementById('personalCategory').value;
+        var qty      = parseInt(document.getElementById('personalQty').value);
+        var price    = parseInt(document.getElementById('personalPrice').value);
         var data = {
-            request_type: 'personal',
+            request_type:'personal',
             title:        document.getElementById('personalItemName').value.trim(),
-            category:     document.getElementById('personalCategory').value,
-            quantity:     parseInt(document.getElementById('personalQty').value),
-            target_price: parseInt(document.getElementById('personalPrice').value),
-            bid_deadline: document.getElementById('personalDeadline').value || null,
+            category:     category,
+            quantity:     qty,
+            target_price: price,
+            bid_deadline: document.getElementById('personalDeadline').value||null,
             design_guide: document.getElementById('personalDesignGuide').value,
             detail_note:  document.getElementById('personalDetailNote').value,
             bidding_type: bType,
-            direct_manufacturer_id: bType==='direct' ? document.getElementById('directMfgId').value : null,
-            status: 'bidding'
+            direct_manufacturer_id: bType==='direct'?document.getElementById('directMfgId').value:null,
+            status:'bidding'
         };
-        await Requests.create(data);
+        var newReq = await Requests.create(data);
+
+        // 입찰 방식일 경우만 더미 입찰 생성
+        if (bType === 'bidding') {
+            await DummyBids.generateBids(newReq.id, category, price, qty);
+        }
+
         showToast('개인 의뢰가 등록되었습니다! 🎉','success');
-        setTimeout(function(){
-            showPersonalTab('myorders', null);
-            loadPersonalDashboard();
-        }, 600);
-    } catch(e) { showToast('오류: '+e.message,'error'); }
+        setTimeout(function(){ showPersonalTab('myorders',null); loadPersonalDashboard(); },800);
+    } catch(e){ showToast('오류: '+e.message,'error'); }
 }
 
 async function submitGroupRequest() {
     if (!AppState.currentUser) { openModal('loginModal'); return; }
-    var title    = document.getElementById('group-title').value.trim();
-    var category = document.getElementById('group-category').value;
-    var totalQty = parseInt(document.getElementById('group-total-qty').value)||0;
-    var minQty   = parseInt(document.getElementById('group-min-qty').value)||0;
-    var price    = parseInt(document.getElementById('group-price').value)||0;
-    if (!title||!category||!totalQty||!minQty||!price) {
-        showToast('필수 항목을 모두 입력해주세요.','error'); return;
-    }
+    var title   =document.getElementById('group-title').value.trim();
+    var category=document.getElementById('group-category').value;
+    var totalQty=parseInt(document.getElementById('group-total-qty').value)||0;
+    var minQty  =parseInt(document.getElementById('group-min-qty').value)||0;
+    var price   =parseInt(document.getElementById('group-price').value)||0;
+    if(!title||!category||!totalQty||!minQty||!price){showToast('필수 항목을 모두 입력해주세요.','error');return;}
     try {
-        var gTypeEl = document.querySelector('input[name="group-type"]:checked');
-        var data = {
-            request_type:'group', title:title, category:category,
-            quantity:totalQty, min_quantity:minQty, target_price:price,
-            recruit_deadline: document.getElementById('group-recruit-deadline').value||null,
-            bid_deadline:     document.getElementById('group-bid-deadline').value||null,
-            design_guide:     document.getElementById('group-design-guide').value,
-            detail_note:      document.getElementById('group-detail-note').value,
-            current_quantity: 0, status:'bidding',
-            bidding_type: gTypeEl ? gTypeEl.value : 'bidding'
+        var gTypeEl=document.querySelector('input[name="group-type"]:checked');
+        var data={
+            request_type:'group',title:title,category:category,
+            quantity:totalQty,min_quantity:minQty,target_price:price,
+            recruit_deadline:document.getElementById('group-recruit-deadline').value||null,
+            bid_deadline:document.getElementById('group-bid-deadline').value||null,
+            design_guide:document.getElementById('group-design-guide').value,
+            detail_note:document.getElementById('group-detail-note').value,
+            current_quantity:0,status:'bidding',
+            bidding_type:gTypeEl?gTypeEl.value:'bidding'
         };
         await Requests.create(data);
-        showToast('공동제작 의뢰가 등록되었습니다! 🎉','success');
-        setTimeout(function(){
-            showPersonalTab('myorders', null);
-            loadPersonalDashboard();
-        }, 600);
-    } catch(e) { showToast('오류: '+e.message,'error'); }
+        showToast('공동제작 의뢰가 마켓플레이스에 등록되었습니다! 🎉','success');
+        setTimeout(function(){ showPersonalTab('myorders',null); loadPersonalDashboard(); },800);
+    } catch(e){ showToast('오류: '+e.message,'error'); }
 }
 
 // ── 매칭 확정 ──────────────────────────────────────────
 function confirmSelectBid(requestId, bidId, manufacturerName, unitPrice) {
-    AppState.pendingMatch = {requestId:requestId,bidId:bidId,name:manufacturerName,price:unitPrice};
-    var amountEl = document.getElementById('matchPayAmount');
-    var detailEl = document.getElementById('matchPayDetail');
-    if (amountEl) amountEl.textContent = '계산 중...';
-    if (detailEl) detailEl.textContent = '';
+    AppState.pendingMatch={requestId:requestId,bidId:bidId,name:manufacturerName,price:unitPrice};
+    var amountEl=document.getElementById('matchPayAmount');
+    var detailEl=document.getElementById('matchPayDetail');
+    if(amountEl)amountEl.textContent='계산 중...';
+    if(detailEl)detailEl.textContent='';
     Requests.getById(requestId).then(function(req){
-        if (req && amountEl) {
-            amountEl.textContent = (req.quantity*unitPrice).toLocaleString()+'원';
-            if (detailEl) detailEl.textContent = req.title+' '+req.quantity.toLocaleString()+'개 × '+unitPrice.toLocaleString()+'원 ('+manufacturerName+')';
+        if(req&&amountEl){
+            amountEl.textContent=(req.quantity*unitPrice).toLocaleString()+'원';
+            if(detailEl)detailEl.textContent=req.title+' '+req.quantity.toLocaleString()+'개 × '+unitPrice.toLocaleString()+'원 ('+manufacturerName+')';
         }
     });
     openModal('matchConfirmModal');
 }
 
 async function executeSelectBid() {
-    var pm = AppState.pendingMatch;
-    if (!pm.requestId||!pm.bidId) { showToast('오류: 매칭 정보가 없습니다.','error'); return; }
-    var btn = document.getElementById('matchConfirmBtn');
-    if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
+    var pm=AppState.pendingMatch;
+    if(!pm.requestId||!pm.bidId){showToast('오류: 매칭 정보가 없습니다.','error');return;}
+    var btn=document.getElementById('matchConfirmBtn');
+    if(btn){btn.disabled=true;btn.textContent='처리 중...';}
     try {
         await Requests.selectBid(pm.requestId,pm.bidId,pm.name,pm.price);
         closeModal('matchConfirmModal');
-        AppState.pendingMatch = {};
+        AppState.pendingMatch={};
         showToast('매칭이 확정되었습니다! 🎉','success');
         loadMyRequests('business');
         loadMyRequests('personal');
+        loadBizDashboard();
+        loadPersonalDashboard();
     } catch(e) {
         showToast('오류: '+e.message,'error');
     } finally {
-        if (btn) { btn.disabled=false; btn.textContent='💳 결제 및 매칭 확정'; }
+        if(btn){btn.disabled=false;btn.textContent='💳 결제 및 매칭 확정';}
     }
 }
 
 async function cancelRequest(requestId) {
-    if (!confirm('정말로 이 의뢰를 취소하시겠습니까?')) return;
+    if(!confirm('정말로 이 의뢰를 취소하시겠습니까?'))return;
     try {
         await Requests.cancel(requestId);
         showToast('의뢰가 취소되었습니다.','info');
         loadMyRequests('business');
         loadMyRequests('personal');
-    } catch(e) { showToast('오류: '+e.message,'error'); }
+        loadBizDashboard();
+        loadPersonalDashboard();
+    } catch(e){showToast('오류: '+e.message,'error');}
 }
 
 // ── 스텝 관리 ──────────────────────────────────────────
 function bizStepNext(step) {
-    if (step===1) {
+    if(step===1){
         var valid=true;
-        [['fg-biz-title','biz-title'],['fg-biz-category','biz-category'],
-         ['fg-biz-qty','biz-qty'],['fg-biz-price','biz-price'],['fg-biz-deadline','biz-deadline']
-        ].forEach(function(p){
+        [['fg-biz-title','biz-title'],['fg-biz-category','biz-category'],['fg-biz-qty','biz-qty'],['fg-biz-price','biz-price'],['fg-biz-deadline','biz-deadline']].forEach(function(p){
             var el=document.getElementById(p[1]),fg=document.getElementById(p[0]);
             if(el&&!el.value.trim()){if(fg)fg.classList.add('error');valid=false;}
             else{if(fg)fg.classList.remove('error');}
         });
-        if (!valid) { showToast('필수 항목을 입력해주세요.','error'); return; }
+        if(!valid){showToast('필수 항목을 입력해주세요.','error');return;}
     }
     document.getElementById('biz-step-'+step).style.display='none';
     document.getElementById('biz-step-'+(step+1)).style.display='block';
     AppState.bizCurrentStep=step+1;
     updateBizStepper();
-    if (step===2) populateBizConfirm();
+    if(step===2)populateBizConfirm();
 }
 
 function bizStepBack(step) {
@@ -647,8 +722,8 @@ function bizStepBack(step) {
 function updateBizStepper() {
     document.querySelectorAll('#bizStepper .step').forEach(function(s,i){
         s.classList.remove('active','done');
-        if(i+1<AppState.bizCurrentStep) s.classList.add('done');
-        else if(i+1===AppState.bizCurrentStep) s.classList.add('active');
+        if(i+1<AppState.bizCurrentStep)s.classList.add('done');
+        else if(i+1===AppState.bizCurrentStep)s.classList.add('active');
     });
     document.querySelectorAll('#bizStepper .step-line').forEach(function(l,i){
         l.classList.toggle('done',i+1<AppState.bizCurrentStep);
@@ -656,18 +731,17 @@ function updateBizStepper() {
 }
 
 function populateBizConfirm() {
-    var qty=document.getElementById('biz-qty').value;
-    var price=document.getElementById('biz-price').value;
-    setEl('confirm-title',    document.getElementById('biz-title').value);
-    setEl('confirm-category', document.getElementById('biz-category').value);
-    setEl('confirm-qty',      Number(qty).toLocaleString()+'개');
-    setEl('confirm-price',    Number(price).toLocaleString()+'원');
-    setEl('confirm-deadline', document.getElementById('biz-deadline').value);
-    setEl('confirm-total',    (Number(qty)*Number(price)).toLocaleString()+'원');
-    setEl('confirm-guide',    document.getElementById('biz-design-guide').value||'-');
-    setEl('confirm-note',     document.getElementById('biz-detail-note').value||'-');
+    var qty=document.getElementById('biz-qty').value, price=document.getElementById('biz-price').value;
+    setEl('confirm-title',   document.getElementById('biz-title').value);
+    setEl('confirm-category',document.getElementById('biz-category').value);
+    setEl('confirm-qty',     Number(qty).toLocaleString()+'개');
+    setEl('confirm-price',   Number(price).toLocaleString()+'원');
+    setEl('confirm-deadline',document.getElementById('biz-deadline').value);
+    setEl('confirm-total',   (Number(qty)*Number(price)).toLocaleString()+'원');
+    setEl('confirm-guide',   document.getElementById('biz-design-guide').value||'-');
+    setEl('confirm-note',    document.getElementById('biz-detail-note').value||'-');
     var fi=document.getElementById('biz-file-input');
-    setEl('confirm-files', fi&&fi.files.length>0?Array.from(fi.files).map(function(f){return f.name;}).join(', '):'없음');
+    setEl('confirm-files',fi&&fi.files.length>0?Array.from(fi.files).map(function(f){return f.name;}).join(', '):'없음');
 }
 
 function resetBizForm() {
@@ -684,20 +758,14 @@ function resetBizForm() {
 
 // ── 필터 ───────────────────────────────────────────────
 function filterBizStatus(status,btn) {
-    if(btn){
-        document.querySelectorAll('#biz-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
-        btn.classList.add('active');
-    }
+    if(btn){document.querySelectorAll('#biz-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});btn.classList.add('active');}
     document.querySelectorAll('#biz-manage-list .request-card').forEach(function(card){
         card.style.display=(status==='all'||card.dataset.status===status)?'block':'none';
     });
 }
 
 function filterPersonalStatus(status,btn) {
-    if(btn){
-        document.querySelectorAll('#personal-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
-        btn.classList.add('active');
-    }
+    if(btn){document.querySelectorAll('#personal-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});btn.classList.add('active');}
     document.querySelectorAll('#personal-myorders-list .request-card').forEach(function(card){
         var show=status==='all'?true:status==='group'?card.dataset.requestType==='group':card.dataset.status===status;
         card.style.display=show?'block':'none';
@@ -706,18 +774,14 @@ function filterPersonalStatus(status,btn) {
 
 // ── 기타 UI ────────────────────────────────────────────
 function toggleDirectMfg(radio) {
-    var f=document.getElementById('directMfgField');
-    if(f)f.style.display=radio.value==='direct'?'block':'none';
+    var f=document.getElementById('directMfgField');if(f)f.style.display=radio.value==='direct'?'block':'none';
     var rb=document.getElementById('radio-bidding'),rd=document.getElementById('radio-direct');
     if(rb)rb.style.borderColor=radio.value==='bidding'?'var(--primary)':'#E2E8F0';
     if(rd)rd.style.borderColor=radio.value==='direct'?'var(--primary)':'#E2E8F0';
 }
-
 function toggleGroupDirectMfg(radio) {
-    var f=document.getElementById('groupDirectMfgField');
-    if(f)f.style.display=radio.value==='direct'?'block':'none';
+    var f=document.getElementById('groupDirectMfgField');if(f)f.style.display=radio.value==='direct'?'block':'none';
 }
-
 function showUploadedFiles(input,listId) {
     var list=document.getElementById(listId);if(!list)return;
     list.innerHTML='';
@@ -728,40 +792,25 @@ function showUploadedFiles(input,listId) {
         list.appendChild(div);
     });
 }
-
-function setRating(n) {
-    document.querySelectorAll('#starRating span').forEach(function(s,i){s.style.opacity=i<n?'1':'0.3';});
-}
-
-function setEl(id,val) {
-    var el=document.getElementById(id);if(el)el.textContent=val;
-}
-
-function openModal(id)  { var el=document.getElementById(id);if(el)el.classList.add('show'); }
-function closeModal(id) { var el=document.getElementById(id);if(el)el.classList.remove('show'); }
-function closeDropdown(){ var d=document.getElementById('profileDropdown');if(d)d.classList.remove('show'); }
-
-function toggleUserMenu(event) {
-    if(event)event.stopPropagation();
-    var d=document.getElementById('profileDropdown');if(d)d.classList.toggle('show');
-}
-
-function showToast(message,type) {
+function setRating(n){document.querySelectorAll('#starRating span').forEach(function(s,i){s.style.opacity=i<n?'1':'0.3';});}
+function setEl(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
+function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('show');}
+function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('show');}
+function closeDropdown(){var d=document.getElementById('profileDropdown');if(d)d.classList.remove('show');}
+function toggleUserMenu(event){if(event)event.stopPropagation();var d=document.getElementById('profileDropdown');if(d)d.classList.toggle('show');}
+function showToast(message,type){
     var toast=document.getElementById('toast');if(!toast)return;
     toast.textContent=message;
     toast.className='toast '+(type||'info')+' show';
     clearTimeout(toast._timer);
     toast._timer=setTimeout(function(){toast.classList.remove('show');},3000);
 }
-
-function escHtml(str) {
+function escHtml(str){
     if(!str)return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
-
 document.addEventListener('click',function(e){
     var d=document.getElementById('profileDropdown');
     if(d&&d.classList.contains('show')&&!e.target.closest('.nav-user'))d.classList.remove('show');
 });
-
-document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded',initApp);
