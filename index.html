@@ -26,8 +26,8 @@
                     <span id="profileEmail" class="text-xs text-muted"></span>
                 </div>
                 <ul class="profile-dropdown-menu">
-                    <li><button onclick="navigateTo('client-personal');document.getElementById('profileDropdown').classList.remove('show')">나의 의뢰 관리</button></li>
-                    <li><button onclick="document.getElementById('profileDropdown').classList.remove('show')">계정 설정</button></li>
+                    <li><button onclick="navigateTo('client-personal');closeDropdown()">나의 의뢰 관리</button></li>
+                    <li><button onclick="closeDropdown()">계정 설정</button></li>
                     <li style="border-top:1px solid #E2E8F0;margin-top:4px;padding-top:4px;">
                         <button style="color:var(--danger)" onclick="handleLogout()">로그아웃</button>
                     </li>
@@ -102,14 +102,36 @@
                 </ul>
             </aside>
             <div class="main-content">
+
+                <!-- 대시보드 -->
                 <div id="biz-dashboard" class="tab-content active">
                     <h2 class="section-title">📊 대시보드</h2>
-                    <div class="alert alert-info">
+                    <div class="summary-grid" id="biz-summary-grid">
+                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('all',null)">
+                            <div class="sum-num" style="color:var(--primary)" id="biz-count-all">-</div>
+                            <div class="sum-label">전체 의뢰</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('bidding',null)">
+                            <div class="sum-num" style="color:var(--warning)" id="biz-count-bidding">-</div>
+                            <div class="sum-label">입찰 진행중</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('producing',null)">
+                            <div class="sum-num" style="color:var(--secondary)" id="biz-count-producing">-</div>
+                            <div class="sum-label">제작 진행중</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('completed',null)">
+                            <div class="sum-num" style="color:var(--success)" id="biz-count-completed">-</div>
+                            <div class="sum-label">완료</div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info" id="biz-dashboard-alert">
                         <span>💡</span>
                         <div>의뢰를 생성하면 생산자들이 입찰을 시작합니다.<br>
                         <a href="#" onclick="showBizTab('create',null);return false;" style="color:var(--primary)">첫 의뢰 만들기 →</a></div>
                     </div>
                 </div>
+
+                <!-- 의뢰 생성 -->
                 <div id="biz-create" class="tab-content">
                     <h2 class="section-title">➕ 새 의뢰 생성 <span class="badge">사업자</span></h2>
                     <div class="stepper" id="bizStepper">
@@ -168,11 +190,15 @@
                         </div>
                         <div class="form-group">
                             <label>디자인 파일 첨부</label>
-                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:32px;text-align:center;cursor:pointer;" onclick="document.getElementById('biz-file-input').click()" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='#E2E8F0'">
+                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:32px;text-align:center;cursor:pointer;"
+                                onclick="document.getElementById('biz-file-input').click()"
+                                onmouseover="this.style.borderColor='var(--primary)'"
+                                onmouseout="this.style.borderColor='#E2E8F0'">
                                 <div style="font-size:32px;margin-bottom:8px">📁</div>
                                 <p class="text-sm text-muted">클릭하여 파일 선택</p>
                                 <p class="text-xs text-muted">AI, PSD, PNG, PDF (최대 50MB)</p>
-                                <input type="file" multiple id="biz-file-input" style="display:none" onchange="showUploadedFiles(this,'biz-file-list')">
+                                <input type="file" multiple id="biz-file-input" style="display:none"
+                                    onchange="showUploadedFiles(this,'biz-file-list')">
                             </div>
                             <div id="biz-file-list" class="mt-8"></div>
                         </div>
@@ -201,13 +227,16 @@
                         </table>
                         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
                             <button class="btn btn-secondary" onclick="bizStepBack(3)">← 수정하기</button>
-                            <button class="btn btn-primary" onclick="submitBizRequest()">🚀 의뢰 등록</button>
+                            <button class="btn btn-primary" id="biz-submit-btn" onclick="submitBizRequest()">🚀 의뢰 등록</button>
                         </div>
                     </div>
                 </div>
+
+                <!-- 내 의뢰 관리 -->
                 <div id="biz-manage" class="tab-content">
                     <div class="flex-between mb-16">
                         <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showBizTab('create',null)">➕ 새 의뢰</button>
                     </div>
                     <div class="pill-filters" id="biz-status-pills">
                         <button class="pill-filter active" onclick="filterBizStatus('all',this)">전체</button>
@@ -215,19 +244,24 @@
                         <button class="pill-filter" onclick="filterBizStatus('matched',this)">매칭완료</button>
                         <button class="pill-filter" onclick="filterBizStatus('producing',this)">제작중</button>
                         <button class="pill-filter" onclick="filterBizStatus('completed',this)">완료</button>
+                        <button class="pill-filter" onclick="filterBizStatus('cancelled',this)">취소됨</button>
                     </div>
                     <div id="biz-manage-list">
-                        <div class="empty-state"><div class="empty-icon">📋</div><p>로딩 중...</p></div>
+                        <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
                     </div>
                 </div>
+
+                <!-- 최근 매칭 -->
                 <div id="biz-recent-match" class="tab-content">
                     <h2 class="section-title">✅ 최근 매칭 조회</h2>
                     <p class="text-sm text-muted mb-16">다른 의뢰자들의 매칭 가격을 참고하세요.</p>
                     <table class="data-table">
                         <thead><tr><th>아이템</th><th>카테고리</th><th>수량</th><th>희망단가</th><th>매칭단가</th><th>절감율</th><th>매칭일</th></tr></thead>
-                        <tbody id="biz-match-tbody"><tr><td colspan="7" style="text-align:center">로딩 중...</td></tr></tbody>
+                        <tbody id="biz-match-tbody"><tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">로딩 중...</td></tr></tbody>
                     </table>
                 </div>
+
+                <!-- 결제/정산 -->
                 <div id="biz-payments" class="tab-content">
                     <h2 class="section-title">💳 결제 / 정산 내역</h2>
                     <div class="empty-state"><div class="empty-icon">💳</div><p>결제 내역이 없습니다.</p></div>
@@ -254,25 +288,47 @@
                 </ul>
             </aside>
             <div class="main-content">
+
+                <!-- 대시보드 -->
                 <div id="personal-dashboard" class="tab-content active">
                     <h2 class="section-title">📊 대시보드</h2>
+                    <div class="summary-grid">
+                        <div class="summary-card" onclick="showPersonalTab('myorders',null)">
+                            <div class="sum-num" style="color:var(--primary)" id="per-count-all">-</div>
+                            <div class="sum-label">전체 의뢰</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--warning)" id="per-count-bidding">-</div>
+                            <div class="sum-label">입찰 진행중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--secondary)" id="per-count-group">-</div>
+                            <div class="sum-label">공동구매 모집중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--success)" id="per-count-completed">-</div>
+                            <div class="sum-label">완료</div>
+                        </div>
+                    </div>
                     <div class="alert alert-info">
                         <span>💡</span>
                         <div>개인 의뢰 또는 공동제작 의뢰를 시작해보세요!<br>
                         <a href="#" onclick="showPersonalTab('individual',null);return false;" style="color:var(--primary)">개인 의뢰 만들기 →</a></div>
                     </div>
                 </div>
+
+                <!-- 개인 의뢰 생성 -->
                 <div id="personal-individual" class="tab-content">
                     <h2 class="section-title">🎯 개인 의뢰 생성</h2>
                     <div class="card">
                         <div class="form-group">
                             <label>의뢰 방식 *</label>
                             <div style="display:flex;gap:16px;flex-wrap:wrap">
-                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid var(--primary);border-radius:8px;" id="radio-bidding">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--primary);border-radius:8px;transition:all 0.2s" id="radio-bidding">
                                     <input type="radio" name="request-type" value="bidding" checked onchange="toggleDirectMfg(this)">
                                     <div><strong>입찰(Bidding)</strong><br><span class="text-xs text-muted">생산자들의 견적을 비교</span></div>
                                 </label>
-                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;" id="radio-direct">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;transition:all 0.2s" id="radio-direct">
                                     <input type="radio" name="request-type" value="direct" onchange="toggleDirectMfg(this)">
                                     <div><strong>직접 의뢰</strong><br><span class="text-xs text-muted">특정 생산자에게 직접 요청</span></div>
                                 </label>
@@ -318,10 +374,12 @@
                         </div>
                         <div class="form-group">
                             <label>디자인 파일 첨부</label>
-                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById('personal-file-input').click()">
+                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:24px;text-align:center;cursor:pointer;"
+                                onclick="document.getElementById('personal-file-input').click()">
                                 <div style="font-size:24px;margin-bottom:6px">📁</div>
                                 <p class="text-xs text-muted">파일을 선택하세요</p>
-                                <input type="file" multiple id="personal-file-input" style="display:none" onchange="showUploadedFiles(this,'personal-file-list')">
+                                <input type="file" multiple id="personal-file-input" style="display:none"
+                                    onchange="showUploadedFiles(this,'personal-file-list')">
                             </div>
                             <div id="personal-file-list" class="mt-8"></div>
                         </div>
@@ -334,6 +392,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 공동제작 의뢰 -->
                 <div id="personal-group" class="tab-content">
                     <h2 class="section-title">👥 공동제작 의뢰 생성</h2>
                     <div class="alert alert-info"><span>💡</span><div>최소 수량이 채워진 후에만 생산자에게 입찰이 요청됩니다.</div></div>
@@ -341,10 +401,10 @@
                         <div class="form-group">
                             <label>의뢰 방식 *</label>
                             <div style="display:flex;gap:16px;flex-wrap:wrap">
-                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
                                     <input type="radio" name="group-type" value="bidding" checked onchange="toggleGroupDirectMfg(this)"> <strong>입찰 방식</strong>
                                 </label>
-                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
                                     <input type="radio" name="group-type" value="direct" onchange="toggleGroupDirectMfg(this)"> <strong>직접 의뢰</strong>
                                 </label>
                             </div>
@@ -385,26 +445,36 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 내 의뢰 관리 -->
                 <div id="personal-myorders" class="tab-content">
-                    <h2 class="section-title" style="margin-bottom:16px">📁 내 의뢰 관리</h2>
-                    <div class="pill-filters">
-                        <button class="pill-filter active" onclick="filterPillActive(this)">전체</button>
-                        <button class="pill-filter" onclick="filterPillActive(this)">입찰중</button>
-                        <button class="pill-filter" onclick="filterPillActive(this)">공동구매</button>
-                        <button class="pill-filter" onclick="filterPillActive(this)">완료</button>
+                    <div class="flex-between mb-16">
+                        <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showPersonalTab('individual',null)">➕ 새 의뢰</button>
+                    </div>
+                    <div class="pill-filters" id="personal-status-pills">
+                        <button class="pill-filter active" onclick="filterPersonalStatus('all',this)">전체</button>
+                        <button class="pill-filter" onclick="filterPersonalStatus('bidding',this)">입찰중</button>
+                        <button class="pill-filter" onclick="filterPersonalStatus('group',this)">공동구매</button>
+                        <button class="pill-filter" onclick="filterPersonalStatus('completed',this)">완료</button>
+                        <button class="pill-filter" onclick="filterPersonalStatus('cancelled',this)">취소됨</button>
                     </div>
                     <div id="personal-myorders-list">
-                        <div class="empty-state"><div class="empty-icon">📋</div><p>로딩 중...</p></div>
+                        <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
                     </div>
                 </div>
+
+                <!-- 최근 매칭 -->
                 <div id="personal-recent-match" class="tab-content">
                     <h2 class="section-title">✅ 최근 매칭 조회</h2>
                     <p class="text-sm text-muted mb-16">다른 개인 의뢰자들의 매칭 가격을 참고하세요.</p>
                     <table class="data-table">
                         <thead><tr><th>아이템</th><th>수량</th><th>희망단가</th><th>매칭단가</th><th>유형</th><th>매칭일</th></tr></thead>
-                        <tbody id="personal-match-tbody"><tr><td colspan="6" style="text-align:center">로딩 중...</td></tr></tbody>
+                        <tbody id="personal-match-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">로딩 중...</td></tr></tbody>
                     </table>
                 </div>
+
+                <!-- 결제/정산 -->
                 <div id="personal-payments" class="tab-content">
                     <h2 class="section-title">💳 결제 / 정산 내역</h2>
                     <div class="empty-state"><div class="empty-icon">💳</div><p>결제 내역이 없습니다.</p></div>
@@ -423,18 +493,20 @@
     </section>
 </div>
 
-<!-- MODALS -->
+<!-- ===== MODALS ===== -->
+
+<!-- 로그인 -->
 <div class="modal-overlay" id="loginModal">
     <div class="modal" style="max-width:440px">
         <button class="modal-close" onclick="closeModal('loginModal')">×</button>
         <h3>🔐 로그인</h3>
         <div class="form-group">
             <label>이메일</label>
-            <input type="email" id="loginEmail" placeholder="이메일 주소">
+            <input type="email" id="loginEmail" placeholder="이메일 주소" onkeydown="if(event.key==='Enter')handleLogin()">
         </div>
         <div class="form-group">
             <label>비밀번호</label>
-            <input type="password" id="loginPassword" placeholder="비밀번호">
+            <input type="password" id="loginPassword" placeholder="비밀번호" onkeydown="if(event.key==='Enter')handleLogin()">
         </div>
         <button class="btn btn-primary btn-block" id="loginSubmitBtn" onclick="handleLogin()">로그인</button>
         <div class="divider"></div>
@@ -445,6 +517,7 @@
     </div>
 </div>
 
+<!-- 회원가입 -->
 <div class="modal-overlay" id="signupModal">
     <div class="modal" style="max-width:440px">
         <button class="modal-close" onclick="closeModal('signupModal')">×</button>
@@ -479,6 +552,16 @@
     </div>
 </div>
 
+<!-- 의뢰 상세 보기 모달 -->
+<div class="modal-overlay" id="requestDetailModal">
+    <div class="modal" style="max-width:640px">
+        <button class="modal-close" onclick="closeModal('requestDetailModal')">×</button>
+        <h3 id="detail-modal-title">📋 의뢰 상세</h3>
+        <div id="detail-modal-body">로딩 중...</div>
+    </div>
+</div>
+
+<!-- 매칭 확정 -->
 <div class="modal-overlay" id="matchConfirmModal">
     <div class="modal">
         <button class="modal-close" onclick="closeModal('matchConfirmModal')">×</button>
@@ -502,6 +585,7 @@
     </div>
 </div>
 
+<!-- 후기 작성 -->
 <div class="modal-overlay" id="writeReviewModal">
     <div class="modal">
         <button class="modal-close" onclick="closeModal('writeReviewModal')">×</button>
@@ -522,6 +606,7 @@
     </div>
 </div>
 
+<!-- 공동구매 추천 팝업 -->
 <div class="modal-overlay" id="coPurchasePopup">
     <div class="modal" style="max-width:480px">
         <button class="modal-close" onclick="closeModal('coPurchasePopup')">×</button>
@@ -535,6 +620,7 @@
     </div>
 </div>
 
+<!-- 알림 -->
 <div class="modal-overlay" id="notificationModal">
     <div class="modal" style="max-width:480px">
         <button class="modal-close" onclick="closeModal('notificationModal')">×</button>
@@ -545,7 +631,7 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- 스크립트: 반드시 이 순서대로! -->
+<!-- ===== 스크립트: 이 순서 절대 변경 금지 ===== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/auth.js"></script>
