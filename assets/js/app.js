@@ -1,8 +1,8 @@
 var AppState = {
-    currentUser: null,
-    currentProfile: null,
-    bizCurrentStep: 1,
-    pendingMatch: {},
+    currentUser:     null,
+    currentProfile:  null,
+    bizCurrentStep:  1,
+    pendingMatch:    {},
     priceHints: {
         '아크릴굿즈':'1,800~3,500원','의류/패브릭':'7,000~25,000원',
         '문구/스티커':'300~1,500원','패키징':'800~3,000원',
@@ -11,18 +11,17 @@ var AppState = {
     }
 };
 
-// ── 앱 초기화 ──────────────────────────────────────────
-async function initApp() {
-    for (var i = 0; i < 30; i++) {
-        if (window.supabaseClient) break;
-        await new Promise(function(r){ setTimeout(r, 100); });
-    }
+// ── 앱 초기화 (빠른 버전) ──────────────────────────────
+function initApp() {
+    // supabaseClient는 이미 동기적으로 생성됨 → 대기 불필요
     if (!window.supabaseClient) {
+        console.error('❌ supabaseClient 없음');
         showToast('연결 오류. 새로고침해주세요.', 'error');
         return;
     }
-    console.log('✅ App 초기화 시작');
+    console.log('✅ App 초기화');
 
+    // 인증 상태 변경 감지
     Auth.onAuthStateChange(async function(event, session) {
         console.log('🔔 Auth 이벤트:', event);
         if (event === 'SIGNED_IN' && session) {
@@ -36,27 +35,32 @@ async function initApp() {
         }
     });
 
-    try {
-        var user = await Auth.getUser();
+    // 현재 세션 즉시 확인 (비동기, UI 블로킹 없음)
+    Auth.getUser().then(async function(user) {
         if (user) {
             AppState.currentUser    = user;
             AppState.currentProfile = await Auth.getProfile();
             updateUILoggedIn();
         }
-    } catch(e) {}
+    }).catch(function(){});
 
+    // 매칭 이력 로드
     loadMatchHistoryBiz();
     loadMatchHistoryPersonal();
 
+    // 카테고리 변경 힌트
     var bizCat = document.getElementById('biz-category');
     if (bizCat) {
         bizCat.addEventListener('change', function() {
             var hint = AppState.priceHints[this.value];
             var el   = document.getElementById('biz-price-hint');
-            if (el) el.textContent = hint ? '시장 평균 참고가: ' + hint : '카테고리를 선택하면 표시됩니다';
+            if (el) el.textContent = hint
+                ? '시장 평균 참고가: ' + hint
+                : '카테고리를 선택하면 표시됩니다';
         });
     }
 
+    // 모달 외부 클릭 닫기
     document.querySelectorAll('.modal-overlay').forEach(function(o) {
         o.addEventListener('click', function(e) {
             if (e.target === this) this.classList.remove('show');
@@ -86,11 +90,14 @@ function updateUILoggedOut() {
     if (avatar)   avatar.style.display   = 'none';
 }
 
-// ── 로그인 / 회원가입 / 로그아웃 ──────────────────────
+// ── 로그인 ─────────────────────────────────────────────
 async function handleLogin() {
     var email    = document.getElementById('loginEmail').value.trim();
     var password = document.getElementById('loginPassword').value;
-    if (!email || !password) { showToast('이메일과 비밀번호를 입력하세요.', 'error'); return; }
+    if (!email || !password) {
+        showToast('이메일과 비밀번호를 입력하세요.', 'error');
+        return;
+    }
     var btn = document.getElementById('loginSubmitBtn');
     if (btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
     try {
@@ -110,6 +117,7 @@ async function handleLogin() {
     }
 }
 
+// ── 회원가입 ───────────────────────────────────────────
 async function handleSignUp() {
     var email    = document.getElementById('signupEmail').value.trim();
     var password = document.getElementById('signupPassword').value;
@@ -130,32 +138,27 @@ async function handleSignUp() {
     }
 }
 
+// ── 로그아웃 ───────────────────────────────────────────
 async function handleLogout() {
     closeDropdown();
-    try {
-        await Auth.signOut();
-    } catch(e) {
-        console.warn('로그아웃 경고 (무시됨):', e.message);
-    } finally {
-        AppState.currentUser    = null;
-        AppState.currentProfile = null;
-        updateUILoggedOut();
-        navigateTo('home');
-        showToast('로그아웃 되었습니다.', 'success');
-    }
+    try { await Auth.signOut(); } catch(e) { console.warn('로그아웃 경고:', e.message); }
+    AppState.currentUser    = null;
+    AppState.currentProfile = null;
+    updateUILoggedOut();
+    navigateTo('home');
+    showToast('로그아웃 되었습니다.', 'success');
 }
 
 // ── 네비게이션 ─────────────────────────────────────────
 function navigateTo(page) {
     document.querySelectorAll('.page-section').forEach(function(el){ el.classList.remove('active'); });
-    var target = document.getElementById('page-'+page);
-    if (target) target.classList.add('active');
+    var t = document.getElementById('page-'+page);
+    if (t) t.classList.add('active');
     document.querySelectorAll('#mainNav button').forEach(function(b){ b.classList.remove('active'); });
-    var map = {home:0,'client-select':1,'client-business':1,'client-personal':1,marketplace:2};
-    var idx = map[page];
-    if (idx!==undefined) {
-        var btns = document.querySelectorAll('#mainNav button');
-        if (btns[idx]) btns[idx].classList.add('active');
+    var map={home:0,'client-select':1,'client-business':1,'client-personal':1,marketplace:2};
+    if (map[page]!==undefined) {
+        var btns=document.querySelectorAll('#mainNav button');
+        if (btns[map[page]]) btns[map[page]].classList.add('active');
     }
     window.scrollTo(0,0);
 }
@@ -163,14 +166,13 @@ function navigateTo(page) {
 // ── 탭 관리 ────────────────────────────────────────────
 function showBizTab(tab, btn) {
     document.querySelectorAll('#page-client-business .main-content > .tab-content').forEach(function(el){ el.classList.remove('active'); });
-    var el = document.getElementById('biz-'+tab);
-    if (el) el.classList.add('active');
+    var el=document.getElementById('biz-'+tab); if(el) el.classList.add('active');
     document.querySelectorAll('#page-client-business .sidebar-menu button').forEach(function(b){ b.classList.remove('active'); });
     if (btn) { btn.classList.add('active'); }
     else {
-        var map={dashboard:0,create:1,manage:2,'recent-match':3,payments:4};
-        var btns=document.querySelectorAll('#page-client-business .sidebar-menu button');
-        if(btns[map[tab]])btns[map[tab]].classList.add('active');
+        var m={dashboard:0,create:1,manage:2,'recent-match':3,payments:4};
+        var bs=document.querySelectorAll('#page-client-business .sidebar-menu button');
+        if(bs[m[tab]]) bs[m[tab]].classList.add('active');
     }
     if (tab==='manage')       loadMyRequests('business');
     if (tab==='recent-match') loadMatchHistoryBiz();
@@ -179,14 +181,13 @@ function showBizTab(tab, btn) {
 
 function showPersonalTab(tab, btn) {
     document.querySelectorAll('#page-client-personal .main-content > .tab-content').forEach(function(el){ el.classList.remove('active'); });
-    var el = document.getElementById('personal-'+tab);
-    if (el) el.classList.add('active');
+    var el=document.getElementById('personal-'+tab); if(el) el.classList.add('active');
     document.querySelectorAll('#page-client-personal .sidebar-menu button').forEach(function(b){ b.classList.remove('active'); });
     if (btn) { btn.classList.add('active'); }
     else {
-        var map={dashboard:0,individual:1,group:2,myorders:3,'recent-match':4,payments:5};
-        var btns=document.querySelectorAll('#page-client-personal .sidebar-menu button');
-        if(btns[map[tab]])btns[map[tab]].classList.add('active');
+        var m={dashboard:0,individual:1,group:2,myorders:3,'recent-match':4,payments:5};
+        var bs=document.querySelectorAll('#page-client-personal .sidebar-menu button');
+        if(bs[m[tab]]) bs[m[tab]].classList.add('active');
     }
     if (tab==='myorders')     loadMyRequests('personal');
     if (tab==='recent-match') loadMatchHistoryPersonal();
@@ -197,314 +198,272 @@ function showPersonalTab(tab, btn) {
 async function loadBizDashboard() {
     if (!AppState.currentUser) return;
     try {
-        var reqs = await Requests.getMyRequests();
-        var biz  = reqs.filter(function(r){ return r.request_type==='business'; });
-        setEl('biz-count-all',       biz.length);
-        setEl('biz-count-bidding',   biz.filter(function(r){ return r.status==='bidding'; }).length);
-        setEl('biz-count-producing', biz.filter(function(r){ return r.status==='producing'; }).length);
-        setEl('biz-count-completed', biz.filter(function(r){ return r.status==='completed'; }).length);
+        var r=await Requests.getMyRequests();
+        var b=r.filter(function(x){return x.request_type==='business';});
+        setEl('biz-count-all',       b.length);
+        setEl('biz-count-bidding',   b.filter(function(x){return x.status==='bidding';}).length);
+        setEl('biz-count-producing', b.filter(function(x){return x.status==='producing';}).length);
+        setEl('biz-count-completed', b.filter(function(x){return x.status==='completed';}).length);
     } catch(e){ console.error(e); }
 }
 
 async function loadPersonalDashboard() {
     if (!AppState.currentUser) return;
     try {
-        var reqs = await Requests.getMyRequests();
-        var per  = reqs.filter(function(r){ return r.request_type==='personal'||r.request_type==='group'; });
-        setEl('per-count-all',       per.length);
-        setEl('per-count-bidding',   per.filter(function(r){ return r.status==='bidding'&&r.request_type==='personal'; }).length);
-        setEl('per-count-group',     per.filter(function(r){ return r.request_type==='group'; }).length);
-        setEl('per-count-completed', per.filter(function(r){ return r.status==='completed'; }).length);
+        var r=await Requests.getMyRequests();
+        var p=r.filter(function(x){return x.request_type==='personal'||x.request_type==='group';});
+        setEl('per-count-all',       p.length);
+        setEl('per-count-bidding',   p.filter(function(x){return x.status==='bidding'&&x.request_type==='personal';}).length);
+        setEl('per-count-group',     p.filter(function(x){return x.request_type==='group';}).length);
+        setEl('per-count-completed', p.filter(function(x){return x.status==='completed';}).length);
     } catch(e){ console.error(e); }
 }
 
 // ── 의뢰 목록 로드 ─────────────────────────────────────
 async function loadMyRequests(type) {
-    var cid       = type==='business' ? 'biz-manage-list' : 'personal-myorders-list';
-    var container = document.getElementById(cid);
-    if (!container) return;
+    var cid=type==='business'?'biz-manage-list':'personal-myorders-list';
+    var container=document.getElementById(cid); if(!container)return;
     if (!AppState.currentUser) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><p>로그인 후 의뢰를 확인할 수 있습니다.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">로그인</button></div>';
+        container.innerHTML='<div class="empty-state"><div class="empty-icon">🔐</div><p>로그인 후 의뢰를 확인할 수 있습니다.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">로그인</button></div>';
         return;
     }
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    container.innerHTML='<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
     try {
-        var all  = await Requests.getMyRequests();
-        var list = all.filter(function(r){
-            return type==='business' ? r.request_type==='business' : (r.request_type==='personal'||r.request_type==='group');
+        var all=await Requests.getMyRequests();
+        var list=all.filter(function(r){
+            return type==='business'?r.request_type==='business':(r.request_type==='personal'||r.request_type==='group');
         });
-        if (list.length===0) {
-            var fn = type==='business' ? "showBizTab('create',null)" : "showPersonalTab('individual',null)";
-            container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>아직 등록된 의뢰가 없습니다.</p><button class="btn btn-primary" onclick="'+fn+'">첫 의뢰 만들기</button></div>';
+        if (!list.length) {
+            var fn=type==='business'?"showBizTab('create',null)":"showPersonalTab('individual',null)";
+            container.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>아직 등록된 의뢰가 없습니다.</p><button class="btn btn-primary" onclick="'+fn+'">첫 의뢰 만들기</button></div>';
             return;
         }
-        container.innerHTML = list.map(renderRequestCard).join('');
+        container.innerHTML=list.map(renderRequestCard).join('');
     } catch(e) {
         console.error(e);
-        container.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+        container.innerHTML='<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
     }
 }
 
 // ── 의뢰 카드 렌더링 ───────────────────────────────────
 function renderRequestCard(req) {
-    var sMap = {
-        draft:    {label:'임시저장',    cls:'status-draft'},
-        bidding:  {label:'입찰중',      cls:'status-bidding'},
-        matched:  {label:'매칭완료',    cls:'status-matched'},
-        producing:{label:'제작 진행중', cls:'status-producing'},
-        shipping: {label:'배송중',      cls:'status-shipping'},
-        completed:{label:'배송 완료',   cls:'status-completed'},
-        cancelled:{label:'취소됨',      cls:'status-draft'}
+    var sMap={
+        draft:{label:'임시저장',cls:'status-draft'},
+        bidding:{label:'입찰중',cls:'status-bidding'},
+        matched:{label:'매칭완료',cls:'status-matched'},
+        producing:{label:'제작 진행중',cls:'status-producing'},
+        shipping:{label:'배송중',cls:'status-shipping'},
+        completed:{label:'배송 완료',cls:'status-completed'},
+        cancelled:{label:'취소됨',cls:'status-draft'}
     };
-    var s        = sMap[req.status]||{label:req.status,cls:''};
-    var bids     = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
-    var bidCount = bids.length;
-    var created  = new Date(req.created_at).toLocaleDateString('ko-KR');
-    var ddText   = '';
+    var s=sMap[req.status]||{label:req.status,cls:''};
+    var bids=req.bids?req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}):[]; 
+    var bidCount=bids.length;
+    var created=new Date(req.created_at).toLocaleDateString('ko-KR');
+    var ddText='';
     if (req.bid_deadline) {
-        var diff = Math.ceil((new Date(req.bid_deadline)-new Date())/86400000);
-        ddText = req.bid_deadline+(diff>=0?' (D-'+diff+')':' (마감)');
+        var diff=Math.ceil((new Date(req.bid_deadline)-new Date())/86400000);
+        ddText=req.bid_deadline+(diff>=0?' (D-'+diff+')':' (마감)');
     }
 
-    // 입찰 현황 HTML
-    var bidsHtml = '';
-    if (req.status==='bidding' && bidCount>0) {
-        var rc = ['gold','silver','bronze'];
-        bidsHtml = '<div class="divider"></div>' +
-            '<h5 class="mb-8">📊 입찰 현황 ('+bidCount+'건) <span class="text-xs text-muted">· 클릭하면 상세 견적 확인</span></h5>' +
+    var bidsHtml='';
+    if (req.status==='bidding'&&bidCount>0) {
+        var rc=['gold','silver','bronze'];
+        bidsHtml='<div class="divider"></div><h5 class="mb-8">📊 입찰 현황 ('+bidCount+'건) <span class="text-xs text-muted">· 클릭하면 견적 확인</span></h5>'+
             bids.slice(0,3).map(function(bid,i){
-                return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">' +
-                    '<div class="bid-info">' +
-                    '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>' +
-                    '<div>' +
-                    '<strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>' +
-                    '<p class="text-xs text-muted">' +
-                    (bid.note ? escHtml(bid.note.split('·')[0].trim()) : '') +
-                    ' | ⭐'+getRating(bid.manufacturer_id)+' | '+getCompletedCount(bid.manufacturer_id)+'건 완료' +
-                    '</p></div>' +
-                    '</div>' +
-                    '<div style="display:flex;align-items:center;gap:12px">' +
-                    '<div>' +
-                    '<div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>' +
-                    '<div class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일</div>' +
-                    '</div>' +
+                var mk=getMakerInfo(bid.manufacturer_id);
+                return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">'+
+                    '<div class="bid-info">'+
+                    '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>'+
+                    '<div><strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>'+
+                    '<p class="text-xs text-muted">'+escHtml(mk.specialty)+' | ⭐'+mk.rating+' | '+mk.completedCount+'건 완료</p></div>'+
+                    '</div>'+
+                    '<div style="display:flex;align-items:center;gap:12px">'+
+                    '<div><div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>'+
+                    '<div class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일</div></div>'+
                     (i===0
                         ? '<button class="btn btn-success btn-sm" onclick="event.stopPropagation();confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">✓ 선택</button>'
                         : '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">Override</button>'
-                    ) +
+                    )+
                     '</div></div>';
             }).join('');
-        if (bidCount > 3) {
-            bidsHtml += '<p class="text-xs text-muted mt-8" style="text-align:center;cursor:pointer;color:var(--primary)" onclick="openRequestDetail(\''+req.id+'\')">+' + (bidCount-3) + '건 더 보기 →</p>';
-        }
-        bidsHtml += '<p class="text-xs text-muted mt-8">⚠️ 마감일 경과 시 최저가 입찰자에게 자동 매칭됩니다.</p>';
-    } else if (req.status==='bidding') {
-        bidsHtml = '<div class="alert alert-info" style="margin-top:12px"><span>⏳</span><span>입찰을 준비 중입니다. 잠시 후 새로고침해보세요.</span></div>';
+        if(bidCount>3) bidsHtml+='<p class="text-xs mt-8" style="text-align:center;cursor:pointer;color:var(--primary)" onclick="openRequestDetail(\''+req.id+'\')">+' +(bidCount-3)+'건 더 보기 →</p>';
+        bidsHtml+='<p class="text-xs text-muted mt-8">⚠️ 마감일 경과 시 최저가 입찰자에게 자동 매칭됩니다.</p>';
+    } else if(req.status==='bidding') {
+        bidsHtml='<div class="alert alert-info" style="margin-top:12px"><span>⏳</span><span>입찰 준비 중입니다.</span></div>';
     }
 
-    // 공동구매 진행률
-    var groupHtml = '';
-    if (req.request_type==='group' && req.min_quantity) {
-        var pct = Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100));
-        groupHtml = '<div class="co-purchase-info">' +
-            '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+req.min_quantity+'개 (최소)</strong></div>' +
-            '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
-            '<p class="text-xs text-muted mt-8">최소 수량까지 '+Math.max(0,req.min_quantity-(req.current_quantity||0))+'개 남음</p>' +
+    var groupHtml='';
+    if(req.request_type==='group'&&req.min_quantity){
+        var pct=Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100));
+        groupHtml='<div class="co-purchase-info">'+
+            '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+req.min_quantity+'개 (최소)</strong></div>'+
+            '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>'+
+            '<p class="text-xs text-muted mt-8">최소 수량까지 '+Math.max(0,req.min_quantity-(req.current_quantity||0))+'개 남음</p>'+
             '</div>';
     }
 
-    return '<div class="request-card" data-status="'+req.status+'" data-request-type="'+req.request_type+'" data-id="'+req.id+'">' +
-        '<div class="request-card-header">' +
-        '<h4>'+(req.request_type==='group'?'👥 ':'')+escHtml(req.title)+'</h4>' +
-        '<span class="status-badge '+s.cls+'">'+s.label+(req.status==='bidding'?' ('+bidCount+'명)':'')+'</span>' +
-        '</div>' +
-        '<div class="request-meta">' +
-        '<div class="meta-item">📦 수량: <strong>'+req.quantity.toLocaleString()+'개</strong></div>' +
-        '<div class="meta-item">💰 희망 단가: <strong>'+req.target_price.toLocaleString()+'원</strong></div>' +
-        (ddText?'<div class="meta-item">📅 마감: <strong>'+ddText+'</strong></div>':'') +
-        '<div class="meta-item">🗓 등록: <strong>'+created+'</strong></div>' +
-        '</div>' +
-        groupHtml + bidsHtml +
-        '<div class="request-actions">' +
-        '<button class="btn btn-sm btn-secondary" onclick="openRequestDetail(\''+req.id+'\')">📋 상세 보기</button>' +
-        (req.status==='bidding'?'<button class="btn btn-sm btn-danger" onclick="cancelRequest(\''+req.id+'\')">취소</button>':'') +
-        (req.status==='completed'?'<button class="btn btn-sm btn-primary" onclick="openModal(\'writeReviewModal\')">✍️ 후기 작성</button>':'') +
+    return '<div class="request-card" data-status="'+req.status+'" data-request-type="'+req.request_type+'" data-id="'+req.id+'">'+
+        '<div class="request-card-header">'+
+        '<h4>'+(req.request_type==='group'?'👥 ':'')+escHtml(req.title)+'</h4>'+
+        '<span class="status-badge '+s.cls+'">'+s.label+(req.status==='bidding'?' ('+bidCount+'명)':'')+'</span>'+
+        '</div>'+
+        '<div class="request-meta">'+
+        '<div class="meta-item">📦 수량: <strong>'+req.quantity.toLocaleString()+'개</strong></div>'+
+        '<div class="meta-item">💰 희망 단가: <strong>'+req.target_price.toLocaleString()+'원</strong></div>'+
+        (ddText?'<div class="meta-item">📅 마감: <strong>'+ddText+'</strong></div>':'')+
+        '<div class="meta-item">🗓 등록: <strong>'+created+'</strong></div>'+
+        '</div>'+
+        groupHtml+bidsHtml+
+        '<div class="request-actions">'+
+        '<button class="btn btn-sm btn-secondary" onclick="openRequestDetail(\''+req.id+'\')">📋 상세 보기</button>'+
+        (req.status==='bidding'?'<button class="btn btn-sm btn-danger" onclick="cancelRequest(\''+req.id+'\')">취소</button>':'')+
+        (req.status==='completed'?'<button class="btn btn-sm btn-primary" onclick="openModal(\'writeReviewModal\')">✍️ 후기 작성</button>':'')+
         '</div></div>';
 }
 
-// 더미 데이터에서 생산자 정보 조회 헬퍼
-function getRating(manufacturerId) {
-    if (!window.DummyBids) return '4.5';
-    var allMakers = Object.values(DummyBids.manufacturers).flat();
-    var found = allMakers.find(function(m){ return m.id===manufacturerId; });
-    return found ? found.rating : '4.5';
-}
-
-function getCompletedCount(manufacturerId) {
-    if (!window.DummyBids) return '-';
-    var allMakers = Object.values(DummyBids.manufacturers).flat();
-    var found = allMakers.find(function(m){ return m.id===manufacturerId; });
-    return found ? found.completedCount : '-';
+// 생산자 정보 헬퍼
+function getMakerInfo(manufacturerId) {
+    if (!window.DummyBids) return {specialty:'종합 굿즈',rating:'4.5',completedCount:'-'};
+    var all=Object.values(DummyBids.manufacturers).flat();
+    var found=all.find(function(m){return m.id===manufacturerId;});
+    return found||{specialty:'종합 굿즈',rating:'4.5',completedCount:'-'};
 }
 
 // ── 입찰 상세 보기 ─────────────────────────────────────
 async function openBidDetail(bidId, requestId) {
-    // 해당 의뢰 조회
-    var req = await Requests.getById(requestId);
-    if (!req) { showToast('의뢰 정보를 불러올 수 없습니다.', 'error'); return; }
-
-    var bids = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
-    var bid  = bids.find(function(b){ return b.id===bidId; });
-    if (!bid) { showToast('입찰 정보를 찾을 수 없습니다.', 'error'); return; }
-
-    // 생산자 정보
-    var allMakers  = window.DummyBids ? Object.values(DummyBids.manufacturers).flat() : [];
-    var makerInfo  = allMakers.find(function(m){ return m.id===bid.manufacturer_id; });
-    var rating     = makerInfo ? makerInfo.rating     : '4.5';
-    var completed  = makerInfo ? makerInfo.completedCount : '-';
-    var specialty  = makerInfo ? makerInfo.specialty  : '종합 굿즈';
-    var rank       = bids.findIndex(function(b){ return b.id===bidId; }) + 1;
-    var isLowest   = rank === 1;
-
-    var titleEl = document.getElementById('detail-modal-title');
-    var body    = document.getElementById('detail-modal-body');
-    if (titleEl) titleEl.textContent = '📄 ' + escHtml(bid.manufacturer_name) + ' 견적서';
-
-    body.innerHTML =
-        // 생산자 정보
-        '<div style="display:flex;align-items:center;gap:12px;background:var(--bg);padding:14px;border-radius:8px;margin-bottom:16px">' +
-        '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px">'+escHtml(bid.manufacturer_name[0])+'</div>' +
-        '<div>' +
-        '<div style="font-weight:700;font-size:15px">'+escHtml(bid.manufacturer_name)+'</div>' +
-        '<div class="text-xs text-muted">'+escHtml(specialty)+' | ⭐'+rating+' | 완료 '+completed+'건</div>' +
-        '</div>' +
-        (isLowest ? '<span class="status-badge status-matched" style="margin-left:auto">🏆 최저가</span>' : '<span class="status-badge status-bidding" style="margin-left:auto">'+rank+'위</span>') +
-        '</div>' +
-
-        // 견적 상세 테이블
-        '<table class="estimate-table">' +
-        '<thead><tr><th>항목</th><th>수량</th><th>단가</th><th>금액</th></tr></thead>' +
-        '<tbody>' +
-        '<tr><td>'+escHtml(req.title)+' 제작비</td><td>'+req.quantity.toLocaleString()+'개</td><td>'+bid.unit_price.toLocaleString()+'원</td><td>'+(bid.unit_price*req.quantity).toLocaleString()+'원</td></tr>' +
-        '<tr><td>포장비</td><td>'+req.quantity.toLocaleString()+'개</td><td>포함</td><td>-</td></tr>' +
-        '<tr><td>배송비</td><td>-</td><td>-</td><td>무료</td></tr>' +
-        '</tbody>' +
-        '<tfoot><tr style="font-weight:700"><td colspan="3" style="text-align:right">합계</td><td class="text-primary">'+(bid.unit_price*req.quantity).toLocaleString()+'원</td></tr></tfoot>' +
-        '</table>' +
-
-        // 생산자 메모
-        (bid.note ? '<div class="alert alert-info mt-16"><span>📝</span><span><strong>생산자 메모:</strong> '+escHtml(bid.note)+'</span></div>' : '') +
-
-        // 납기 정보
-        '<div style="background:var(--bg);border-radius:8px;padding:12px 16px;margin-top:12px;display:flex;gap:24px">' +
-        '<div><div class="text-xs text-muted">예상 납기</div><div style="font-weight:700;font-size:16px;color:var(--primary)">'+(bid.delivery_days||'-')+'일</div></div>' +
-        '<div><div class="text-xs text-muted">희망 단가 대비</div><div style="font-weight:700;font-size:16px;color:var(--success)">▼'+Math.round((1-bid.unit_price/req.target_price)*100)+'% 절감</div></div>' +
-        '<div><div class="text-xs text-muted">총 결제 예정액</div><div style="font-weight:700;font-size:16px;color:var(--dark)">'+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>' +
-        '</div>' +
-
-        // 다른 입찰 목록
-        '<div class="divider"></div>' +
-        '<h5 style="margin-bottom:10px">다른 입찰 비교</h5>' +
-        '<div style="display:flex;flex-direction:column;gap:6px">' +
-        bids.map(function(b,i){
-            var isThis = b.id===bidId;
-            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:'+(isThis?'rgba(108,92,231,0.08)':'var(--bg)')+';border-radius:6px;border:'+(isThis?'1px solid var(--primary-light)':'1px solid transparent')+'">' +
-                '<span class="text-sm"><strong>'+(i+1)+'위</strong> '+escHtml(b.manufacturer_name)+'</span>' +
-                '<div style="display:flex;align-items:center;gap:12px">' +
-                '<span style="font-weight:700;color:var(--primary)">'+b.unit_price.toLocaleString()+'원</span>' +
-                '<span class="text-xs text-muted">납기 '+(b.delivery_days||'-')+'일</span>' +
-                (isThis
-                    ? '<span class="text-xs" style="color:var(--primary)">현재 보는 중</span>'
-                    : '<button class="btn btn-outline btn-sm" onclick="closeModal(\'requestDetailModal\');openBidDetail(\''+b.id+'\',\''+requestId+'\')">보기</button>'
-                ) +
-                '</div></div>';
-        }).join('') +
-        '</div>' +
-
-        // 하단 버튼
-        '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
-        '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>' +
-        (req.status==='bidding'
-            ? '<button class="btn btn-success" onclick="closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name)+'\',' +bid.unit_price+')">이 견적으로 매칭 →</button>'
-            : '') +
-        '</div>';
-
     openModal('requestDetailModal');
+    var body=document.getElementById('detail-modal-body');
+    var titleEl=document.getElementById('detail-modal-title');
+    if(body) body.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var req=await Requests.getById(requestId);
+        if(!req) throw new Error('의뢰 정보를 찾을 수 없습니다.');
+        var bids=req.bids?req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}):[]; 
+        var bid=bids.find(function(b){return b.id===bidId;});
+        if(!bid) throw new Error('입찰 정보를 찾을 수 없습니다.');
+
+        var mk=getMakerInfo(bid.manufacturer_id);
+        var rank=bids.findIndex(function(b){return b.id===bidId;})+1;
+        if(titleEl) titleEl.textContent='📄 '+escHtml(bid.manufacturer_name)+' 견적서';
+
+        body.innerHTML=
+            // 생산자 프로필
+            '<div style="display:flex;align-items:center;gap:12px;background:var(--bg);padding:14px;border-radius:8px;margin-bottom:16px">'+
+            '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px">'+escHtml(bid.manufacturer_name[0])+'</div>'+
+            '<div><div style="font-weight:700;font-size:15px">'+escHtml(bid.manufacturer_name)+'</div>'+
+            '<div class="text-xs text-muted">'+escHtml(mk.specialty)+' | ⭐'+mk.rating+' | 완료 '+mk.completedCount+'건</div></div>'+
+            (rank===1?'<span class="status-badge status-matched" style="margin-left:auto">🏆 최저가</span>':'<span class="status-badge status-bidding" style="margin-left:auto">'+rank+'위</span>')+
+            '</div>'+
+            // 견적 테이블
+            '<table class="estimate-table">'+
+            '<thead><tr><th>항목</th><th>수량</th><th>단가</th><th>금액</th></tr></thead>'+
+            '<tbody>'+
+            '<tr><td>'+escHtml(req.title)+' 제작비</td><td>'+req.quantity.toLocaleString()+'개</td><td>'+bid.unit_price.toLocaleString()+'원</td><td>'+(bid.unit_price*req.quantity).toLocaleString()+'원</td></tr>'+
+            '<tr><td>포장비</td><td>'+req.quantity.toLocaleString()+'개</td><td>포함</td><td>-</td></tr>'+
+            '<tr><td>배송비</td><td>-</td><td>-</td><td>무료</td></tr>'+
+            '</tbody>'+
+            '<tfoot><tr style="font-weight:700"><td colspan="3" style="text-align:right">합계</td><td class="text-primary">'+(bid.unit_price*req.quantity).toLocaleString()+'원</td></tr></tfoot>'+
+            '</table>'+
+            // 메모
+            (bid.note?'<div class="alert alert-info mt-16"><span>📝</span><span><strong>생산자 메모:</strong> '+escHtml(bid.note)+'</span></div>':'')+
+            // 요약 정보
+            '<div style="background:var(--bg);border-radius:8px;padding:12px 16px;margin-top:12px;display:flex;gap:24px;flex-wrap:wrap">'+
+            '<div><div class="text-xs text-muted">예상 납기</div><div style="font-weight:700;font-size:16px;color:var(--primary)">'+(bid.delivery_days||'-')+'일</div></div>'+
+            '<div><div class="text-xs text-muted">희망 단가 대비</div><div style="font-weight:700;font-size:16px;color:var(--success)">▼'+Math.max(0,Math.round((1-bid.unit_price/req.target_price)*100))+'% 절감</div></div>'+
+            '<div><div class="text-xs text-muted">총 결제 예정액</div><div style="font-weight:700;font-size:16px">'+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>'+
+            '</div>'+
+            // 다른 입찰 비교
+            '<div class="divider"></div><h5 style="margin-bottom:10px">다른 입찰 비교 (단가 낮은 순)</h5>'+
+            '<div style="display:flex;flex-direction:column;gap:6px">'+
+            bids.map(function(b,i){
+                var isThis=b.id===bidId;
+                return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:'+(isThis?'rgba(108,92,231,0.08)':'var(--bg)')+';border-radius:6px;border:'+(isThis?'1px solid var(--primary-light)':'1px solid transparent')+'">'+
+                    '<span class="text-sm"><strong>'+(i+1)+'위</strong> '+escHtml(b.manufacturer_name)+'</span>'+
+                    '<div style="display:flex;align-items:center;gap:12px">'+
+                    '<span style="font-weight:700;color:var(--primary)">'+b.unit_price.toLocaleString()+'원</span>'+
+                    '<span class="text-xs text-muted">납기 '+(b.delivery_days||'-')+'일</span>'+
+                    (isThis
+                        ? '<span class="text-xs" style="color:var(--primary);font-weight:600">현재 보는 중</span>'
+                        : '<button class="btn btn-outline btn-sm" onclick="openBidDetail(\''+b.id+'\',\''+requestId+'\')">보기</button>'
+                    )+
+                    '</div></div>';
+            }).join('')+
+            '</div>'+
+            // 하단 버튼
+            '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">'+
+            '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>'+
+            (req.status==='bidding'?'<button class="btn btn-success" onclick="closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name)+'\',' +bid.unit_price+')">이 견적으로 매칭 →</button>':'')+
+            '</div>';
+    } catch(e) {
+        console.error(e);
+        if(body) body.innerHTML='<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+    }
 }
 
 // ── 의뢰 상세 보기 ─────────────────────────────────────
 async function openRequestDetail(requestId) {
     openModal('requestDetailModal');
-    var body    = document.getElementById('detail-modal-body');
-    var titleEl = document.getElementById('detail-modal-title');
-    if (body) body.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div>';
+    var body=document.getElementById('detail-modal-body');
+    var titleEl=document.getElementById('detail-modal-title');
+    if(body) body.innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div>';
     try {
-        var req = await Requests.getById(requestId);
-        if (!req) throw new Error('의뢰를 찾을 수 없습니다.');
-        if (titleEl) titleEl.textContent = '📋 '+req.title;
+        var req=await Requests.getById(requestId);
+        if(!req) throw new Error('의뢰를 찾을 수 없습니다.');
+        if(titleEl) titleEl.textContent='📋 '+req.title;
+        var sMap={draft:'임시저장',bidding:'입찰중',matched:'매칭완료',producing:'제작 진행중',shipping:'배송중',completed:'배송 완료',cancelled:'취소됨'};
+        var tMap={business:'사업자 의뢰',personal:'개인 의뢰',group:'공동구매 의뢰'};
+        var bids=req.bids?req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}):[]; 
+        var files=req.request_files||[];
 
-        var sMap = {draft:'임시저장',bidding:'입찰중',matched:'매칭완료',producing:'제작 진행중',shipping:'배송중',completed:'배송 완료',cancelled:'취소됨'};
-        var tMap = {business:'사업자 의뢰',personal:'개인 의뢰',group:'공동구매 의뢰'};
-        var bids  = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
-        var files = req.request_files||[];
-
-        var bidsSection = '';
-        if (bids.length>0) {
+        var bidsSection='';
+        if(bids.length>0){
             var rc=['gold','silver','bronze'];
-            bidsSection = '<div class="divider"></div><h5 style="margin-bottom:12px">📊 전체 입찰 목록 ('+bids.length+'건) - 단가 낮은 순</h5>' +
+            bidsSection='<div class="divider"></div><h5 style="margin-bottom:12px">📊 전체 입찰 목록 ('+bids.length+'건) - 단가 낮은 순</h5>'+
                 bids.map(function(bid,i){
-                    var allMakers = window.DummyBids ? Object.values(DummyBids.manufacturers).flat() : [];
-                    var mk = allMakers.find(function(m){return m.id===bid.manufacturer_id;});
-                    return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">' +
-                        '<div class="bid-info">' +
-                        '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>' +
-                        '<div><strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>' +
-                        '<p class="text-xs text-muted">'+(mk?mk.specialty:'종합 굿즈')+' | ⭐'+(mk?mk.rating:'4.5')+' | 완료 '+(mk?mk.completedCount:'-')+'건</p>' +
-                        '</div></div>' +
-                        '<div style="display:flex;align-items:center;gap:12px">' +
-                        '<div><div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>' +
-                        '<div class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일 · 총 '+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>' +
+                    var mk=getMakerInfo(bid.manufacturer_id);
+                    return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">'+
+                        '<div class="bid-info">'+
+                        '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>'+
+                        '<div><strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>'+
+                        '<p class="text-xs text-muted">'+escHtml(mk.specialty)+' | ⭐'+mk.rating+' | 완료 '+mk.completedCount+'건</p></div></div>'+
+                        '<div style="display:flex;align-items:center;gap:12px">'+
+                        '<div><div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>'+
+                        '<div class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일 · 총 '+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>'+
                         (req.status==='bidding'
-                            ? (i===0
-                                ? '<button class="btn btn-success btn-sm" onclick="event.stopPropagation();closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">✓ 선택</button>'
-                                : '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">Override</button>'
-                              )
-                            : '') +
+                            ?(i===0
+                                ?'<button class="btn btn-success btn-sm" onclick="event.stopPropagation();closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">✓ 선택</button>'
+                                :'<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">Override</button>'
+                            ):'')+
                         '</div></div>';
                 }).join('');
         } else {
-            bidsSection = '<div class="divider"></div><div class="alert alert-info"><span>⏳</span><span>아직 입찰한 생산자가 없습니다.</span></div>';
+            bidsSection='<div class="divider"></div><div class="alert alert-info"><span>⏳</span><span>아직 입찰한 생산자가 없습니다.</span></div>';
         }
-
-        var filesSection = files.length>0
-            ? '<div class="divider"></div><h5 style="margin-bottom:8px">📎 첨부 파일</h5>' +
-              files.map(function(f){
-                  return '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:13px">' +
-                      '<a href="'+f.file_url+'" target="_blank" style="color:var(--primary)">📎 '+escHtml(f.file_name)+'</a></div>';
-              }).join('')
-            : '';
-
-        body.innerHTML =
-            '<table class="data-table mb-16">' +
-            '<tr><td style="width:120px;font-weight:600">의뢰 유형</td><td>'+(tMap[req.request_type]||req.request_type)+'</td></tr>' +
-            '<tr><td style="font-weight:600">카테고리</td><td>'+escHtml(req.category)+'</td></tr>' +
-            '<tr><td style="font-weight:600">수량</td><td>'+req.quantity.toLocaleString()+'개</td></tr>' +
-            '<tr><td style="font-weight:600">희망 단가</td><td>'+req.target_price.toLocaleString()+'원</td></tr>' +
-            '<tr><td style="font-weight:600">예상 총액</td><td class="text-primary fw-bold">'+(req.quantity*req.target_price).toLocaleString()+'원</td></tr>' +
-            (req.bid_deadline?'<tr><td style="font-weight:600">입찰 마감일</td><td>'+req.bid_deadline+'</td></tr>':'') +
-            '<tr><td style="font-weight:600">상태</td><td>'+(sMap[req.status]||req.status)+'</td></tr>' +
-            '<tr><td style="font-weight:600">등록일</td><td>'+new Date(req.created_at).toLocaleString('ko-KR')+'</td></tr>' +
-            (req.design_guide?'<tr><td style="font-weight:600">디자인 가이드</td><td style="white-space:pre-wrap">'+escHtml(req.design_guide)+'</td></tr>':'') +
-            (req.detail_note?'<tr><td style="font-weight:600">상세 요청</td><td style="white-space:pre-wrap">'+escHtml(req.detail_note)+'</td></tr>':'') +
-            '</table>' +
-            bidsSection + filesSection +
-            '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
-            (req.status==='bidding'?'<button class="btn btn-danger btn-sm" onclick="closeModal(\'requestDetailModal\');cancelRequest(\''+req.id+'\')">의뢰 취소</button>':'') +
-            '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>' +
+        var filesSection=files.length>0
+            ?'<div class="divider"></div><h5 style="margin-bottom:8px">📎 첨부 파일</h5>'+
+              files.map(function(f){return '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:13px"><a href="'+f.file_url+'" target="_blank" style="color:var(--primary)">📎 '+escHtml(f.file_name)+'</a></div>';}).join('')
+            :'';
+        body.innerHTML=
+            '<table class="data-table mb-16">'+
+            '<tr><td style="width:120px;font-weight:600">의뢰 유형</td><td>'+(tMap[req.request_type]||req.request_type)+'</td></tr>'+
+            '<tr><td style="font-weight:600">카테고리</td><td>'+escHtml(req.category)+'</td></tr>'+
+            '<tr><td style="font-weight:600">수량</td><td>'+req.quantity.toLocaleString()+'개</td></tr>'+
+            '<tr><td style="font-weight:600">희망 단가</td><td>'+req.target_price.toLocaleString()+'원</td></tr>'+
+            '<tr><td style="font-weight:600">예상 총액</td><td class="text-primary fw-bold">'+(req.quantity*req.target_price).toLocaleString()+'원</td></tr>'+
+            (req.bid_deadline?'<tr><td style="font-weight:600">입찰 마감일</td><td>'+req.bid_deadline+'</td></tr>':'')+
+            '<tr><td style="font-weight:600">상태</td><td>'+(sMap[req.status]||req.status)+'</td></tr>'+
+            '<tr><td style="font-weight:600">등록일</td><td>'+new Date(req.created_at).toLocaleString('ko-KR')+'</td></tr>'+
+            (req.design_guide?'<tr><td style="font-weight:600">디자인 가이드</td><td style="white-space:pre-wrap">'+escHtml(req.design_guide)+'</td></tr>':'')+
+            (req.detail_note?'<tr><td style="font-weight:600">상세 요청</td><td style="white-space:pre-wrap">'+escHtml(req.detail_note)+'</td></tr>':'')+
+            '</table>'+bidsSection+filesSection+
+            '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">'+
+            (req.status==='bidding'?'<button class="btn btn-danger btn-sm" onclick="closeModal(\'requestDetailModal\');cancelRequest(\''+req.id+'\')">의뢰 취소</button>':'')+
+            '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>'+
             '</div>';
     } catch(e) {
         console.error(e);
-        if (body) body.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+        if(body) body.innerHTML='<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
     }
 }
 
@@ -515,8 +474,8 @@ async function loadMatchHistoryBiz() {
         var list=await Requests.getMatchHistory('business',20);
         if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
         tbody.innerHTML=list.map(function(h){
-            var s=h.target_price>0?Math.round((1-h.matched_price/h.target_price)*100):0;
-            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.category||'-')+'</td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td class="text-success">▼'+s+'%</td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
+            var sv=h.target_price>0?Math.round((1-h.matched_price/h.target_price)*100):0;
+            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.category||'-')+'</td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td class="text-success">▼'+sv+'%</td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
         }).join('');
     }catch(e){console.error(e);}
 }
@@ -525,60 +484,50 @@ async function loadMatchHistoryPersonal() {
     var tbody=document.getElementById('personal-match-tbody'); if(!tbody)return;
     try {
         var list=await Requests.getMatchHistory(null,20);
-        var filtered=list.filter(function(h){return h.request_type!=='business';});
-        if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
+        var f=list.filter(function(h){return h.request_type!=='business';});
+        if(!f.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
         var tMap={personal:'개인',group:'공동구매'};
-        tbody.innerHTML=filtered.map(function(h){
+        tbody.innerHTML=f.map(function(h){
             var cls=h.request_type==='group'?'status-recruiting':'status-completed';
             return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td><span class="status-badge '+cls+'">'+(tMap[h.request_type]||h.request_type)+'</span></td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
         }).join('');
     }catch(e){console.error(e);}
 }
 
-// ── 의뢰 생성 (더미 입찰 자동 생성 포함) ──────────────
+// ── 의뢰 생성 ──────────────────────────────────────────
 async function submitBizRequest() {
-    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    if(!AppState.currentUser){openModal('loginModal');return;}
     var btn=document.getElementById('biz-submit-btn');
     if(btn){btn.disabled=true;btn.textContent='등록 중...';}
     try {
-        var category = document.getElementById('biz-category').value;
-        var qty      = parseInt(document.getElementById('biz-qty').value);
-        var price    = parseInt(document.getElementById('biz-price').value);
-        var data = {
+        var category=document.getElementById('biz-category').value;
+        var qty=parseInt(document.getElementById('biz-qty').value);
+        var price=parseInt(document.getElementById('biz-price').value);
+        var newReq=await Requests.create({
             request_type:'business',
-            title:        document.getElementById('biz-title').value.trim(),
-            category:     category,
-            quantity:     qty,
-            target_price: price,
-            bid_deadline: document.getElementById('biz-deadline').value||null,
-            design_guide: document.getElementById('biz-design-guide').value,
-            detail_note:  document.getElementById('biz-detail-note').value,
-            status:'bidding', bidding_type:'bidding'
-        };
-        var newReq = await Requests.create(data);
-
-        // 더미 입찰 자동 생성
-        showToast('의뢰 등록 완료! 생산자 입찰을 생성 중...', 'info');
-        await DummyBids.generateBids(newReq.id, category, price, qty);
-
-        showToast('의뢰가 등록되었습니다! 생산자 '+3+'건의 입찰이 도착했습니다 🎉', 'success');
+            title:document.getElementById('biz-title').value.trim(),
+            category:category, quantity:qty, target_price:price,
+            bid_deadline:document.getElementById('biz-deadline').value||null,
+            design_guide:document.getElementById('biz-design-guide').value,
+            detail_note:document.getElementById('biz-detail-note').value,
+            status:'bidding',bidding_type:'bidding'
+        });
+        await DummyBids.generateBids(newReq.id,category,price,qty);
+        showToast('의뢰 등록 완료! 생산자 입찰이 도착했습니다 🎉','success');
         resetBizForm();
-        setTimeout(function(){ showBizTab('manage',null); loadBizDashboard(); }, 800);
-    } catch(e) {
-        showToast('오류: '+e.message,'error');
-    } finally {
-        if(btn){btn.disabled=false;btn.textContent='🚀 의뢰 등록';}
-    }
+        setTimeout(function(){showBizTab('manage',null);loadBizDashboard();},600);
+    }catch(e){showToast('오류: '+e.message,'error');}
+    finally{if(btn){btn.disabled=false;btn.textContent='🚀 의뢰 등록';}}
 }
 
 async function submitPersonalRequest() {
-    if (!AppState.currentUser) { openModal('loginModal'); return; }
-    var qty   = parseInt(document.getElementById('personalQty').value)||0;
-    var price = parseInt(document.getElementById('personalPrice').value)||0;
-    var name  = document.getElementById('personalItemName').value.trim();
-    if (!name||!qty||!price) { showToast('필수 항목을 모두 입력해주세요.','error'); return; }
+    if(!AppState.currentUser){openModal('loginModal');return;}
+    var qty=parseInt(document.getElementById('personalQty').value)||0;
+    var price=parseInt(document.getElementById('personalPrice').value)||0;
+    var name=document.getElementById('personalItemName').value.trim();
+    if(!name||!qty||!price){showToast('필수 항목을 모두 입력해주세요.','error');return;}
     var reasons=[];
-    if(qty>50)             reasons.push('📦 수량 '+qty+'개는 공동구매로 진행하면 더 유리합니다.');
+    if(qty>50) reasons.push('📦 수량 '+qty+'개는 공동구매로 진행하면 더 유리합니다.');
     if(price>0&&price<1500) reasons.push('💰 희망 단가('+price.toLocaleString()+'원)가 낮습니다.');
     if(reasons.length>0){
         document.getElementById('coPurchaseReason').innerHTML=reasons.map(function(r){return '<p class="text-sm" style="margin-bottom:8px">'+r+'</p>';}).join('');
@@ -591,45 +540,37 @@ async function doSubmitPersonalRequest() {
     var typeEl=document.querySelector('input[name="request-type"]:checked');
     var bType=typeEl?typeEl.value:'bidding';
     try {
-        var category = document.getElementById('personalCategory').value;
-        var qty      = parseInt(document.getElementById('personalQty').value);
-        var price    = parseInt(document.getElementById('personalPrice').value);
-        var data = {
+        var category=document.getElementById('personalCategory').value;
+        var qty=parseInt(document.getElementById('personalQty').value);
+        var price=parseInt(document.getElementById('personalPrice').value);
+        var newReq=await Requests.create({
             request_type:'personal',
-            title:        document.getElementById('personalItemName').value.trim(),
-            category:     category,
-            quantity:     qty,
-            target_price: price,
-            bid_deadline: document.getElementById('personalDeadline').value||null,
-            design_guide: document.getElementById('personalDesignGuide').value,
-            detail_note:  document.getElementById('personalDetailNote').value,
-            bidding_type: bType,
-            direct_manufacturer_id: bType==='direct'?document.getElementById('directMfgId').value:null,
+            title:document.getElementById('personalItemName').value.trim(),
+            category:category, quantity:qty, target_price:price,
+            bid_deadline:document.getElementById('personalDeadline').value||null,
+            design_guide:document.getElementById('personalDesignGuide').value,
+            detail_note:document.getElementById('personalDetailNote').value,
+            bidding_type:bType,
+            direct_manufacturer_id:bType==='direct'?document.getElementById('directMfgId').value:null,
             status:'bidding'
-        };
-        var newReq = await Requests.create(data);
-
-        // 입찰 방식일 경우만 더미 입찰 생성
-        if (bType === 'bidding') {
-            await DummyBids.generateBids(newReq.id, category, price, qty);
-        }
-
+        });
+        if(bType==='bidding') await DummyBids.generateBids(newReq.id,category,price,qty);
         showToast('개인 의뢰가 등록되었습니다! 🎉','success');
-        setTimeout(function(){ showPersonalTab('myorders',null); loadPersonalDashboard(); },800);
-    } catch(e){ showToast('오류: '+e.message,'error'); }
+        setTimeout(function(){showPersonalTab('myorders',null);loadPersonalDashboard();},600);
+    }catch(e){showToast('오류: '+e.message,'error');}
 }
 
 async function submitGroupRequest() {
-    if (!AppState.currentUser) { openModal('loginModal'); return; }
-    var title   =document.getElementById('group-title').value.trim();
+    if(!AppState.currentUser){openModal('loginModal');return;}
+    var title=document.getElementById('group-title').value.trim();
     var category=document.getElementById('group-category').value;
     var totalQty=parseInt(document.getElementById('group-total-qty').value)||0;
-    var minQty  =parseInt(document.getElementById('group-min-qty').value)||0;
-    var price   =parseInt(document.getElementById('group-price').value)||0;
+    var minQty=parseInt(document.getElementById('group-min-qty').value)||0;
+    var price=parseInt(document.getElementById('group-price').value)||0;
     if(!title||!category||!totalQty||!minQty||!price){showToast('필수 항목을 모두 입력해주세요.','error');return;}
     try {
         var gTypeEl=document.querySelector('input[name="group-type"]:checked');
-        var data={
+        await Requests.create({
             request_type:'group',title:title,category:category,
             quantity:totalQty,min_quantity:minQty,target_price:price,
             recruit_deadline:document.getElementById('group-recruit-deadline').value||null,
@@ -638,15 +579,14 @@ async function submitGroupRequest() {
             detail_note:document.getElementById('group-detail-note').value,
             current_quantity:0,status:'bidding',
             bidding_type:gTypeEl?gTypeEl.value:'bidding'
-        };
-        await Requests.create(data);
-        showToast('공동제작 의뢰가 마켓플레이스에 등록되었습니다! 🎉','success');
-        setTimeout(function(){ showPersonalTab('myorders',null); loadPersonalDashboard(); },800);
-    } catch(e){ showToast('오류: '+e.message,'error'); }
+        });
+        showToast('공동제작 의뢰가 등록되었습니다! 🎉','success');
+        setTimeout(function(){showPersonalTab('myorders',null);loadPersonalDashboard();},600);
+    }catch(e){showToast('오류: '+e.message,'error');}
 }
 
 // ── 매칭 확정 ──────────────────────────────────────────
-function confirmSelectBid(requestId, bidId, manufacturerName, unitPrice) {
+function confirmSelectBid(requestId,bidId,manufacturerName,unitPrice) {
     AppState.pendingMatch={requestId:requestId,bidId:bidId,name:manufacturerName,price:unitPrice};
     var amountEl=document.getElementById('matchPayAmount');
     var detailEl=document.getElementById('matchPayDetail');
@@ -675,11 +615,8 @@ async function executeSelectBid() {
         loadMyRequests('personal');
         loadBizDashboard();
         loadPersonalDashboard();
-    } catch(e) {
-        showToast('오류: '+e.message,'error');
-    } finally {
-        if(btn){btn.disabled=false;btn.textContent='💳 결제 및 매칭 확정';}
-    }
+    }catch(e){showToast('오류: '+e.message,'error');}
+    finally{if(btn){btn.disabled=false;btn.textContent='💳 결제 및 매칭 확정';}}
 }
 
 async function cancelRequest(requestId) {
@@ -691,7 +628,7 @@ async function cancelRequest(requestId) {
         loadMyRequests('personal');
         loadBizDashboard();
         loadPersonalDashboard();
-    } catch(e){showToast('오류: '+e.message,'error');}
+    }catch(e){showToast('오류: '+e.message,'error');}
 }
 
 // ── 스텝 관리 ──────────────────────────────────────────
@@ -707,18 +644,14 @@ function bizStepNext(step) {
     }
     document.getElementById('biz-step-'+step).style.display='none';
     document.getElementById('biz-step-'+(step+1)).style.display='block';
-    AppState.bizCurrentStep=step+1;
-    updateBizStepper();
+    AppState.bizCurrentStep=step+1; updateBizStepper();
     if(step===2)populateBizConfirm();
 }
-
 function bizStepBack(step) {
     document.getElementById('biz-step-'+step).style.display='none';
     document.getElementById('biz-step-'+(step-1)).style.display='block';
-    AppState.bizCurrentStep=step-1;
-    updateBizStepper();
+    AppState.bizCurrentStep=step-1; updateBizStepper();
 }
-
 function updateBizStepper() {
     document.querySelectorAll('#bizStepper .step').forEach(function(s,i){
         s.classList.remove('active','done');
@@ -729,60 +662,48 @@ function updateBizStepper() {
         l.classList.toggle('done',i+1<AppState.bizCurrentStep);
     });
 }
-
 function populateBizConfirm() {
-    var qty=document.getElementById('biz-qty').value, price=document.getElementById('biz-price').value;
-    setEl('confirm-title',   document.getElementById('biz-title').value);
+    var qty=document.getElementById('biz-qty').value,price=document.getElementById('biz-price').value;
+    setEl('confirm-title',document.getElementById('biz-title').value);
     setEl('confirm-category',document.getElementById('biz-category').value);
-    setEl('confirm-qty',     Number(qty).toLocaleString()+'개');
-    setEl('confirm-price',   Number(price).toLocaleString()+'원');
+    setEl('confirm-qty',Number(qty).toLocaleString()+'개');
+    setEl('confirm-price',Number(price).toLocaleString()+'원');
     setEl('confirm-deadline',document.getElementById('biz-deadline').value);
-    setEl('confirm-total',   (Number(qty)*Number(price)).toLocaleString()+'원');
-    setEl('confirm-guide',   document.getElementById('biz-design-guide').value||'-');
-    setEl('confirm-note',    document.getElementById('biz-detail-note').value||'-');
+    setEl('confirm-total',(Number(qty)*Number(price)).toLocaleString()+'원');
+    setEl('confirm-guide',document.getElementById('biz-design-guide').value||'-');
+    setEl('confirm-note',document.getElementById('biz-detail-note').value||'-');
     var fi=document.getElementById('biz-file-input');
     setEl('confirm-files',fi&&fi.files.length>0?Array.from(fi.files).map(function(f){return f.name;}).join(', '):'없음');
 }
-
 function resetBizForm() {
-    ['biz-title','biz-qty','biz-price','biz-deadline','biz-design-guide','biz-detail-note'].forEach(function(id){
-        var el=document.getElementById(id);if(el)el.value='';
-    });
+    ['biz-title','biz-qty','biz-price','biz-deadline','biz-design-guide','biz-detail-note'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
     var cat=document.getElementById('biz-category');if(cat)cat.value='';
     document.getElementById('biz-step-3').style.display='none';
     document.getElementById('biz-step-2').style.display='none';
     document.getElementById('biz-step-1').style.display='block';
-    AppState.bizCurrentStep=1;
-    updateBizStepper();
+    AppState.bizCurrentStep=1; updateBizStepper();
 }
 
-// ── 필터 ───────────────────────────────────────────────
+// ── 필터 / 기타 UI ─────────────────────────────────────
 function filterBizStatus(status,btn) {
     if(btn){document.querySelectorAll('#biz-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});btn.classList.add('active');}
-    document.querySelectorAll('#biz-manage-list .request-card').forEach(function(card){
-        card.style.display=(status==='all'||card.dataset.status===status)?'block':'none';
-    });
+    document.querySelectorAll('#biz-manage-list .request-card').forEach(function(c){c.style.display=(status==='all'||c.dataset.status===status)?'block':'none';});
 }
-
 function filterPersonalStatus(status,btn) {
     if(btn){document.querySelectorAll('#personal-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});btn.classList.add('active');}
-    document.querySelectorAll('#personal-myorders-list .request-card').forEach(function(card){
-        var show=status==='all'?true:status==='group'?card.dataset.requestType==='group':card.dataset.status===status;
-        card.style.display=show?'block':'none';
+    document.querySelectorAll('#personal-myorders-list .request-card').forEach(function(c){
+        var show=status==='all'?true:status==='group'?c.dataset.requestType==='group':c.dataset.status===status;
+        c.style.display=show?'block':'none';
     });
 }
-
-// ── 기타 UI ────────────────────────────────────────────
 function toggleDirectMfg(radio) {
     var f=document.getElementById('directMfgField');if(f)f.style.display=radio.value==='direct'?'block':'none';
     var rb=document.getElementById('radio-bidding'),rd=document.getElementById('radio-direct');
     if(rb)rb.style.borderColor=radio.value==='bidding'?'var(--primary)':'#E2E8F0';
     if(rd)rd.style.borderColor=radio.value==='direct'?'var(--primary)':'#E2E8F0';
 }
-function toggleGroupDirectMfg(radio) {
-    var f=document.getElementById('groupDirectMfgField');if(f)f.style.display=radio.value==='direct'?'block':'none';
-}
-function showUploadedFiles(input,listId) {
+function toggleGroupDirectMfg(radio){var f=document.getElementById('groupDirectMfgField');if(f)f.style.display=radio.value==='direct'?'block':'none';}
+function showUploadedFiles(input,listId){
     var list=document.getElementById(listId);if(!list)return;
     list.innerHTML='';
     Array.from(input.files).forEach(function(f){
@@ -797,13 +718,11 @@ function setEl(id,val){var el=document.getElementById(id);if(el)el.textContent=v
 function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('show');}
 function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('show');}
 function closeDropdown(){var d=document.getElementById('profileDropdown');if(d)d.classList.remove('show');}
-function toggleUserMenu(event){if(event)event.stopPropagation();var d=document.getElementById('profileDropdown');if(d)d.classList.toggle('show');}
+function toggleUserMenu(e){if(e)e.stopPropagation();var d=document.getElementById('profileDropdown');if(d)d.classList.toggle('show');}
 function showToast(message,type){
-    var toast=document.getElementById('toast');if(!toast)return;
-    toast.textContent=message;
-    toast.className='toast '+(type||'info')+' show';
-    clearTimeout(toast._timer);
-    toast._timer=setTimeout(function(){toast.classList.remove('show');},3000);
+    var t=document.getElementById('toast');if(!t)return;
+    t.textContent=message; t.className='toast '+(type||'info')+' show';
+    clearTimeout(t._timer); t._timer=setTimeout(function(){t.classList.remove('show');},3000);
 }
 function escHtml(str){
     if(!str)return '';
