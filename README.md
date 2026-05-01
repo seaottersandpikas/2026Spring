@@ -26,7 +26,9 @@
   - Claude Sonnet: main, 코딩 전반 및 troubleshooting 담당
   - Gemini Pro: 코드 검증
   - Github Codespace: 개발 내용 업로드
-- AI automation
+    - miterm.test: 중간고사 범위
+    - FINAL.prd: 기말고사, 최종
+- AI automation (예정)
   - Google API (free)
     - 의뢰 생성 및 견적 제출 자동화
     - 사업자 등록, 저작권 등록, 세무 처리 등 절차 자동화
