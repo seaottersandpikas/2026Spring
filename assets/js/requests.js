@@ -19,7 +19,7 @@ var Requests = {
             .select('*, bids(*)')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
-        if (res.error) { console.error('getMyRequests 오류:', res.error); return []; }
+        if (res.error) { console.error(res.error); return []; }
         return res.data || [];
     },
 
@@ -29,7 +29,7 @@ var Requests = {
             .select('*, bids(*), request_files(*)')
             .eq('id', id)
             .single();
-        if (res.error) { console.error('getById 오류:', res.error); return null; }
+        if (res.error) { console.error(res.error); return null; }
         return res.data;
     },
 
@@ -49,16 +49,16 @@ var Requests = {
     },
 
     async selectBid(requestId, bidId, manufacturerName, unitPrice) {
+        var r1 = await window.supabaseClient
+            .from('bids').update({ status: 'selected' }).eq('id', bidId);
+        if (r1.error) throw r1.error;
+
         await window.supabaseClient
-            .from('bids')
-            .update({ status: 'selected' })
-            .eq('id', bidId);
-        await window.supabaseClient
-            .from('bids')
-            .update({ status: 'rejected' })
-            .eq('request_id', requestId)
-            .neq('id', bidId);
+            .from('bids').update({ status: 'rejected' })
+            .eq('request_id', requestId).neq('id', bidId);
+
         var req = await this.update(requestId, { status: 'matched' });
+
         await window.supabaseClient.from('match_history').insert([{
             request_id:    requestId,
             bid_id:        bidId,
@@ -74,16 +74,15 @@ var Requests = {
 
     async getMatchHistory(type, limit) {
         var q = window.supabaseClient
-            .from('match_history')
-            .select('*')
+            .from('match_history').select('*')
             .order('matched_at', { ascending: false })
             .limit(limit || 20);
         if (type) q = q.eq('request_type', type);
         var res = await q;
-        if (res.error) { console.error('getMatchHistory 오류:', res.error); return []; }
+        if (res.error) { console.error(res.error); return []; }
         return res.data || [];
     }
 };
 
 window.Requests = Requests;
-console.log('✅ Requests 모듈 로드 완료');
+console.log('✅ Requests 로드 완료');
