@@ -84,6 +84,11 @@ function updateUILoggedIn() {
     setEl('profileEmail',          email);
     setEl('biz-sidebar-name',      name);
     setEl('personal-sidebar-name', name);
+    // 로그인 후 현재 활성 페이지가 의뢰 페이지면 즉시 로드
+    var bizPage = document.getElementById('page-client-business');
+    var perPage = document.getElementById('page-client-personal');
+    if (bizPage && bizPage.classList.contains('active')) loadBizDashboard();
+    if (perPage && perPage.classList.contains('active')) loadPersonalDashboard();
 }
 
 function updateUILoggedOut() {
@@ -168,6 +173,9 @@ function navigateTo(page) {
         var btns = document.querySelectorAll('#mainNav button');
         if (btns[map[page]]) btns[map[page]].classList.add('active');
     }
+    // 페이지 진입 시 데이터 즉시 로드
+    if (page === 'client-business') loadBizDashboard();
+    if (page === 'client-personal') loadPersonalDashboard();
     window.scrollTo(0,0);
 }
 

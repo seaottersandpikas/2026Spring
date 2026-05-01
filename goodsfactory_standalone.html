@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoodsFactory - 굿즈 제작 및 판매 플랫폼</title>
+    <style>
+/* 기존 HTML의 <style> 내용을 전부 여기에 붙여넣으세요 */
+/* (앞서 제공한 HTML의 CSS와 동일) */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --primary: #6C5CE7; --primary-dark: #5A4BD1; --primary-light: #A29BFE;
+    --secondary: #00CEC9; --accent: #FD79A8; --dark: #2D3436;
+    --gray: #636E72; --light-gray: #B2BEC3; --bg: #F8F9FA;
+    --white: #FFFFFF; --success: #00B894; --warning: #FDCB6E; --danger: #E17055;
+    --shadow: 0 2px 15px rgba(0,0,0,0.08); --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+    --radius: 12px; --radius-sm: 8px;
+}
+/* 아래에 기존 CSS 전체 붙여넣기 */
+ <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #6C5CE7; --primary-dark: #5A4BD1; --primary-light: #A29BFE;
+            --secondary: #00CEC9; --accent: #FD79A8; --dark: #2D3436;
+            --gray: #636E72; --light-gray: #B2BEC3; --bg: #F8F9FA;
+            --white: #FFFFFF; --success: #00B894; --warning: #FDCB6E; --danger: #E17055;
+            --shadow: 0 2px 15px rgba(0,0,0,0.08); --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+            --radius: 12px; --radius-sm: 8px;
+        }
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; overflow-x: hidden; }
+
+        .main-header { background: var(--white); box-shadow: 0 1px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 1000; }
+        .header-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+        .logo { font-size: 24px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .logo span { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links { display: flex; gap: 4px; }
+        .nav-links button { background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 600; color: var(--gray); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; }
+        .nav-links button:hover { color: var(--primary); background: rgba(108, 92, 231, 0.06); }
+        .nav-links button.active { color: var(--primary); background: rgba(108, 92, 231, 0.1); }
+        .nav-user { display: flex; align-items: center; gap: 12px; position: relative; }
+        .nav-user .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
+        .profile-dropdown { position: absolute; top: 50px; right: 0; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 220px; display: none; flex-direction: column; overflow: hidden; z-index: 1001; border: 1px solid #E2E8F0; }
+        .profile-dropdown.show { display: flex; animation: fadeIn 0.2s ease; }
+        .profile-header-info { padding: 16px; border-bottom: 1px solid #E2E8F0; background: var(--bg); }
+        .profile-dropdown-menu { list-style: none; padding: 8px 0; }
+        .profile-dropdown-menu li button { width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; font-size: 14px; color: var(--dark); cursor: pointer; transition: background 0.2s; display: block; }
+        .profile-dropdown-menu li button:hover { background: rgba(108, 92, 231, 0.05); color: var(--primary); }
+
+        .page-container { max-width: 1400px; margin: 0 auto; padding: 24px; min-height: calc(100vh - 64px); }
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .home-hero { text-align: center; padding: 80px 20px 60px; }
+        .home-hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 16px; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .home-hero p { font-size: 18px; color: var(--gray); max-width: 600px; margin: 0 auto 48px; }
+        .role-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1000px; margin: 0 auto; }
+        .role-card { background: var(--white); border-radius: 20px; padding: 40px 32px; text-align: center; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        .role-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary)); transform: scaleX(0); transition: transform 0.3s; }
+        .role-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--primary-light); }
+        .role-card:hover::before { transform: scaleX(1); }
+        .role-card .icon { width: 80px; height: 80px; border-radius: 20px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+        .role-card:nth-child(1) .icon { background: rgba(108, 92, 231, 0.1); }
+        .role-card:nth-child(2) .icon { background: rgba(0, 206, 201, 0.1); }
+        .role-card:nth-child(3) .icon { background: rgba(253, 121, 168, 0.1); }
+        .role-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .role-card p { font-size: 14px; color: var(--gray); }
+        .home-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 1000px; margin: 60px auto 0; }
+        .stat-card { background: var(--white); border-radius: var(--radius); padding: 24px; text-align: center; box-shadow: var(--shadow); }
+        .stat-card .stat-num { font-size: 32px; font-weight: 800; color: var(--primary); }
+        .stat-card .stat-label { font-size: 13px; color: var(--gray); margin-top: 4px; }
+
+        .section-title { font-size: 24px; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
+        .section-title .badge { font-size: 12px; background: var(--primary); color: white; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+        .card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 16px; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-secondary { background: rgba(108, 92, 231, 0.1); color: var(--primary); }
+        .btn-secondary:hover { background: rgba(108, 92, 231, 0.2); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #00a884; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #d35400; }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-outline:hover { background: var(--primary); color: white; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-block { width: 100%; justify-content: center; }
+        .btn-warning { background: var(--warning); color: var(--dark); }
+        .btn-warning:hover { background: #f0c040; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--dark); margin-bottom: 6px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 2px solid #E2E8F0; border-radius: var(--radius-sm); font-size: 14px; transition: border-color 0.2s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-hint { font-size: 12px; color: var(--gray); margin-top: 4px; }
+        .form-error { font-size: 12px; color: var(--danger); margin-top: 4px; display: none; }
+        .form-group.error input, .form-group.error select, .form-group.error textarea { border-color: var(--danger); }
+        .form-group.error .form-error { display: block; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0; }
+        .tab-btn { padding: 12px 20px; background: none; border: none; font-size: 14px; font-weight: 600; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+        .dashboard-layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; }
+        .sidebar { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); height: fit-content; position: sticky; top: 88px; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { margin-bottom: 4px; }
+        .sidebar-menu button { width: 100%; text-align: left; padding: 10px 14px; background: none; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; color: var(--gray); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu button:hover { background: rgba(108, 92, 231, 0.06); color: var(--primary); }
+        .sidebar-menu button.active { background: rgba(108, 92, 231, 0.1); color: var(--primary); font-weight: 600; }
+        .sidebar-menu .menu-badge { margin-left: auto; background: var(--danger); color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
+        .main-content { min-width: 0; }
+
+        .request-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; border-left: 4px solid var(--primary); transition: all 0.2s; }
+        .request-card:hover { box-shadow: var(--shadow-lg); }
+        .request-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .request-card-header h4 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .status-badge { display: inline-flex; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .status-bidding { background: rgba(253, 203, 110, 0.2); color: #E17055; }
+        .status-matched { background: rgba(0, 184, 148, 0.15); color: var(--success); }
+        .status-producing { background: rgba(108, 92, 231, 0.15); color: var(--primary-dark); }
+        .status-shipping { background: rgba(9, 132, 227, 0.15); color: #0984e3; }
+        .status-completed { background: rgba(108, 92, 231, 0.1); color: var(--primary); }
+        .status-recruiting { background: rgba(0, 206, 201, 0.15); color: var(--secondary); }
+        .status-draft { background: rgba(178, 190, 195, 0.2); color: var(--gray); }
+        .status-payment { background: rgba(253, 121, 168, 0.15); color: var(--accent); }
+
+        .request-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .request-meta .meta-item { font-size: 13px; color: var(--gray); display: flex; align-items: center; gap: 4px; }
+        .request-meta .meta-item strong { color: var(--dark); }
+        .request-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+        .bid-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--bg); border-radius: var(--radius-sm); margin-bottom: 8px; transition: all 0.2s; cursor: pointer; }
+        .bid-item:hover { background: rgba(108, 92, 231, 0.04); }
+        .bid-item.top-bid { background: rgba(0, 184, 148, 0.08); border: 1px solid rgba(0, 184, 148, 0.2); }
+        .bid-info { display: flex; align-items: center; gap: 12px; }
+        .bid-rank { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+        .bid-rank.gold { background: #FDCB6E; color: #2D3436; }
+        .bid-rank.silver { background: #B2BEC3; color: white; }
+        .bid-rank.bronze { background: #E17055; color: white; }
+        .bid-price { font-size: 18px; font-weight: 700; color: var(--primary); }
+
+        .progress-bar { height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+        .progress-bar .fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 4px; transition: width 0.5s ease; }
+
+        .co-purchase-info { background: rgba(0, 206, 201, 0.08); border: 1px solid rgba(0, 206, 201, 0.2); border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 12px; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+        .modal { background: var(--white); border-radius: 16px; max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 32px; position: relative; }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--gray); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; }
+        .modal-close:hover { background: var(--bg); }
+        .modal h3 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { padding: 12px 16px; text-align: left; font-size: 13px; }
+        .data-table th { background: var(--bg); font-weight: 600; color: var(--gray); border-bottom: 2px solid #E2E8F0; }
+        .data-table td { border-bottom: 1px solid #E2E8F0; }
+        .data-table tr:hover td { background: rgba(108, 92, 231, 0.02); }
+
+        .estimate-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        .estimate-table th, .estimate-table td { border: 1px solid #E2E8F0; padding: 10px 12px; font-size: 13px; }
+        .estimate-table th { background: var(--bg); font-weight: 600; }
+
+        .filter-select { padding: 8px 12px; border: 2px solid #E2E8F0; border-radius: var(--radius-sm); font-size: 13px; outline: none; cursor: pointer; background: var(--white); }
+        .filter-select:focus { border-color: var(--primary); }
+
+        .matching-card { background: linear-gradient(135deg, rgba(108,92,231,0.05), rgba(0,206,201,0.05)); border: 1px solid rgba(108,92,231,0.15); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .matching-card .match-info { display: flex; align-items: center; gap: 16px; }
+        .matching-card .match-price { font-size: 18px; font-weight: 700; color: var(--success); }
+
+        /* Stepper */
+        .stepper { display: flex; align-items: center; margin-bottom: 32px; }
+        .step { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--light-gray); }
+        .step.active { color: var(--primary); }
+        .step.done { color: var(--success); }
+        .step-circle { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--light-gray); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+        .step.active .step-circle { border-color: var(--primary); background: var(--primary); color: white; }
+        .step.done .step-circle { border-color: var(--success); background: var(--success); color: white; }
+        .step-line { flex: 1; height: 2px; background: #E2E8F0; margin: 0 12px; }
+        .step-line.done { background: var(--success); }
+
+        /* Summary cards */
+        .summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+        .summary-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); text-align: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .summary-card:hover { border-color: var(--primary-light); }
+        .summary-card.active-filter { border-color: var(--primary); background: rgba(108,92,231,0.03); }
+        .summary-card .sum-num { font-size: 28px; font-weight: 800; }
+        .summary-card .sum-label { font-size: 12px; color: var(--gray); margin-top: 4px; }
+
+        /* Timeline */
+        .timeline { position: relative; padding-left: 32px; }
+        .timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: #E2E8F0; }
+        .timeline-item { position: relative; margin-bottom: 20px; }
+        .timeline-dot { position: absolute; left: -32px; top: 2px; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; z-index: 1; }
+        .timeline-dot.done { background: var(--success); }
+        .timeline-dot.current { background: var(--primary); box-shadow: 0 0 0 4px rgba(108,92,231,0.2); }
+        .timeline-dot.pending { background: #E2E8F0; }
+        .timeline-content { background: var(--white); border-radius: var(--radius-sm); padding: 14px 16px; box-shadow: var(--shadow); }
+        .timeline-content h5 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .timeline-content p { font-size: 12px; color: var(--gray); }
+
+        /* Payment card */
+        .payment-summary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+        .payment-summary h4 { font-size: 14px; font-weight: 600; opacity: 0.8; margin-bottom: 4px; }
+        .payment-summary .pay-amount { font-size: 32px; font-weight: 800; }
+        .payment-summary .pay-detail { font-size: 13px; opacity: 0.7; margin-top: 8px; }
+
+        /* Status flow */
+        .status-flow { display: flex; align-items: center; gap: 0; margin: 16px 0; }
+        .sf-item { flex: 1; text-align: center; position: relative; }
+        .sf-dot { width: 28px; height: 28px; border-radius: 50%; background: #E2E8F0; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .sf-item.done .sf-dot { background: var(--success); color: white; }
+        .sf-item.active .sf-dot { background: var(--primary); color: white; box-shadow: 0 0 0 4px rgba(108,92,231,0.2); }
+        .sf-label { font-size: 11px; color: var(--gray); }
+        .sf-item.done .sf-label, .sf-item.active .sf-label { color: var(--dark); font-weight: 600; }
+        .sf-line { width: 100%; height: 2px; background: #E2E8F0; position: absolute; top: 14px; left: 50%; z-index: 0; }
+        .sf-item.done .sf-line { background: var(--success); }
+
+        /* Alert box */
+        .alert { padding: 14px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; }
+        .alert-info { background: rgba(108,92,231,0.08); border: 1px solid rgba(108,92,231,0.2); color: var(--primary-dark); }
+        .alert-warning { background: rgba(253,203,110,0.2); border: 1px solid rgba(253,203,110,0.4); color: #856404; }
+        .alert-success { background: rgba(0,184,148,0.1); border: 1px solid rgba(0,184,148,0.25); color: #155724; }
+
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--dark); color: white; padding: 14px 24px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; z-index: 3000; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .text-muted { color: var(--gray); }
+        .text-primary { color: var(--primary); }
+        .text-success { color: var(--success); }
+        .text-danger { color: var(--danger); }
+        .text-sm { font-size: 13px; }
+        .text-xs { font-size: 11px; }
+        .fw-bold { font-weight: 700; }
+        .mb-8 { margin-bottom: 8px; }
+        .mb-16 { margin-bottom: 16px; }
+        .mb-24 { margin-bottom: 24px; }
+        .mt-8 { margin-top: 8px; }
+        .mt-16 { margin-top: 16px; }
+        .mt-24 { margin-top: 24px; }
+        .ml-8 { margin-left: 8px; }
+        .divider { height: 1px; background: #E2E8F0; margin: 20px 0; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state p { font-size: 14px; margin-bottom: 16px; }
+
+        .pill-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .pill-filter { padding: 6px 14px; border-radius: 20px; border: 1px solid #E2E8F0; background: var(--white); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .pill-filter:hover { border-color: var(--primary); color: var(--primary); }
+        .pill-filter.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+        @media (max-width: 768px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; }
+            .form-row { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: repeat(2,1fr); }
+            .role-cards { grid-template-columns: 1fr; }
+            .home-stats { grid-template-columns: repeat(2,1fr); }
+        }
+    </style>
+</style>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="header-inner">
+        <div class="logo" onclick="navigateTo('home')"><span>🏭 GoodsFactory</span></div>
+        <nav class="nav-links" id="mainNav">
+            <button class="active" onclick="navigateTo('home')">홈</button>
+            <button onclick="navigateTo('client-select')">의뢰자</button>
+            <button onclick="navigateTo('marketplace')">마켓플레이스</button>
+        </nav>
+        <div class="nav-user">
+            <button class="btn btn-sm btn-secondary" onclick="openModal('notificationModal')">🔔</button>
+            <button class="btn btn-sm btn-primary" id="loginNavBtn" onclick="openModal('loginModal')">로그인</button>
+            <div class="user-avatar" onclick="toggleUserMenu(event)" id="userAvatar" style="display:none">U</div>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="profile-header-info">
+                    <strong id="profileName" style="display:block;color:var(--primary);font-size:15px;">사용자</strong>
+                    <span id="profileEmail" class="text-xs text-muted"></span>
+                </div>
+                <ul class="profile-dropdown-menu">
+                    <li><button onclick="navigateTo('client-personal');closeDropdown()">나의 의뢰 관리</button></li>
+                    <li><button onclick="closeDropdown()">계정 설정</button></li>
+                    <li style="border-top:1px solid #E2E8F0;margin-top:4px;padding-top:4px;">
+                        <button style="color:var(--danger)" onclick="handleLogout()">로그아웃</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="page-container">
+
+    <!-- HOME -->
+    <section id="page-home" class="page-section active">
+        <div class="home-hero">
+            <h1>당신의 아이디어를 현실로</h1>
+            <p>굿즈 제작부터 판매까지, 생산자와 의뢰자를 연결하는 스마트 플랫폼</p>
+            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;margin:0 auto 40px;">
+                <div class="role-card" onclick="navigateTo('client-select')">
+                    <div class="icon" style="background:rgba(0,206,201,0.1)">📋</div>
+                    <h3>의뢰자 (Client)</h3>
+                    <p>사업자 또는 개인으로서<br>원하는 굿즈를 의뢰하세요</p>
+                </div>
+                <div class="role-card" onclick="navigateTo('marketplace')">
+                    <div class="icon" style="background:rgba(253,121,168,0.1)">🛒</div>
+                    <h3>마켓플레이스</h3>
+                    <p>다양한 굿즈를 구매하고<br>공동구매에 참여하세요</p>
+                </div>
+            </div>
+            <div class="home-stats">
+                <div class="stat-card"><div class="stat-num">2,847</div><div class="stat-label">등록 생산자</div></div>
+                <div class="stat-card"><div class="stat-num">15,234</div><div class="stat-label">완료된 의뢰</div></div>
+                <div class="stat-card"><div class="stat-num">8,912</div><div class="stat-label">활성 의뢰자</div></div>
+                <div class="stat-card"><div class="stat-num">&#8361;3.2B</div><div class="stat-label">총 거래액</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLIENT SELECT -->
+    <section id="page-client-select" class="page-section">
+        <div class="home-hero" style="padding-top:40px">
+            <h1 style="font-size:36px">의뢰자 유형 선택</h1>
+            <p>사업자 또는 개인으로 의뢰하세요</p>
+            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;margin:0 auto;">
+                <div class="role-card" onclick="navigateTo('client-business')">
+                    <div class="icon" style="background:rgba(0,206,201,0.1)">🏢</div>
+                    <h3>사업자 의뢰</h3>
+                    <p>대량 생산 의뢰<br>Mass Production</p>
+                </div>
+                <div class="role-card" onclick="navigateTo('client-personal')">
+                    <div class="icon" style="background:rgba(253,121,168,0.1)">👤</div>
+                    <h3>개인 의뢰</h3>
+                    <p>개별 또는 공동구매<br>Individual / Group Order</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLIENT BUSINESS -->
+    <section id="page-client-business" class="page-section">
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <div style="padding:12px 14px;margin-bottom:8px">
+                    <span class="text-xs text-muted">사업자 의뢰자</span>
+                    <h4 id="biz-sidebar-name">사용자</h4>
+                </div>
+                <ul class="sidebar-menu">
+                    <li><button class="active" onclick="showBizTab('dashboard',this)">📊 대시보드</button></li>
+                    <li><button onclick="showBizTab('create',this)">➕ 의뢰 생성</button></li>
+                    <li><button onclick="showBizTab('manage',this)">📁 내 의뢰 관리</button></li>
+                    <li><button onclick="showBizTab('recent-match',this)">✅ 최근 매칭 조회</button></li>
+                    <li><button onclick="showBizTab('payments',this)">💳 결제/정산</button></li>
+                </ul>
+            </aside>
+            <div class="main-content">
+
+                <!-- 대시보드 -->
+                <div id="biz-dashboard" class="tab-content active">
+                    <h2 class="section-title">📊 대시보드</h2>
+                    <div class="summary-grid" id="biz-summary-grid">
+                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('all',null)">
+                            <div class="sum-num" style="color:var(--primary)" id="biz-count-all">-</div>
+                            <div class="sum-label">전체 의뢰</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('bidding',null)">
+                            <div class="sum-num" style="color:var(--warning)" id="biz-count-bidding">-</div>
+                            <div class="sum-label">입찰 진행중</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('producing',null)">
+                            <div class="sum-num" style="color:var(--secondary)" id="biz-count-producing">-</div>
+                            <div class="sum-label">제작 진행중</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null);filterBizStatus('completed',null)">
+                            <div class="sum-num" style="color:var(--success)" id="biz-count-completed">-</div>
+                            <div class="sum-label">완료</div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info" id="biz-dashboard-alert">
+                        <span>💡</span>
+                        <div>의뢰를 생성하면 생산자들이 입찰을 시작합니다.<br>
+                        <a href="#" onclick="showBizTab('create',null);return false;" style="color:var(--primary)">첫 의뢰 만들기 →</a></div>
+                    </div>
+                </div>
+
+                <!-- 의뢰 생성 -->
+                <div id="biz-create" class="tab-content">
+                    <h2 class="section-title">➕ 새 의뢰 생성 <span class="badge">사업자</span></h2>
+                    <div class="stepper" id="bizStepper">
+                        <div class="step active" data-step="1"><div class="step-circle">1</div><span>기본 정보</span></div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="2"><div class="step-circle">2</div><span>디자인/상세</span></div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="3"><div class="step-circle">3</div><span>확인/등록</span></div>
+                    </div>
+                    <div id="biz-step-1" class="card">
+                        <h4 class="mb-16">📝 기본 정보</h4>
+                        <div class="form-group" id="fg-biz-title">
+                            <label>아이템 명칭 *</label>
+                            <input type="text" placeholder="예: 아크릴 키링" id="biz-title">
+                            <div class="form-error">아이템 명칭을 입력해주세요.</div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" id="fg-biz-category">
+                                <label>카테고리 *</label>
+                                <select id="biz-category">
+                                    <option value="">선택하세요</option>
+                                    <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                                    <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
+                                    <option>생활용품</option><option>기타</option>
+                                </select>
+                                <div class="form-error">카테고리를 선택해주세요.</div>
+                            </div>
+                            <div class="form-group" id="fg-biz-qty">
+                                <label>희망 수량 *</label>
+                                <input type="number" placeholder="예: 1000" id="biz-qty">
+                                <div class="form-error">수량을 입력해주세요.</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" id="fg-biz-price">
+                                <label>희망 단가 (원) *</label>
+                                <input type="number" placeholder="예: 2500" id="biz-price">
+                                <div class="form-hint" id="biz-price-hint">카테고리를 선택하면 시장 평균가가 표시됩니다</div>
+                                <div class="form-error">희망 단가를 입력해주세요.</div>
+                            </div>
+                            <div class="form-group" id="fg-biz-deadline">
+                                <label>입찰 마감일 *</label>
+                                <input type="date" id="biz-deadline">
+                                <div class="form-error">마감일을 선택해주세요.</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+                            <button class="btn btn-primary" onclick="bizStepNext(1)">다음 단계 →</button>
+                        </div>
+                    </div>
+                    <div id="biz-step-2" class="card" style="display:none">
+                        <h4 class="mb-16">🎨 디자인 및 상세 요청</h4>
+                        <div class="form-group">
+                            <label>디자인 가이드라인</label>
+                            <textarea placeholder="디자인 관련 요구사항을 상세히 적어주세요." id="biz-design-guide"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>디자인 파일 첨부</label>
+                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:32px;text-align:center;cursor:pointer;"
+                                onclick="document.getElementById('biz-file-input').click()"
+                                onmouseover="this.style.borderColor='var(--primary)'"
+                                onmouseout="this.style.borderColor='#E2E8F0'">
+                                <div style="font-size:32px;margin-bottom:8px">📁</div>
+                                <p class="text-sm text-muted">클릭하여 파일 선택</p>
+                                <p class="text-xs text-muted">AI, PSD, PNG, PDF (최대 50MB)</p>
+                                <input type="file" multiple id="biz-file-input" style="display:none"
+                                    onchange="showUploadedFiles(this,'biz-file-list')">
+                            </div>
+                            <div id="biz-file-list" class="mt-8"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>상세 요청 사항</label>
+                            <textarea placeholder="납품 일정, 포장 방식 등 추가 요청사항을 적어주세요." id="biz-detail-note"></textarea>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+                            <button class="btn btn-secondary" onclick="bizStepBack(2)">← 이전</button>
+                            <button class="btn btn-primary" onclick="bizStepNext(2)">다음 단계 →</button>
+                        </div>
+                    </div>
+                    <div id="biz-step-3" class="card" style="display:none">
+                        <h4 class="mb-16">✅ 의뢰 내용 확인</h4>
+                        <div class="alert alert-info"><span>ℹ️</span><span>등록 전 내용을 한 번 더 확인해주세요.</span></div>
+                        <table class="data-table">
+                            <tr><td style="width:140px;font-weight:600">아이템명</td><td id="confirm-title">-</td></tr>
+                            <tr><td style="font-weight:600">카테고리</td><td id="confirm-category">-</td></tr>
+                            <tr><td style="font-weight:600">희망 수량</td><td id="confirm-qty">-</td></tr>
+                            <tr><td style="font-weight:600">희망 단가</td><td id="confirm-price">-</td></tr>
+                            <tr><td style="font-weight:600">입찰 마감일</td><td id="confirm-deadline">-</td></tr>
+                            <tr><td style="font-weight:600">예상 총액</td><td id="confirm-total" class="text-primary fw-bold">-</td></tr>
+                            <tr><td style="font-weight:600">디자인 가이드</td><td id="confirm-guide">-</td></tr>
+                            <tr><td style="font-weight:600">상세 요청</td><td id="confirm-note">-</td></tr>
+                            <tr><td style="font-weight:600">첨부파일</td><td id="confirm-files">-</td></tr>
+                        </table>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+                            <button class="btn btn-secondary" onclick="bizStepBack(3)">← 수정하기</button>
+                            <button class="btn btn-primary" id="biz-submit-btn" onclick="submitBizRequest()">🚀 의뢰 등록</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 내 의뢰 관리 -->
+                <div id="biz-manage" class="tab-content">
+                    <div class="flex-between mb-16">
+                        <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showBizTab('create',null)">➕ 새 의뢰</button>
+                    </div>
+                    <div class="pill-filters" id="biz-status-pills">
+                        <button class="pill-filter active" onclick="filterBizStatus('all',this)">전체</button>
+                        <button class="pill-filter" onclick="filterBizStatus('bidding',this)">입찰중</button>
+                        <button class="pill-filter" onclick="filterBizStatus('matched',this)">매칭완료</button>
+                        <button class="pill-filter" onclick="filterBizStatus('producing',this)">제작중</button>
+                        <button class="pill-filter" onclick="filterBizStatus('completed',this)">완료</button>
+                        <button class="pill-filter" onclick="filterBizStatus('cancelled',this)">취소됨</button>
+                    </div>
+                    <div id="biz-manage-list">
+                        <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
+                    </div>
+                </div>
+
+                <!-- 최근 매칭 -->
+                <div id="biz-recent-match" class="tab-content">
+                    <h2 class="section-title">✅ 최근 매칭 조회</h2>
+                    <p class="text-sm text-muted mb-16">다른 의뢰자들의 매칭 가격을 참고하세요.</p>
+                    <table class="data-table">
+                        <thead><tr><th>아이템</th><th>카테고리</th><th>수량</th><th>희망단가</th><th>매칭단가</th><th>절감율</th><th>매칭일</th></tr></thead>
+                        <tbody id="biz-match-tbody"><tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">로딩 중...</td></tr></tbody>
+                    </table>
+                </div>
+
+                <!-- 결제/정산 -->
+                <div id="biz-payments" class="tab-content">
+                    <h2 class="section-title">💳 결제 / 정산 내역</h2>
+                    <div class="empty-state"><div class="empty-icon">💳</div><p>결제 내역이 없습니다.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLIENT PERSONAL -->
+    <section id="page-client-personal" class="page-section">
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <div style="padding:12px 14px;margin-bottom:8px">
+                    <span class="text-xs text-muted">개인 의뢰자</span>
+                    <h4 id="personal-sidebar-name">사용자</h4>
+                </div>
+                <ul class="sidebar-menu">
+                    <li><button class="active" onclick="showPersonalTab('dashboard',this)">📊 대시보드</button></li>
+                    <li><button onclick="showPersonalTab('individual',this)">🎯 개인 의뢰</button></li>
+                    <li><button onclick="showPersonalTab('group',this)">👥 공동제작 의뢰</button></li>
+                    <li><button onclick="showPersonalTab('myorders',this)">📁 내 의뢰 관리</button></li>
+                    <li><button onclick="showPersonalTab('recent-match',this)">✅ 최근 매칭 조회</button></li>
+                    <li><button onclick="showPersonalTab('payments',this)">💳 결제/정산</button></li>
+                </ul>
+            </aside>
+            <div class="main-content">
+
+                <!-- 대시보드 -->
+                <div id="personal-dashboard" class="tab-content active">
+                    <h2 class="section-title">📊 대시보드</h2>
+                    <div class="summary-grid">
+                        <div class="summary-card" onclick="showPersonalTab('myorders',null)">
+                            <div class="sum-num" style="color:var(--primary)" id="per-count-all">-</div>
+                            <div class="sum-label">전체 의뢰</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--warning)" id="per-count-bidding">-</div>
+                            <div class="sum-label">입찰 진행중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--secondary)" id="per-count-group">-</div>
+                            <div class="sum-label">공동구매 모집중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--success)" id="per-count-completed">-</div>
+                            <div class="sum-label">완료</div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <span>💡</span>
+                        <div>개인 의뢰 또는 공동제작 의뢰를 시작해보세요!<br>
+                        <a href="#" onclick="showPersonalTab('individual',null);return false;" style="color:var(--primary)">개인 의뢰 만들기 →</a></div>
+                    </div>
+                </div>
+
+                <!-- 개인 의뢰 생성 -->
+                <div id="personal-individual" class="tab-content">
+                    <h2 class="section-title">🎯 개인 의뢰 생성</h2>
+                    <div class="card">
+                        <div class="form-group">
+                            <label>의뢰 방식 *</label>
+                            <div style="display:flex;gap:16px;flex-wrap:wrap">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid var(--primary);border-radius:8px;transition:all 0.2s" id="radio-bidding">
+                                    <input type="radio" name="request-type" value="bidding" checked onchange="toggleDirectMfg(this)">
+                                    <div><strong>입찰(Bidding)</strong><br><span class="text-xs text-muted">생산자들의 견적을 비교</span></div>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;transition:all 0.2s" id="radio-direct">
+                                    <input type="radio" name="request-type" value="direct" onchange="toggleDirectMfg(this)">
+                                    <div><strong>직접 의뢰</strong><br><span class="text-xs text-muted">특정 생산자에게 직접 요청</span></div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="directMfgField" style="display:none">
+                            <label>생산자 ID *</label>
+                            <input type="text" id="directMfgId" placeholder="예: MFG-20240001">
+                            <div class="form-hint">마켓플레이스에서 생산자 ID를 확인하세요.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>아이템 명칭 *</label>
+                            <input type="text" placeholder="예: 아크릴 키링" id="personalItemName">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>카테고리 *</label>
+                                <select id="personalCategory">
+                                    <option value="">선택하세요</option>
+                                    <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                                    <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
+                                    <option>생활용품</option><option>기타</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>희망 수량 *</label>
+                                <input type="number" placeholder="예: 30" id="personalQty">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>희망 단가 (원) *</label>
+                                <input type="number" placeholder="예: 3000" id="personalPrice">
+                            </div>
+                            <div class="form-group">
+                                <label>입찰 마감일</label>
+                                <input type="date" id="personalDeadline">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>디자인 가이드라인</label>
+                            <textarea placeholder="디자인 요구사항을 상세히 적어주세요." id="personalDesignGuide"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>디자인 파일 첨부</label>
+                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:24px;text-align:center;cursor:pointer;"
+                                onclick="document.getElementById('personal-file-input').click()">
+                                <div style="font-size:24px;margin-bottom:6px">📁</div>
+                                <p class="text-xs text-muted">파일을 선택하세요</p>
+                                <input type="file" multiple id="personal-file-input" style="display:none"
+                                    onchange="showUploadedFiles(this,'personal-file-list')">
+                            </div>
+                            <div id="personal-file-list" class="mt-8"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>상세 요청 사항</label>
+                            <textarea placeholder="추가 요청사항을 적어주세요." id="personalDetailNote"></textarea>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+                            <button class="btn btn-primary" onclick="submitPersonalRequest()">🚀 의뢰 등록</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 공동제작 의뢰 -->
+                <div id="personal-group" class="tab-content">
+                    <h2 class="section-title">👥 공동제작 의뢰 생성</h2>
+                    <div class="alert alert-info"><span>💡</span><div>최소 수량이 채워진 후에만 생산자에게 입찰이 요청됩니다.</div></div>
+                    <div class="card">
+                        <div class="form-group">
+                            <label>의뢰 방식 *</label>
+                            <div style="display:flex;gap:16px;flex-wrap:wrap">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
+                                    <input type="radio" name="group-type" value="bidding" checked onchange="toggleGroupDirectMfg(this)"> <strong>입찰 방식</strong>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
+                                    <input type="radio" name="group-type" value="direct" onchange="toggleGroupDirectMfg(this)"> <strong>직접 의뢰</strong>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="groupDirectMfgField" style="display:none">
+                            <label>생산자 ID *</label>
+                            <input type="text" id="group-direct-id" placeholder="생산자의 고유 ID">
+                        </div>
+                        <div class="form-group"><label>아이템 명칭 *</label><input type="text" id="group-title" placeholder="예: 아크릴 키링 공동구매"></div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>카테고리 *</label>
+                                <select id="group-category">
+                                    <option value="">선택하세요</option>
+                                    <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                                    <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
+                                    <option>생활용품</option><option>기타</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>총 목표 수량 *</label><input type="number" id="group-total-qty" placeholder="예: 200"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>최소 모집 수량 *</label>
+                                <input type="number" id="group-min-qty" placeholder="예: 100">
+                                <div class="form-hint">이 수량이 채워져야 진행됩니다.</div>
+                            </div>
+                            <div class="form-group"><label>희망 단가 (원) *</label><input type="number" id="group-price" placeholder="예: 2000"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>모집 마감일 *</label><input type="date" id="group-recruit-deadline"></div>
+                            <div class="form-group"><label>입찰 마감일</label><input type="date" id="group-bid-deadline"></div>
+                        </div>
+                        <div class="form-group"><label>디자인 가이드라인</label><textarea id="group-design-guide" placeholder="디자인 요구사항을 적어주세요."></textarea></div>
+                        <div class="form-group"><label>상세 설명</label><textarea id="group-detail-note" placeholder="옵션, 사이즈, 색상 등 상세 계획을 적어주세요."></textarea></div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+                            <button class="btn btn-primary" onclick="submitGroupRequest()">🚀 공동구매 등록</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 내 의뢰 관리 -->
+                <div id="personal-myorders" class="tab-content">
+                    <div class="flex-between mb-16">
+                        <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
+                        <button class="btn btn-primary btn-sm" onclick="showPersonalTab('individual',null)">➕ 새 의뢰</button>
+                    </div>
+                    <div class="pill-filters" id="personal-status-pills">
+                        <button class="pill-filter active" onclick="filterPersonalStatus('all',this)">전체</button>
+                        <button class="pill-filter" onclick="filterPersonalStatus('bidding',this)">입찰중</button>
+                        <button class="pill-filter" onclick="filterPersonalStatus('group',this)">공동구매</button>
+                        <button class="pill-filter" onclick="filterPersonalStatus('completed',this)">완료</button>
+                        <button class="pill-filter" onclick="filterPersonalStatus('cancelled',this)">취소됨</button>
+                    </div>
+                    <div id="personal-myorders-list">
+                        <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
+                    </div>
+                </div>
+
+                <!-- 최근 매칭 -->
+                <div id="personal-recent-match" class="tab-content">
+                    <h2 class="section-title">✅ 최근 매칭 조회</h2>
+                    <p class="text-sm text-muted mb-16">다른 개인 의뢰자들의 매칭 가격을 참고하세요.</p>
+                    <table class="data-table">
+                        <thead><tr><th>아이템</th><th>수량</th><th>희망단가</th><th>매칭단가</th><th>유형</th><th>매칭일</th></tr></thead>
+                        <tbody id="personal-match-tbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">로딩 중...</td></tr></tbody>
+                    </table>
+                </div>
+
+                <!-- 결제/정산 -->
+                <div id="personal-payments" class="tab-content">
+                    <h2 class="section-title">💳 결제 / 정산 내역</h2>
+                    <div class="empty-state"><div class="empty-icon">💳</div><p>결제 내역이 없습니다.</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MARKETPLACE -->
+    <section id="page-marketplace" class="page-section">
+        <div class="empty-state">
+            <div class="empty-icon">🛒</div>
+            <p>마켓플레이스는 추후 구현됩니다.</p>
+            <button class="btn btn-primary" onclick="navigateTo('client-select')">의뢰하러 가기</button>
+        </div>
+    </section>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- 로그인 -->
+<div class="modal-overlay" id="loginModal">
+    <div class="modal" style="max-width:440px">
+        <button class="modal-close" onclick="closeModal('loginModal')">×</button>
+        <h3>🔐 로그인</h3>
+        <div class="form-group">
+            <label>이메일</label>
+            <input type="email" id="loginEmail" placeholder="이메일 주소" onkeydown="if(event.key==='Enter')handleLogin()">
+        </div>
+        <div class="form-group">
+            <label>비밀번호</label>
+            <input type="password" id="loginPassword" placeholder="비밀번호" onkeydown="if(event.key==='Enter')handleLogin()">
+        </div>
+        <button class="btn btn-primary btn-block" id="loginSubmitBtn" onclick="handleLogin()">로그인</button>
+        <div class="divider"></div>
+        <p class="text-sm text-muted" style="text-align:center">
+            계정이 없으신가요?
+            <a href="#" onclick="closeModal('loginModal');openModal('signupModal');return false;" style="color:var(--primary)">회원가입</a>
+        </p>
+    </div>
+</div>
+
+<!-- 회원가입 -->
+<div class="modal-overlay" id="signupModal">
+    <div class="modal" style="max-width:440px">
+        <button class="modal-close" onclick="closeModal('signupModal')">×</button>
+        <h3>✨ 회원가입</h3>
+        <div class="form-group">
+            <label>이메일 *</label>
+            <input type="email" id="signupEmail" placeholder="이메일 주소">
+        </div>
+        <div class="form-group">
+            <label>비밀번호 * (6자 이상)</label>
+            <input type="password" id="signupPassword" placeholder="비밀번호">
+        </div>
+        <div class="form-group">
+            <label>닉네임 *</label>
+            <input type="text" id="signupNickname" placeholder="사용하실 닉네임">
+        </div>
+        <div class="form-group">
+            <label>회원 유형 *</label>
+            <select id="signupUserType">
+                <option value="">선택하세요</option>
+                <option value="personal">개인 의뢰자</option>
+                <option value="business">사업자 의뢰자</option>
+                <option value="manufacturer">생산자</option>
+            </select>
+        </div>
+        <button class="btn btn-primary btn-block" id="signupSubmitBtn" onclick="handleSignUp()">회원가입</button>
+        <div class="divider"></div>
+        <p class="text-sm text-muted" style="text-align:center">
+            이미 계정이 있으신가요?
+            <a href="#" onclick="closeModal('signupModal');openModal('loginModal');return false;" style="color:var(--primary)">로그인</a>
+        </p>
+    </div>
+</div>
+
+<!-- 의뢰 상세 보기 모달 -->
+<div class="modal-overlay" id="requestDetailModal">
+    <div class="modal" style="max-width:640px">
+        <button class="modal-close" onclick="closeModal('requestDetailModal')">×</button>
+        <h3 id="detail-modal-title">📋 의뢰 상세</h3>
+        <div id="detail-modal-body">로딩 중...</div>
+    </div>
+</div>
+
+<!-- 매칭 확정 -->
+<div class="modal-overlay" id="matchConfirmModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('matchConfirmModal')">×</button>
+        <h3>✅ 매칭 확정</h3>
+        <div class="alert alert-warning"><span>⚠️</span><span>매칭을 확정하면 취소가 어렵습니다.</span></div>
+        <div class="payment-summary">
+            <h4>최종 결제 예정 금액</h4>
+            <div class="pay-amount" id="matchPayAmount">계산 중...</div>
+            <div class="pay-detail" id="matchPayDetail"></div>
+        </div>
+        <div class="form-group">
+            <label>결제 방법 *</label>
+            <select id="matchPayMethod">
+                <option>신용카드</option><option>계좌이체</option><option>카카오페이</option><option>토스페이</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('matchConfirmModal')">취소</button>
+            <button class="btn btn-success" id="matchConfirmBtn" onclick="executeSelectBid()">💳 결제 및 매칭 확정</button>
+        </div>
+    </div>
+</div>
+
+<!-- 후기 작성 -->
+<div class="modal-overlay" id="writeReviewModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('writeReviewModal')">×</button>
+        <h3>✍️ 후기 작성</h3>
+        <div class="form-group">
+            <label>만족도</label>
+            <div style="display:flex;gap:8px;font-size:28px;cursor:pointer" id="starRating">
+                <span onclick="setRating(1)">⭐</span><span onclick="setRating(2)">⭐</span>
+                <span onclick="setRating(3)">⭐</span><span onclick="setRating(4)">⭐</span>
+                <span onclick="setRating(5)" style="opacity:0.3">⭐</span>
+            </div>
+        </div>
+        <div class="form-group"><label>후기 내용</label><textarea placeholder="품질, 소통, 납기 등에 대한 후기를 남겨주세요."></textarea></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('writeReviewModal')">취소</button>
+            <button class="btn btn-primary" onclick="closeModal('writeReviewModal');showToast('후기가 등록되었습니다!','success')">등록</button>
+        </div>
+    </div>
+</div>
+
+<!-- 공동구매 추천 팝업 -->
+<div class="modal-overlay" id="coPurchasePopup">
+    <div class="modal" style="max-width:480px">
+        <button class="modal-close" onclick="closeModal('coPurchasePopup')">×</button>
+        <h3>💡 공동구매를 추천합니다!</h3>
+        <div id="coPurchaseReason" style="background:rgba(253,203,110,0.15);border:1px solid rgba(253,203,110,0.3);border-radius:8px;padding:14px;margin-bottom:16px"></div>
+        <p class="text-sm mb-16">공동구매로 진행하면 단가를 낮출 수 있습니다.</p>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('coPurchasePopup');doSubmitPersonalRequest()">개인 의뢰 유지</button>
+            <button class="btn btn-primary" onclick="closeModal('coPurchasePopup');showPersonalTab('group',null)">공동구매로 전환 →</button>
+        </div>
+    </div>
+</div>
+
+<!-- 알림 -->
+<div class="modal-overlay" id="notificationModal">
+    <div class="modal" style="max-width:480px">
+        <button class="modal-close" onclick="closeModal('notificationModal')">×</button>
+        <h3>🔔 알림</h3>
+        <div style="padding:20px 0;text-align:center;color:var(--gray)"><p>새로운 알림이 없습니다.</p></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===== 스크립트: 이 순서 절대 변경 금지 ===== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+    if (window._sbInitialized) return;
+    window._sbInitialized = true;
+
+    var SUPABASE_URL      = 'https://gdfhomgmwthtttnkgoko.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkZmhvbWdtd3RodHR0bmtnb2tvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MTkyODMsImV4cCI6MjA5MjQ5NTI4M30.hrpMBj3Ev3r78imzFn7T2I4_9RFEV7NJKHNbec_cT_Y';
+
+    window.supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        {
+            auth: {
+                storageKey:         'gf-auth-v1',
+                autoRefreshToken:   true,
+                persistSession:     true,
+                detectSessionInUrl: false,
+                flowType:           'implicit'
+            }
+        }
+    );
+    console.log('✅ Supabase 초기화 완료');
+})();
+
+</script>
+<script>
+function getSupabase() {
+    if (!window.supabaseClient) throw new Error('Supabase 미초기화');
+    return window.supabaseClient;
+}
+
+var Auth = {
+    async getUser() {
+        try {
+            var res = await getSupabase().auth.getUser();
+            return res.data.user || null;
+        } catch(e) { return null; }
+    },
+
+    async getProfile() {
+        try {
+            var user = await this.getUser();
+            if (!user) return null;
+            var res = await getSupabase()
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            return res.data || null;
+        } catch(e) { return null; }
+    },
+
+    async signUp(email, password, nickname, userType) {
+        var res = await getSupabase().auth.signUp({
+            email, password,
+            options: { data: { nickname, user_type: userType } }
+        });
+        if (res.error) throw res.error;
+        if (res.data.user) {
+            await getSupabase().from('profiles').upsert({
+                id: res.data.user.id,
+                email, nickname, user_type: userType
+            });
+        }
+        return res.data;
+    },
+
+    async signIn(email, password) {
+        // 기존 세션 완전히 정리 후 로그인
+        try { await getSupabase().auth.signOut({ scope: 'local' }); } catch(e) {}
+        var res = await getSupabase().auth.signInWithPassword({ email, password });
+        if (res.error) throw res.error;
+        return res.data;
+    },
+
+    async signOut() {
+        try {
+            await getSupabase().auth.signOut({ scope: 'local' });
+        } catch(e) {
+            console.warn('signOut 경고 (무시):', e.message);
+        }
+    },
+
+    onAuthStateChange(callback) {
+        return getSupabase().auth.onAuthStateChange(callback);
+    }
+};
+
+window.Auth = Auth;
+console.log('✅ Auth 로드 완료');
+
+</script>
+<script>
+var Requests = {
+    async create(data) {
+        var user = await Auth.getUser();
+        if (!user) throw new Error('로그인이 필요합니다.');
+        var res = await window.supabaseClient
+            .from('requests')
+            .insert([Object.assign({}, data, { user_id: user.id })])
+            .select()
+            .single();
+        if (res.error) throw res.error;
+        return res.data;
+    },
+
+    async getMyRequests() {
+        var user = await Auth.getUser();
+        if (!user) return [];
+        var res = await window.supabaseClient
+            .from('requests')
+            .select('*, bids(*)')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+        if (res.error) { console.error(res.error); return []; }
+        return res.data || [];
+    },
+
+    async getById(id) {
+        var res = await window.supabaseClient
+            .from('requests')
+            .select('*, bids(*), request_files(*)')
+            .eq('id', id)
+            .single();
+        if (res.error) { console.error(res.error); return null; }
+        return res.data;
+    },
+
+    async update(id, data) {
+        var res = await window.supabaseClient
+            .from('requests')
+            .update(Object.assign({}, data, { updated_at: new Date().toISOString() }))
+            .eq('id', id)
+            .select()
+            .single();
+        if (res.error) throw res.error;
+        return res.data;
+    },
+
+    async cancel(id) {
+        return this.update(id, { status: 'cancelled' });
+    },
+
+    async selectBid(requestId, bidId, manufacturerName, unitPrice) {
+        var r1 = await window.supabaseClient
+            .from('bids').update({ status: 'selected' }).eq('id', bidId);
+        if (r1.error) throw r1.error;
+
+        await window.supabaseClient
+            .from('bids').update({ status: 'rejected' })
+            .eq('request_id', requestId).neq('id', bidId);
+
+        var req = await this.update(requestId, { status: 'matched' });
+
+        await window.supabaseClient.from('match_history').insert([{
+            request_id:    requestId,
+            bid_id:        bidId,
+            category:      req.category,
+            title:         req.title,
+            quantity:      req.quantity,
+            target_price:  req.target_price,
+            matched_price: unitPrice,
+            request_type:  req.request_type
+        }]);
+        return req;
+    },
+
+    async getMatchHistory(type, limit) {
+        var q = window.supabaseClient
+            .from('match_history').select('*')
+            .order('matched_at', { ascending: false })
+            .limit(limit || 20);
+        if (type) q = q.eq('request_type', type);
+        var res = await q;
+        if (res.error) { console.error(res.error); return []; }
+        return res.data || [];
+    }
+};
+
+window.Requests = Requests;
+console.log('✅ Requests 로드 완료');
+
+</script>
+<script>
+// =====================================================
+// 더미 입찰 자동 생성 모듈 (DB 기반)
+// =====================================================
+
+var DummyBids = {
+
+    // DB에서 카테고리에 맞는 생산자 조회
+    async getManufacturersByCategory(category) {
+        var res = await window.supabaseClient
+            .from('manufacturers')
+            .select('*')
+            .contains('categories', [category])
+            .eq('is_active', true)
+            .order('rating', { ascending: false });
+
+        if (res.error) {
+            console.error('생산자 조회 오류:', res.error);
+            return [];
+        }
+        return res.data || [];
+    },
+
+    // 이름으로 생산자 정보 조회 (캐시 활용)
+    _cache: {},
+    async getMakerByName(name) {
+        if (this._cache[name]) return this._cache[name];
+        var res = await window.supabaseClient
+            .from('manufacturers')
+            .select('*')
+            .eq('name', name)
+            .single();
+        if (res.data) this._cache[name] = res.data;
+        return res.data || { name: name, specialty: '종합 굿즈', rating: 4.5, completed_count: 0 };
+    },
+
+    randInt: function(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    },
+
+    // 단가 계산 (100원 단위 반올림)
+    calcPrice: function(targetPrice, ratio) {
+        return Math.round(targetPrice * ratio / 100) * 100;
+    },
+
+    // 의뢰에 더미 입찰 생성
+    async generateBids(requestId, category, targetPrice, quantity) {
+        // 해당 카테고리 생산자 조회
+        var makers = await this.getManufacturersByCategory(category);
+
+        if (makers.length === 0) {
+            // 카테고리 매칭 없으면 전체에서 랜덤
+            var fallback = await window.supabaseClient
+                .from('manufacturers')
+                .select('*')
+                .eq('is_active', true)
+                .limit(5);
+            makers = fallback.data || [];
+        }
+
+        if (makers.length === 0) {
+            console.warn('생산자 데이터 없음');
+            return [];
+        }
+
+        // 3~5개 랜덤 선택
+        var count   = this.randInt(3, Math.min(5, makers.length));
+        var shuffled = makers.slice().sort(function(){ return Math.random() - 0.5; });
+        var selected = shuffled.slice(0, count);
+
+        // 가격 배열 생성 (낮은 순 정렬)
+        var prices = selected.map(function(maker) {
+            var ratio = maker.price_ratio_min +
+                Math.random() * (maker.price_ratio_max - maker.price_ratio_min);
+            return DummyBids.calcPrice(targetPrice, ratio);
+        });
+        prices.sort(function(a, b){ return a - b; });
+
+        // 가격 중복 방지 (최소 100원 차이)
+        for (var j = 1; j < prices.length; j++) {
+            if (prices[j] <= prices[j-1]) prices[j] = prices[j-1] + 100;
+        }
+
+        // 가격 낮은 순으로 생산자 배정
+        selected.sort(function(a, b){ return b.rating - a.rating; });
+
+        var noteTemplates = [
+            '샘플 1개 무료 제공, 고품질 보장',
+            '빠른 납기 가능, 품질 검수 철저',
+            '대량 추가 할인 가능, 재구매 시 우대',
+            '디자인 수정 1회 무료, 납품 후 AS 보장',
+            '친환경 소재 사용 가능, 개별 포장 포함'
+        ];
+
+        var bidsToInsert = selected.map(function(maker, i) {
+            return {
+                request_id:              requestId,
+                manufacturer_id:         null,
+                manufacturer_name:       maker.name,
+                manufacturer_rating:     maker.rating,
+                manufacturer_specialty:  maker.specialty,
+                manufacturer_completed:  maker.completed_count,
+                unit_price:              prices[i],
+                total_price:             prices[i] * quantity,
+                delivery_days:           DummyBids.randInt(maker.delivery_min, maker.delivery_max),
+                note:                    maker.note_template || noteTemplates[i % noteTemplates.length],
+                status:                  'pending'
+            };
+        });
+
+        var res = await window.supabaseClient
+            .from('bids')
+            .insert(bidsToInsert)
+            .select();
+
+        if (res.error) {
+            console.error('더미 입찰 생성 오류:', res.error);
+            throw res.error;
+        }
+
+        console.log('✅ 더미 입찰 ' + res.data.length + '건 생성 완료 (카테고리: ' + category + ')');
+        return res.data;
+    }
+};
+
+window.DummyBids = DummyBids;
+console.log('✅ DummyBids 모듈 로드 완료');
+
+</script>
+<script>
+var AppState = {
+    currentUser:    null,
+    currentProfile: null,
+    bizCurrentStep: 1,
+    pendingMatch:   {},
+    priceHints: {
+        '아크릴굿즈':'1,800~3,500원','의류/패브릭':'7,000~25,000원',
+        '문구/스티커':'300~1,500원','패키징':'800~3,000원',
+        '봉제인형':'10,000~30,000원','금속/뱃지':'2,000~5,000원',
+        '생활용품':'3,000~15,000원'
+    }
+};
+
+// ── 초기화 ─────────────────────────────────────────────
+function initApp() {
+    if (!window.supabaseClient) {
+        showToast('연결 오류. 새로고침해주세요.', 'error');
+        return;
+    }
+    console.log('✅ App 초기화');
+
+    // 인증 상태 변경 → UI 즉시 반영
+    Auth.onAuthStateChange(function(event, session) {
+        console.log('🔔 Auth 이벤트:', event);
+        if (event === 'SIGNED_IN' && session) {
+            AppState.currentUser = session.user;
+            // 프로필 비동기 로드 (UI 블로킹 없음)
+            Auth.getProfile().then(function(p) {
+                AppState.currentProfile = p;
+                updateUILoggedIn();
+            });
+        } else if (event === 'SIGNED_OUT') {
+            AppState.currentUser    = null;
+            AppState.currentProfile = null;
+            updateUILoggedOut();
+        }
+    });
+
+    // 기존 세션 확인
+    Auth.getUser().then(function(user) {
+        if (user) {
+            AppState.currentUser = user;
+            Auth.getProfile().then(function(p) {
+                AppState.currentProfile = p;
+                updateUILoggedIn();
+            });
+        }
+    });
+
+    // 매칭 이력 로드
+    loadMatchHistoryBiz();
+    loadMatchHistoryPersonal();
+
+    // 카테고리 힌트
+    var bizCat = document.getElementById('biz-category');
+    if (bizCat) {
+        bizCat.addEventListener('change', function() {
+            var hint = AppState.priceHints[this.value];
+            var el   = document.getElementById('biz-price-hint');
+            if (el) el.textContent = hint
+                ? '시장 평균 참고가: ' + hint
+                : '카테고리를 선택하면 표시됩니다';
+        });
+    }
+
+    // 모달 오버레이 클릭 닫기
+    document.querySelectorAll('.modal-overlay').forEach(function(o) {
+        o.addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('show');
+        });
+    });
+}
+
+// ── UI ─────────────────────────────────────────────────
+function updateUILoggedIn() {
+    var p     = AppState.currentProfile;
+    var name  = (p && p.nickname) ? p.nickname : '사용자';
+    var email = (p && p.email)    ? p.email    : '';
+    var loginBtn = document.getElementById('loginNavBtn');
+    var avatar   = document.getElementById('userAvatar');
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (avatar)  { avatar.style.display = 'flex'; avatar.textContent = name[0].toUpperCase(); }
+    setEl('profileName',           name);
+    setEl('profileEmail',          email);
+    setEl('biz-sidebar-name',      name);
+    setEl('personal-sidebar-name', name);
+}
+
+function updateUILoggedOut() {
+    var loginBtn = document.getElementById('loginNavBtn');
+    var avatar   = document.getElementById('userAvatar');
+    if (loginBtn) loginBtn.style.display = 'flex';
+    if (avatar)   avatar.style.display   = 'none';
+    // 프로필 드롭다운도 닫기
+    var dd = document.getElementById('profileDropdown');
+    if (dd) dd.classList.remove('show');
+}
+
+// ── 로그인 ─────────────────────────────────────────────
+async function handleLogin() {
+    var email    = document.getElementById('loginEmail').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    if (!email || !password) { showToast('이메일과 비밀번호를 입력하세요.', 'error'); return; }
+
+    var btn = document.getElementById('loginSubmitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '로그인 중...'; }
+
+    try {
+        await Auth.signIn(email, password);
+        // onAuthStateChange → SIGNED_IN 이벤트가 UI 처리
+        closeModal('loginModal');
+        document.getElementById('loginEmail').value    = '';
+        document.getElementById('loginPassword').value = '';
+        showToast('로그인되었습니다! 😊', 'success');
+    } catch(e) {
+        var msg = e.message || '';
+        if (msg.includes('Invalid login credentials')) msg = '이메일 또는 비밀번호가 올바르지 않습니다.';
+        else if (msg.includes('Email not confirmed'))  msg = '이메일 인증이 필요합니다.';
+        else if (msg.includes('Too many requests'))    msg = '잠시 후 다시 시도해주세요.';
+        showToast('로그인 실패: ' + msg, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '로그인'; }
+    }
+}
+
+// ── 회원가입 ───────────────────────────────────────────
+async function handleSignUp() {
+    var email    = document.getElementById('signupEmail').value.trim();
+    var password = document.getElementById('signupPassword').value;
+    var nickname = document.getElementById('signupNickname').value.trim();
+    var userType = document.getElementById('signupUserType').value;
+    if (!email||!password||!nickname||!userType) { showToast('모든 항목을 입력해주세요.','error'); return; }
+    if (password.length < 6) { showToast('비밀번호는 6자 이상이어야 합니다.','error'); return; }
+    var btn = document.getElementById('signupSubmitBtn');
+    if (btn) { btn.disabled=true; btn.textContent='가입 중...'; }
+    try {
+        await Auth.signUp(email, password, nickname, userType);
+        closeModal('signupModal');
+        showToast('회원가입 완료! 이메일 인증 후 로그인해주세요.','success');
+    } catch(e) {
+        showToast('회원가입 실패: '+e.message,'error');
+    } finally {
+        if (btn) { btn.disabled=false; btn.textContent='회원가입'; }
+    }
+}
+
+// ── 로그아웃 (즉시 처리) ───────────────────────────────
+async function handleLogout() {
+    // 1. 즉시 UI 업데이트 (사용자가 바로 느낌)
+    AppState.currentUser    = null;
+    AppState.currentProfile = null;
+    updateUILoggedOut();
+    navigateTo('home');
+    showToast('로그아웃 되었습니다.', 'success');
+
+    // 2. 백그라운드에서 실제 로그아웃
+    try { await Auth.signOut(); } catch(e) { console.warn('signOut 경고:', e.message); }
+}
+
+// ── 네비게이션 ─────────────────────────────────────────
+function navigateTo(page) {
+    document.querySelectorAll('.page-section').forEach(function(el){ el.classList.remove('active'); });
+    var t = document.getElementById('page-'+page);
+    if (t) t.classList.add('active');
+    document.querySelectorAll('#mainNav button').forEach(function(b){ b.classList.remove('active'); });
+    var map = {home:0,'client-select':1,'client-business':1,'client-personal':1,marketplace:2};
+    if (map[page] !== undefined) {
+        var btns = document.querySelectorAll('#mainNav button');
+        if (btns[map[page]]) btns[map[page]].classList.add('active');
+    }
+    window.scrollTo(0,0);
+}
+
+// ── 탭 ─────────────────────────────────────────────────
+function showBizTab(tab, btn) {
+    document.querySelectorAll('#page-client-business .main-content > .tab-content')
+        .forEach(function(el){ el.classList.remove('active'); });
+    var el = document.getElementById('biz-'+tab);
+    if (el) el.classList.add('active');
+    document.querySelectorAll('#page-client-business .sidebar-menu button')
+        .forEach(function(b){ b.classList.remove('active'); });
+    if (btn) { btn.classList.add('active'); }
+    else {
+        var m = {dashboard:0,create:1,manage:2,'recent-match':3,payments:4};
+        var bs = document.querySelectorAll('#page-client-business .sidebar-menu button');
+        if (bs[m[tab]]) bs[m[tab]].classList.add('active');
+    }
+    if (tab==='manage')       loadMyRequests('business');
+    if (tab==='recent-match') loadMatchHistoryBiz();
+    if (tab==='dashboard')    loadBizDashboard();
+}
+
+function showPersonalTab(tab, btn) {
+    document.querySelectorAll('#page-client-personal .main-content > .tab-content')
+        .forEach(function(el){ el.classList.remove('active'); });
+    var el = document.getElementById('personal-'+tab);
+    if (el) el.classList.add('active');
+    document.querySelectorAll('#page-client-personal .sidebar-menu button')
+        .forEach(function(b){ b.classList.remove('active'); });
+    if (btn) { btn.classList.add('active'); }
+    else {
+        var m = {dashboard:0,individual:1,group:2,myorders:3,'recent-match':4,payments:5};
+        var bs = document.querySelectorAll('#page-client-personal .sidebar-menu button');
+        if (bs[m[tab]]) bs[m[tab]].classList.add('active');
+    }
+    if (tab==='myorders')     loadMyRequests('personal');
+    if (tab==='recent-match') loadMatchHistoryPersonal();
+    if (tab==='dashboard')    loadPersonalDashboard();
+}
+
+// ── 대시보드 ───────────────────────────────────────────
+async function loadBizDashboard() {
+    if (!AppState.currentUser) return;
+    try {
+        var r = await Requests.getMyRequests();
+        var b = r.filter(function(x){ return x.request_type==='business'; });
+        setEl('biz-count-all',       b.length);
+        setEl('biz-count-bidding',   b.filter(function(x){ return x.status==='bidding'; }).length);
+        setEl('biz-count-producing', b.filter(function(x){ return x.status==='producing'; }).length);
+        setEl('biz-count-completed', b.filter(function(x){ return x.status==='matched'||x.status==='producing'||x.status==='shipping'||x.status==='completed'; }).length);
+    } catch(e){ console.error(e); }
+}
+
+async function loadPersonalDashboard() {
+    if (!AppState.currentUser) return;
+    try {
+        var r = await Requests.getMyRequests();
+        var p = r.filter(function(x){ return x.request_type==='personal'||x.request_type==='group'; });
+        setEl('per-count-all',       p.length);
+        setEl('per-count-bidding',   p.filter(function(x){ return x.status==='bidding'&&x.request_type==='personal'; }).length);
+        setEl('per-count-group',     p.filter(function(x){ return x.request_type==='group'; }).length);
+        setEl('per-count-completed', p.filter(function(x){ return x.status==='matched'||x.status==='producing'||x.status==='shipping'||x.status==='completed'; }).length);
+    } catch(e){ console.error(e); }
+}
+
+// ── 의뢰 목록 ──────────────────────────────────────────
+async function loadMyRequests(type) {
+    var cid       = type==='business' ? 'biz-manage-list' : 'personal-myorders-list';
+    var container = document.getElementById(cid);
+    if (!container) return;
+
+    if (!AppState.currentUser) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><p>로그인 후 확인할 수 있습니다.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">로그인</button></div>';
+        return;
+    }
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+
+    try {
+        var all  = await Requests.getMyRequests();
+        var list = all.filter(function(r){
+            return type==='business'
+                ? r.request_type==='business'
+                : (r.request_type==='personal'||r.request_type==='group');
+        });
+        if (!list.length) {
+            var fn = type==='business' ? "showBizTab('create',null)" : "showPersonalTab('individual',null)";
+            container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>아직 등록된 의뢰가 없습니다.</p><button class="btn btn-primary" onclick="'+fn+'">첫 의뢰 만들기</button></div>';
+            return;
+        }
+        container.innerHTML = list.map(renderRequestCard).join('');
+    } catch(e) {
+        console.error(e);
+        container.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+    }
+}
+
+// ── 카드 렌더링 ────────────────────────────────────────
+function renderRequestCard(req) {
+    var sMap = {
+        draft:    {label:'임시저장',    cls:'status-draft'},
+        bidding:  {label:'입찰중',      cls:'status-bidding'},
+        matched:  {label:'매칭완료',    cls:'status-matched'},
+        producing:{label:'제작 진행중', cls:'status-producing'},
+        shipping: {label:'배송중',      cls:'status-shipping'},
+        completed:{label:'배송 완료',   cls:'status-completed'},
+        cancelled:{label:'취소됨',      cls:'status-draft'}
+    };
+    var s        = sMap[req.status] || {label:req.status, cls:''};
+    var bids     = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
+    var bidCount = bids.length;
+    var created  = new Date(req.created_at).toLocaleDateString('ko-KR');
+    var ddText   = '';
+    if (req.bid_deadline) {
+        var diff = Math.ceil((new Date(req.bid_deadline)-new Date())/86400000);
+        ddText = req.bid_deadline+(diff>=0?' (D-'+diff+')':' (마감)');
+    }
+
+    // 입찰 현황
+    var bidsHtml = '';
+    if (req.status==='bidding' && bidCount>0) {
+        var rc = ['gold','silver','bronze'];
+        bidsHtml = '<div class="divider"></div>' +
+            '<h5 class="mb-8">📊 입찰 현황 ('+bidCount+'건) <span class="text-xs text-muted">· 클릭하면 견적 확인</span></h5>' +
+            bids.slice(0,3).map(function(bid,i){
+                var mk = getMakerInfo(bid);
+                return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">' +
+                    '<div class="bid-info">' +
+                    '<div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>' +
+                    '<div><strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>' +
+                    '<p class="text-xs text-muted">'+escHtml(mk.specialty)+' | ⭐'+mk.rating+' | '+mk.completedCount+'건 완료</p>' +
+                    '</div></div>' +
+                    '<div style="display:flex;align-items:center;gap:12px">' +
+                    '<div><div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>' +
+                    '<div class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일</div></div>' +
+                    (i===0
+                        ? '<button class="btn btn-success btn-sm" onclick="event.stopPropagation();confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">✓ 선택</button>'
+                        : '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">Override</button>'
+                    ) +
+                    '</div></div>';
+            }).join('');
+        if (bidCount>3) bidsHtml += '<p class="text-xs mt-8" style="text-align:center;cursor:pointer;color:var(--primary)" onclick="openRequestDetail(\''+req.id+'\')">' +(bidCount-3)+'건 더 보기 →</p>';
+        bidsHtml += '<p class="text-xs text-muted mt-8">⚠️ 마감일 경과 시 최저가 입찰자에게 자동 매칭됩니다.</p>';
+    } else if (req.status==='bidding') {
+        bidsHtml = '<div class="alert alert-info" style="margin-top:12px"><span>⏳</span><span>입찰 준비 중입니다.</span></div>';
+    }
+
+    // 매칭 완료 상태 표시
+    var matchedHtml = '';
+    if (req.status==='matched'||req.status==='producing'||req.status==='shipping'||req.status==='completed') {
+        var selectedBid = req.bids ? req.bids.find(function(b){return b.status==='selected';}) : null;
+        if (selectedBid) {
+            matchedHtml = '<div class="alert alert-success" style="margin-top:12px">' +
+                '<span>✅</span>' +
+                '<div><strong>'+escHtml(selectedBid.manufacturer_name)+'</strong> 와 매칭되었습니다.<br>' +
+                '<span class="text-sm">확정 단가: <strong>'+selectedBid.unit_price.toLocaleString()+'원</strong> | 납기: '+(selectedBid.delivery_days||'-')+'일</span>' +
+                '</div></div>';
+        }
+    }
+
+    // 공동구매
+    var groupHtml = '';
+    if (req.request_type==='group' && req.min_quantity) {
+        var pct = Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100));
+        groupHtml = '<div class="co-purchase-info">' +
+            '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+req.min_quantity+'개 (최소)</strong></div>' +
+            '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
+            '<p class="text-xs text-muted mt-8">최소 수량까지 '+Math.max(0,req.min_quantity-(req.current_quantity||0))+'개 남음</p>' +
+            '</div>';
+    }
+
+    return '<div class="request-card" data-status="'+req.status+'" data-request-type="'+req.request_type+'" data-id="'+req.id+'">' +
+        '<div class="request-card-header">' +
+        '<h4>'+(req.request_type==='group'?'👥 ':'')+escHtml(req.title)+'</h4>' +
+        '<span class="status-badge '+s.cls+'">'+s.label+(req.status==='bidding'?' ('+bidCount+'명)':'')+'</span>' +
+        '</div>' +
+        '<div class="request-meta">' +
+        '<div class="meta-item">📦 수량: <strong>'+req.quantity.toLocaleString()+'개</strong></div>' +
+        '<div class="meta-item">💰 희망 단가: <strong>'+req.target_price.toLocaleString()+'원</strong></div>' +
+        (ddText?'<div class="meta-item">📅 마감: <strong>'+ddText+'</strong></div>':'')+
+        '<div class="meta-item">🗓 등록: <strong>'+created+'</strong></div>' +
+        '</div>' +
+        groupHtml + bidsHtml + matchedHtml +
+        '<div class="request-actions">' +
+        '<button class="btn btn-sm btn-secondary" onclick="openRequestDetail(\''+req.id+'\')">📋 상세 보기</button>' +
+        (req.status==='bidding'?'<button class="btn btn-sm btn-danger" onclick="cancelRequest(\''+req.id+'\')">취소</button>':'')+
+        (req.status==='completed'?'<button class="btn btn-sm btn-primary" onclick="openModal(\'writeReviewModal\')">✍️ 후기 작성</button>':'')+
+        '</div></div>';
+}
+
+// ── 생산자 정보 헬퍼 ───────────────────────────────────
+function getMakerInfo(bid) {
+    return {
+        specialty:      bid.manufacturer_specialty || '종합 굿즈',
+        rating:         bid.manufacturer_rating    || '4.5',
+        completedCount: bid.manufacturer_completed || '-'
+    };
+}
+
+// ── 입찰 상세 ──────────────────────────────────────────
+async function openBidDetail(bidId, requestId) {
+    openModal('requestDetailModal');
+    var body    = document.getElementById('detail-modal-body');
+    var titleEl = document.getElementById('detail-modal-title');
+    if (body) body.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var req  = await Requests.getById(requestId);
+        if (!req) throw new Error('의뢰 정보를 찾을 수 없습니다.');
+        var bids = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
+        var bid  = bids.find(function(b){return b.id===bidId;});
+        if (!bid) throw new Error('입찰 정보를 찾을 수 없습니다.');
+        var mk   = getMakerInfo(bid);
+        var rank = bids.findIndex(function(b){return b.id===bidId;})+1;
+        if (titleEl) titleEl.textContent = '📄 '+escHtml(bid.manufacturer_name)+' 견적서';
+
+        body.innerHTML =
+            '<div style="display:flex;align-items:center;gap:12px;background:var(--bg);padding:14px;border-radius:8px;margin-bottom:16px">' +
+            '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px">'+escHtml(bid.manufacturer_name[0])+'</div>' +
+            '<div><div style="font-weight:700;font-size:15px">'+escHtml(bid.manufacturer_name)+'</div>' +
+            '<div class="text-xs text-muted">'+escHtml(mk.specialty)+' | ⭐'+mk.rating+' | 완료 '+mk.completedCount+'건</div></div>' +
+            (rank===1?'<span class="status-badge status-matched" style="margin-left:auto">🏆 최저가</span>':'<span class="status-badge status-bidding" style="margin-left:auto">'+rank+'위</span>')+
+            '</div>' +
+            '<table class="estimate-table">' +
+            '<thead><tr><th>항목</th><th>수량</th><th>단가</th><th>금액</th></tr></thead>' +
+            '<tbody>' +
+            '<tr><td>'+escHtml(req.title)+' 제작비</td><td>'+req.quantity.toLocaleString()+'개</td><td>'+bid.unit_price.toLocaleString()+'원</td><td>'+(bid.unit_price*req.quantity).toLocaleString()+'원</td></tr>' +
+            '<tr><td>포장비</td><td>포함</td><td>-</td><td>-</td></tr>' +
+            '<tr><td>배송비</td><td>-</td><td>-</td><td>무료</td></tr>' +
+            '</tbody>' +
+            '<tfoot><tr style="font-weight:700"><td colspan="3" style="text-align:right">합계</td><td class="text-primary">'+(bid.unit_price*req.quantity).toLocaleString()+'원</td></tr></tfoot>' +
+            '</table>' +
+            (bid.note?'<div class="alert alert-info mt-16"><span>📝</span><span><strong>생산자 메모:</strong> '+escHtml(bid.note)+'</span></div>':'')+
+            '<div style="background:var(--bg);border-radius:8px;padding:12px 16px;margin-top:12px;display:flex;gap:24px;flex-wrap:wrap">' +
+            '<div><div class="text-xs text-muted">예상 납기</div><div style="font-weight:700;font-size:16px;color:var(--primary)">'+(bid.delivery_days||'-')+'일</div></div>' +
+            '<div><div class="text-xs text-muted">희망 단가 대비</div><div style="font-weight:700;font-size:16px;color:var(--success)">▼'+Math.max(0,Math.round((1-bid.unit_price/req.target_price)*100))+'% 절감</div></div>' +
+            '<div><div class="text-xs text-muted">총 결제 예정액</div><div style="font-weight:700;font-size:16px">'+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>' +
+            '</div>' +
+            '<div class="divider"></div>' +
+            '<h5 style="margin-bottom:10px">다른 입찰 비교 (단가 낮은 순)</h5>' +
+            '<div style="display:flex;flex-direction:column;gap:6px">' +
+            bids.map(function(b,i){
+                var isThis = b.id===bidId;
+                return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:'+(isThis?'rgba(108,92,231,0.08)':'var(--bg)')+';border-radius:6px;border:'+(isThis?'1px solid var(--primary-light)':'1px solid transparent')+'">' +
+                    '<span class="text-sm"><strong>'+(i+1)+'위</strong> '+escHtml(b.manufacturer_name)+'</span>' +
+                    '<div style="display:flex;align-items:center;gap:12px">' +
+                    '<span style="font-weight:700;color:var(--primary)">'+b.unit_price.toLocaleString()+'원</span>' +
+                    '<span class="text-xs text-muted">납기 '+(b.delivery_days||'-')+'일</span>' +
+                    (isThis
+                        ? '<span class="text-xs" style="color:var(--primary);font-weight:600">현재 보는 중</span>'
+                        : '<button class="btn btn-outline btn-sm" onclick="openBidDetail(\''+b.id+'\',\''+requestId+'\')">보기</button>'
+                    )+
+                    '</div></div>';
+            }).join('')+
+            '</div>' +
+            '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
+            '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>' +
+            (req.status==='bidding'?'<button class="btn btn-success" onclick="closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name)+'\',' +bid.unit_price+')">이 견적으로 매칭 →</button>':'')+
+            '</div>';
+    } catch(e) {
+        console.error(e);
+        if (body) body.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+    }
+}
+
+// ── 의뢰 상세 ──────────────────────────────────────────
+async function openRequestDetail(requestId) {
+    openModal('requestDetailModal');
+    var body    = document.getElementById('detail-modal-body');
+    var titleEl = document.getElementById('detail-modal-title');
+    if (body) body.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var req = await Requests.getById(requestId);
+        if (!req) throw new Error('의뢰를 찾을 수 없습니다.');
+        if (titleEl) titleEl.textContent = '📋 '+req.title;
+        var sMap={draft:'임시저장',bidding:'입찰중',matched:'매칭완료',producing:'제작 진행중',shipping:'배송중',completed:'배송 완료',cancelled:'취소됨'};
+        var tMap={business:'사업자 의뢰',personal:'개인 의뢰',group:'공동구매 의뢰'};
+        var bids  = req.bids ? req.bids.slice().sort(function(a,b){return a.unit_price-b.unit_price;}) : [];
+        var files = req.request_files||[];
+
+        var bidsSection = bids.length>0
+            ? '<div class="divider"></div><h5 style="margin-bottom:12px">📊 전체 입찰 목록 ('+bids.length+'건)</h5>' +
+              bids.map(function(bid,i){
+                  var mk=getMakerInfo(bid), rc=['gold','silver','bronze'];
+                  return '<div class="bid-item '+(i===0?'top-bid':'')+'" onclick="openBidDetail(\''+bid.id+'\',\''+req.id+'\')" style="cursor:pointer">' +
+                      '<div class="bid-info"><div class="bid-rank '+(rc[i]||'')+'">'+(i+1)+'</div>' +
+                      '<div><strong>'+escHtml(bid.manufacturer_name||'생산자')+'</strong>' +
+                      '<p class="text-xs text-muted">'+escHtml(mk.specialty)+' | ⭐'+mk.rating+' | 완료 '+mk.completedCount+'건</p></div></div>' +
+                      '<div style="display:flex;align-items:center;gap:12px">' +
+                      '<div><div class="bid-price">'+bid.unit_price.toLocaleString()+'원</div>' +
+                      '<div class="text-xs text-muted">납기 '+(bid.delivery_days||'-')+'일 · 총 '+(bid.unit_price*req.quantity).toLocaleString()+'원</div></div>' +
+                      (req.status==='bidding'
+                          ?(i===0
+                              ?'<button class="btn btn-success btn-sm" onclick="event.stopPropagation();closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">✓ 선택</button>'
+                              :'<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();closeModal(\'requestDetailModal\');confirmSelectBid(\''+req.id+'\',\''+bid.id+'\',\''+escHtml(bid.manufacturer_name||'')+'\',' +bid.unit_price+')">Override</button>'
+                          ):'')+
+                      '</div></div>';
+              }).join('')
+            : '<div class="divider"></div><div class="alert alert-info"><span>⏳</span><span>아직 입찰한 생산자가 없습니다.</span></div>';
+
+        var filesSection = files.length>0
+            ? '<div class="divider"></div><h5 style="margin-bottom:8px">📎 첨부 파일</h5>'+
+              files.map(function(f){return '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:13px"><a href="'+f.file_url+'" target="_blank" style="color:var(--primary)">📎 '+escHtml(f.file_name)+'</a></div>';}).join('')
+            : '';
+
+        body.innerHTML =
+            '<table class="data-table mb-16">' +
+            '<tr><td style="width:120px;font-weight:600">의뢰 유형</td><td>'+(tMap[req.request_type]||req.request_type)+'</td></tr>' +
+            '<tr><td style="font-weight:600">카테고리</td><td>'+escHtml(req.category)+'</td></tr>' +
+            '<tr><td style="font-weight:600">수량</td><td>'+req.quantity.toLocaleString()+'개</td></tr>' +
+            '<tr><td style="font-weight:600">희망 단가</td><td>'+req.target_price.toLocaleString()+'원</td></tr>' +
+            '<tr><td style="font-weight:600">예상 총액</td><td class="text-primary fw-bold">'+(req.quantity*req.target_price).toLocaleString()+'원</td></tr>' +
+            (req.bid_deadline?'<tr><td style="font-weight:600">입찰 마감일</td><td>'+req.bid_deadline+'</td></tr>':'')+
+            '<tr><td style="font-weight:600">상태</td><td>'+(sMap[req.status]||req.status)+'</td></tr>' +
+            '<tr><td style="font-weight:600">등록일</td><td>'+new Date(req.created_at).toLocaleString('ko-KR')+'</td></tr>' +
+            (req.design_guide?'<tr><td style="font-weight:600">디자인 가이드</td><td style="white-space:pre-wrap">'+escHtml(req.design_guide)+'</td></tr>':'')+
+            (req.detail_note?'<tr><td style="font-weight:600">상세 요청</td><td style="white-space:pre-wrap">'+escHtml(req.detail_note)+'</td></tr>':'')+
+            '</table>'+bidsSection+filesSection+
+            '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
+            (req.status==='bidding'?'<button class="btn btn-danger btn-sm" onclick="closeModal(\'requestDetailModal\');cancelRequest(\''+req.id+'\')">의뢰 취소</button>':'')+
+            '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>' +
+            '</div>';
+    } catch(e) {
+        console.error(e);
+        if (body) body.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+    }
+}
+
+// ── 매칭 이력 ──────────────────────────────────────────
+async function loadMatchHistoryBiz() {
+    var tbody=document.getElementById('biz-match-tbody'); if(!tbody)return;
+    try {
+        var list=await Requests.getMatchHistory('business',20);
+        if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
+        tbody.innerHTML=list.map(function(h){
+            var sv=h.target_price>0?Math.round((1-h.matched_price/h.target_price)*100):0;
+            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.category||'-')+'</td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td class="text-success">▼'+sv+'%</td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
+        }).join('');
+    }catch(e){console.error(e);}
+}
+
+async function loadMatchHistoryPersonal() {
+    var tbody=document.getElementById('personal-match-tbody'); if(!tbody)return;
+    try {
+        var list=await Requests.getMatchHistory(null,20);
+        var f=list.filter(function(h){return h.request_type!=='business';});
+        if(!f.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
+        var tMap={personal:'개인',group:'공동구매'};
+        tbody.innerHTML=f.map(function(h){
+            var cls=h.request_type==='group'?'status-recruiting':'status-completed';
+            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td><span class="status-badge '+cls+'">'+(tMap[h.request_type]||h.request_type)+'</span></td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
+        }).join('');
+    }catch(e){console.error(e);}
+}
+
+// ── 의뢰 생성 ──────────────────────────────────────────
+async function submitBizRequest() {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    var btn = document.getElementById('biz-submit-btn');
+    if (btn) { btn.disabled=true; btn.textContent='등록 중...'; }
+    try {
+        var category = document.getElementById('biz-category').value;
+        var qty      = parseInt(document.getElementById('biz-qty').value);
+        var price    = parseInt(document.getElementById('biz-price').value);
+        var newReq   = await Requests.create({
+            request_type: 'business',
+            title:        document.getElementById('biz-title').value.trim(),
+            category:     category, quantity: qty, target_price: price,
+            bid_deadline: document.getElementById('biz-deadline').value||null,
+            design_guide: document.getElementById('biz-design-guide').value,
+            detail_note:  document.getElementById('biz-detail-note').value,
+            status: 'bidding', bidding_type: 'bidding'
+        });
+        // 더미 입찰 생성 (실패해도 의뢰는 등록됨)
+        try {
+            await DummyBids.generateBids(newReq.id, category, price, qty);
+            showToast('의뢰 등록 완료! 입찰이 도착했습니다 🎉', 'success');
+        } catch(bidErr) {
+            console.error('입찰 생성 오류:', bidErr);
+            showToast('의뢰가 등록되었습니다. (입찰 생성 오류)', 'info');
+        }
+        resetBizForm();
+        // 즉시 목록 갱신
+        showBizTab('manage', null);
+        loadBizDashboard();
+    } catch(e) {
+        showToast('오류: '+e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled=false; btn.textContent='🚀 의뢰 등록'; }
+    }
+}
+
+async function submitPersonalRequest() {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    var qty   = parseInt(document.getElementById('personalQty').value)||0;
+    var price = parseInt(document.getElementById('personalPrice').value)||0;
+    var name  = document.getElementById('personalItemName').value.trim();
+    if (!name||!qty||!price) { showToast('필수 항목을 모두 입력해주세요.','error'); return; }
+    var reasons=[];
+    if (qty>50)              reasons.push('📦 수량 '+qty+'개는 공동구매로 진행하면 더 유리합니다.');
+    if (price>0&&price<1500) reasons.push('💰 희망 단가('+price.toLocaleString()+'원)가 낮습니다.');
+    if (reasons.length>0) {
+        document.getElementById('coPurchaseReason').innerHTML=reasons.map(function(r){return '<p class="text-sm" style="margin-bottom:8px">'+r+'</p>';}).join('');
+        openModal('coPurchasePopup'); return;
+    }
+    await doSubmitPersonalRequest();
+}
+
+async function doSubmitPersonalRequest() {
+    var typeEl = document.querySelector('input[name="request-type"]:checked');
+    var bType  = typeEl ? typeEl.value : 'bidding';
+    try {
+        var category = document.getElementById('personalCategory').value;
+        var qty      = parseInt(document.getElementById('personalQty').value);
+        var price    = parseInt(document.getElementById('personalPrice').value);
+        var newReq   = await Requests.create({
+            request_type: 'personal',
+            title:        document.getElementById('personalItemName').value.trim(),
+            category:     category, quantity: qty, target_price: price,
+            bid_deadline: document.getElementById('personalDeadline').value||null,
+            design_guide: document.getElementById('personalDesignGuide').value,
+            detail_note:  document.getElementById('personalDetailNote').value,
+            bidding_type: bType,
+            direct_manufacturer_id: bType==='direct'?document.getElementById('directMfgId').value:null,
+            status: 'bidding'
+        });
+        if (bType==='bidding') {
+            try { await DummyBids.generateBids(newReq.id, category, price, qty); } catch(e){ console.error(e); }
+        }
+        showToast('개인 의뢰가 등록되었습니다! 🎉','success');
+        showPersonalTab('myorders', null);
+        loadPersonalDashboard();
+    } catch(e) { showToast('오류: '+e.message,'error'); }
+}
+
+async function submitGroupRequest() {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    var title    = document.getElementById('group-title').value.trim();
+    var category = document.getElementById('group-category').value;
+    var totalQty = parseInt(document.getElementById('group-total-qty').value)||0;
+    var minQty   = parseInt(document.getElementById('group-min-qty').value)||0;
+    var price    = parseInt(document.getElementById('group-price').value)||0;
+    if (!title||!category||!totalQty||!minQty||!price) { showToast('필수 항목을 모두 입력해주세요.','error'); return; }
+    try {
+        var gTypeEl = document.querySelector('input[name="group-type"]:checked');
+        await Requests.create({
+            request_type:'group', title, category,
+            quantity:totalQty, min_quantity:minQty, target_price:price,
+            recruit_deadline: document.getElementById('group-recruit-deadline').value||null,
+            bid_deadline:     document.getElementById('group-bid-deadline').value||null,
+            design_guide:     document.getElementById('group-design-guide').value,
+            detail_note:      document.getElementById('group-detail-note').value,
+            current_quantity:0, status:'bidding',
+            bidding_type: gTypeEl ? gTypeEl.value : 'bidding'
+        });
+        showToast('공동제작 의뢰가 등록되었습니다! 🎉','success');
+        showPersonalTab('myorders', null);
+        loadPersonalDashboard();
+    } catch(e) { showToast('오류: '+e.message,'error'); }
+}
+
+// ── 매칭 확정 ──────────────────────────────────────────
+function confirmSelectBid(requestId, bidId, manufacturerName, unitPrice) {
+    AppState.pendingMatch = {requestId, bidId, name:manufacturerName, price:unitPrice};
+    var amountEl = document.getElementById('matchPayAmount');
+    var detailEl = document.getElementById('matchPayDetail');
+    if (amountEl) amountEl.textContent = '계산 중...';
+    if (detailEl) detailEl.textContent = '';
+    Requests.getById(requestId).then(function(req){
+        if (req && amountEl) {
+            amountEl.textContent = (req.quantity*unitPrice).toLocaleString()+'원';
+            if (detailEl) detailEl.textContent = req.title+' '+req.quantity.toLocaleString()+'개 × '+unitPrice.toLocaleString()+'원 ('+manufacturerName+')';
+        }
+    });
+    openModal('matchConfirmModal');
+}
+
+async function executeSelectBid() {
+    var pm  = AppState.pendingMatch;
+    if (!pm.requestId||!pm.bidId) { showToast('오류: 매칭 정보가 없습니다.','error'); return; }
+    var btn = document.getElementById('matchConfirmBtn');
+    if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
+    try {
+        await Requests.selectBid(pm.requestId, pm.bidId, pm.name, pm.price);
+        closeModal('matchConfirmModal');
+        AppState.pendingMatch = {};
+        showToast('매칭이 확정되었습니다! 🎉','success');
+        // 즉시 목록 & 대시보드 갱신
+        await loadMyRequests('business');
+        await loadMyRequests('personal');
+        loadBizDashboard();
+        loadPersonalDashboard();
+        loadMatchHistoryBiz();
+        loadMatchHistoryPersonal();
+    } catch(e) {
+        showToast('오류: '+e.message,'error');
+    } finally {
+        if (btn) { btn.disabled=false; btn.textContent='💳 결제 및 매칭 확정'; }
+    }
+}
+
+async function cancelRequest(requestId) {
+    if (!confirm('정말로 이 의뢰를 취소하시겠습니까?')) return;
+    try {
+        await Requests.cancel(requestId);
+        showToast('의뢰가 취소되었습니다.','info');
+        await loadMyRequests('business');
+        await loadMyRequests('personal');
+        loadBizDashboard();
+        loadPersonalDashboard();
+    } catch(e) { showToast('오류: '+e.message,'error'); }
+}
+
+// ── 필터 ───────────────────────────────────────────────
+function filterBizStatus(status, btn) {
+    if (btn) {
+        document.querySelectorAll('#biz-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
+        btn.classList.add('active');
+    }
+    document.querySelectorAll('#biz-manage-list .request-card').forEach(function(c){
+        var show = status==='all' ? true
+            : status==='completed' ? (c.dataset.status==='matched'||c.dataset.status==='producing'||c.dataset.status==='shipping'||c.dataset.status==='completed')
+            : c.dataset.status===status;
+        c.style.display = show ? 'block' : 'none';
+    });
+}
+
+function filterPersonalStatus(status, btn) {
+    if (btn) {
+        document.querySelectorAll('#personal-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
+        btn.classList.add('active');
+    }
+    document.querySelectorAll('#personal-myorders-list .request-card').forEach(function(c){
+        var show = status==='all' ? true
+            : status==='group'     ? c.dataset.requestType==='group'
+            : status==='completed' ? (c.dataset.status==='matched'||c.dataset.status==='producing'||c.dataset.status==='shipping'||c.dataset.status==='completed')
+            : c.dataset.status===status;
+        c.style.display = show ? 'block' : 'none';
+    });
+}
+
+// ── 스텝 ───────────────────────────────────────────────
+function bizStepNext(step) {
+    if (step===1) {
+        var valid=true;
+        [['fg-biz-title','biz-title'],['fg-biz-category','biz-category'],['fg-biz-qty','biz-qty'],['fg-biz-price','biz-price'],['fg-biz-deadline','biz-deadline']].forEach(function(p){
+            var el=document.getElementById(p[1]),fg=document.getElementById(p[0]);
+            if(el&&!el.value.trim()){if(fg)fg.classList.add('error');valid=false;}
+            else{if(fg)fg.classList.remove('error');}
+        });
+        if(!valid){showToast('필수 항목을 입력해주세요.','error');return;}
+    }
+    document.getElementById('biz-step-'+step).style.display='none';
+    document.getElementById('biz-step-'+(step+1)).style.display='block';
+    AppState.bizCurrentStep=step+1; updateBizStepper();
+    if(step===2) populateBizConfirm();
+}
+function bizStepBack(step) {
+    document.getElementById('biz-step-'+step).style.display='none';
+    document.getElementById('biz-step-'+(step-1)).style.display='block';
+    AppState.bizCurrentStep=step-1; updateBizStepper();
+}
+function updateBizStepper() {
+    document.querySelectorAll('#bizStepper .step').forEach(function(s,i){
+        s.classList.remove('active','done');
+        if(i+1<AppState.bizCurrentStep)s.classList.add('done');
+        else if(i+1===AppState.bizCurrentStep)s.classList.add('active');
+    });
+    document.querySelectorAll('#bizStepper .step-line').forEach(function(l,i){
+        l.classList.toggle('done',i+1<AppState.bizCurrentStep);
+    });
+}
+function populateBizConfirm() {
+    var qty=document.getElementById('biz-qty').value, price=document.getElementById('biz-price').value;
+    setEl('confirm-title',   document.getElementById('biz-title').value);
+    setEl('confirm-category',document.getElementById('biz-category').value);
+    setEl('confirm-qty',     Number(qty).toLocaleString()+'개');
+    setEl('confirm-price',   Number(price).toLocaleString()+'원');
+    setEl('confirm-deadline',document.getElementById('biz-deadline').value);
+    setEl('confirm-total',   (Number(qty)*Number(price)).toLocaleString()+'원');
+    setEl('confirm-guide',   document.getElementById('biz-design-guide').value||'-');
+    setEl('confirm-note',    document.getElementById('biz-detail-note').value||'-');
+    var fi=document.getElementById('biz-file-input');
+    setEl('confirm-files',fi&&fi.files.length>0?Array.from(fi.files).map(function(f){return f.name;}).join(', '):'없음');
+}
+function resetBizForm() {
+    ['biz-title','biz-qty','biz-price','biz-deadline','biz-design-guide','biz-detail-note'].forEach(function(id){
+        var el=document.getElementById(id);if(el)el.value='';
+    });
+    var cat=document.getElementById('biz-category');if(cat)cat.value='';
+    document.getElementById('biz-step-3').style.display='none';
+    document.getElementById('biz-step-2').style.display='none';
+    document.getElementById('biz-step-1').style.display='block';
+    AppState.bizCurrentStep=1; updateBizStepper();
+}
+
+// ── 기타 UI ────────────────────────────────────────────
+function toggleDirectMfg(radio) {
+    var f=document.getElementById('directMfgField');if(f)f.style.display=radio.value==='direct'?'block':'none';
+    var rb=document.getElementById('radio-bidding'),rd=document.getElementById('radio-direct');
+    if(rb)rb.style.borderColor=radio.value==='bidding'?'var(--primary)':'#E2E8F0';
+    if(rd)rd.style.borderColor=radio.value==='direct'?'var(--primary)':'#E2E8F0';
+}
+function toggleGroupDirectMfg(radio){var f=document.getElementById('groupDirectMfgField');if(f)f.style.display=radio.value==='direct'?'block':'none';}
+function showUploadedFiles(input,listId){
+    var list=document.getElementById(listId);if(!list)return;
+    list.innerHTML='';
+    Array.from(input.files).forEach(function(f){
+        var div=document.createElement('div');
+        div.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:13px';
+        div.innerHTML='<span>📎 '+escHtml(f.name)+' ('+(f.size/1024/1024).toFixed(1)+'MB)</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px">×</button>';
+        list.appendChild(div);
+    });
+}
+function setRating(n){document.querySelectorAll('#starRating span').forEach(function(s,i){s.style.opacity=i<n?'1':'0.3';});}
+function setEl(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
+function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('show');}
+function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('show');}
+function closeDropdown(){var d=document.getElementById('profileDropdown');if(d)d.classList.remove('show');}
+function toggleUserMenu(e){if(e)e.stopPropagation();var d=document.getElementById('profileDropdown');if(d)d.classList.toggle('show');}
+function showToast(message,type){
+    var t=document.getElementById('toast');if(!t)return;
+    t.textContent=message; t.className='toast '+(type||'info')+' show';
+    clearTimeout(t._timer); t._timer=setTimeout(function(){t.classList.remove('show');},3500);
+}
+function escHtml(str){
+    if(!str)return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+document.addEventListener('click',function(e){
+    var d=document.getElementById('profileDropdown');
+    if(d&&d.classList.contains('show')&&!e.target.closest('.nav-user'))d.classList.remove('show');
+});
+document.addEventListener('DOMContentLoaded', initApp);
+
+</script>
+
+</body>
+</html>
