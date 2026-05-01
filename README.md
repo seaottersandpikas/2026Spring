@@ -1,6 +1,6 @@
 # 2022130887 김윤
 
-##굿즈 제작·유통 플랫폼: "굿즈 팩토리(가칭)"
+## 굿즈 제작·유통 플랫폼: "굿즈 팩토리(가칭)"
 - URL: https://seaottersandpikas.github.io/2026Spring/
   - user id: `test@test.com` 
   - PW: `test123456`
