@@ -12,6 +12,9 @@ var AppState = {
     }
 };
 
+var _pendingBidRequestId = null;
+var _pendingBidQuantity  = 0;
+
 // ── 초기화 ─────────────────────────────────────────────
 function initApp() {
     if (!window.supabaseClient) {
@@ -858,6 +861,7 @@ function showMfgTab(tab, btn) {
     if (tab === 'dashboard') loadMfgDashboard();
     if (tab === 'bids')      loadMfgBids();
     if (tab === 'requests')  loadMfgAvailableRequests();
+    if (tab === 'profile')   loadMfgProfile();
 }
 
 // ── 생산자 대시보드 ────────────────────────────────────
@@ -914,16 +918,31 @@ async function loadMfgBids() {
 }
 
 function renderMfgBidCard(bid) {
-    var req = bid.requests || {};
+    var req   = bid.requests || {};
     var title = escHtml(req.title || '(의뢰 정보 없음)');
     var qty   = (req.quantity || 0).toLocaleString();
     var date  = bid.created_at ? new Date(bid.created_at).toLocaleDateString('ko-KR') : '-';
     var price = (bid.unit_price || 0).toLocaleString();
+    var rs    = req.status || '';
+
+    var actionBtn = '';
+    if (bid.status === 'selected') {
+        if (rs === 'matched') {
+            actionBtn = '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();updateBidStatus(\''+req.id+'\',\'producing\',this)">🔧 생산 시작</button>';
+        } else if (rs === 'producing') {
+            actionBtn = '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();updateBidStatus(\''+req.id+'\',\'shipping\',this)">🚚 배송 시작</button>';
+        } else if (rs === 'shipping') {
+            actionBtn = '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();updateBidStatus(\''+req.id+'\',\'completed\',this)">✅ 배송 완료</button>';
+        }
+    }
+
     return '<div class="mfg-bid-card" onclick="openMfgBidDetail(\''+bid.id+'\')">' +
         '<div class="flex-between">' +
         '<div><strong>'+title+'</strong><p class="text-xs text-muted" style="margin-top:4px">'+escHtml(req.category||'')+(req.category?' | ':'')+'수량 '+qty+'개</p></div>' +
         '<div style="text-align:right"><div style="font-weight:700;color:var(--primary)">'+price+'원<span class="text-xs text-muted">/개</span></div><div class="text-xs text-muted">'+date+'</div></div>' +
-        '</div></div>';
+        '</div>' +
+        (actionBtn ? '<div style="display:flex;justify-content:flex-end;margin-top:10px">'+actionBtn+'</div>' : '') +
+        '</div>';
 }
 
 // ── 생산자 입찰 상세 팝업 ──────────────────────────────
@@ -1001,13 +1020,167 @@ async function loadMfgAvailableRequests() {
                 '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
                 (ddText?'<div class="meta-item">📅 마감: <strong>'+ddText+'</strong></div>':'')+
                 '</div>' +
-                '<div class="request-actions"><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showToast(\'입찰 기능은 Phase 1에서 구현됩니다.\',\'info\')">📨 입찰하기</button></div>' +
+                '<div class="request-actions"><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openSubmitBidModal(\''+req.id+'\')">📨 입찰하기</button></div>' +
                 '</div>';
         }).join('');
     } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류가 발생했습니다.</p></div>'; }
 }
 
-function saveMfgProfile() { showToast('프로필 저장 기능은 Phase 1에서 구현됩니다.','info'); }
+async function saveMfgProfile() {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    var nickname  = document.getElementById('mfg-profile-nickname')  ? document.getElementById('mfg-profile-nickname').value.trim() : '';
+    var specialty = document.getElementById('mfg-profile-specialty') ? document.getElementById('mfg-profile-specialty').value : '';
+    var maxQty    = document.getElementById('mfg-profile-max-qty')   ? parseInt(document.getElementById('mfg-profile-max-qty').value)||null : null;
+    var minQty    = document.getElementById('mfg-profile-min-qty')   ? parseInt(document.getElementById('mfg-profile-min-qty').value)||null : null;
+    var intro     = document.getElementById('mfg-profile-intro')     ? document.getElementById('mfg-profile-intro').value.trim() : '';
+    if (!nickname) { showToast('닉네임을 입력해주세요.','error'); return; }
+    var btn = document.querySelector('#mfg-profile .btn-primary');
+    if (btn) { btn.disabled=true; btn.textContent='저장 중...'; }
+    try {
+        await Bids.saveProfile({ nickname, specialty, maxQuantity:maxQty, minQuantity:minQty, intro });
+        AppState.currentProfile = Object.assign({}, AppState.currentProfile, {
+            nickname, specialty, max_quantity:maxQty, min_quantity:minQty, manufacturer_intro:intro
+        });
+        setEl('mfg-sidebar-name', nickname);
+        setEl('profileName', nickname);
+        var avatar = document.getElementById('userAvatar');
+        if (avatar) avatar.textContent = nickname[0].toUpperCase();
+        showToast('프로필이 저장되었습니다! 💾','success');
+    } catch(e) {
+        showToast('저장 실패: '+e.message,'error');
+    } finally {
+        if (btn) { btn.disabled=false; btn.textContent='💾 저장'; }
+    }
+}
+
+function loadMfgProfile() {
+    var p = AppState.currentProfile;
+    if (!p) return;
+    var nick = document.getElementById('mfg-profile-nickname');
+    var spec = document.getElementById('mfg-profile-specialty');
+    var maxQ = document.getElementById('mfg-profile-max-qty');
+    var minQ = document.getElementById('mfg-profile-min-qty');
+    var intr = document.getElementById('mfg-profile-intro');
+    if (nick) nick.value = p.nickname || '';
+    if (spec) spec.value = p.specialty || '';
+    if (maxQ) maxQ.value = p.max_quantity || '';
+    if (minQ) minQ.value = p.min_quantity || '';
+    if (intr) intr.value = p.manufacturer_intro || '';
+}
+
+async function openSubmitBidModal(requestId) {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    var alreadyBid = await Bids.hasAlreadyBid(requestId);
+    if (alreadyBid) { showToast('이미 이 의뢰에 입찰하셨습니다.','warning'); return; }
+
+    _pendingBidRequestId = requestId;
+    _pendingBidQuantity  = 0;
+
+    ['bid-unit-price','bid-delivery-days','bid-note'].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.value='';
+    });
+    var fileEl = document.getElementById('bid-quote-file');
+    if (fileEl) fileEl.value = '';
+    var fileNameEl = document.getElementById('bid-file-name');
+    if (fileNameEl) fileNameEl.innerHTML = '';
+    var totalEl = document.getElementById('bid-total-display');
+    if (totalEl) totalEl.style.display = 'none';
+
+    openModal('submitBidModal');
+
+    var summaryEl = document.getElementById('submit-bid-req-summary');
+    if (summaryEl) summaryEl.innerHTML = '<div style="text-align:center;padding:8px;color:var(--gray)">⏳ 로딩 중...</div>';
+    try {
+        var res = await window.supabaseClient.from('requests')
+            .select('title,category,quantity,target_price,bid_deadline')
+            .eq('id', requestId).single();
+        if (res.error) throw res.error;
+        var req = res.data;
+        _pendingBidQuantity = req.quantity || 0;
+        if (summaryEl) {
+            summaryEl.innerHTML =
+                '<div class="flex-between"><strong>'+escHtml(req.title)+'</strong><span class="status-badge status-bidding">입찰중</span></div>' +
+                '<div class="request-meta" style="margin-top:8px">' +
+                '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
+                '<div class="meta-item">🔢 수량: <strong>'+_pendingBidQuantity.toLocaleString()+'개</strong></div>' +
+                '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+                (req.bid_deadline?'<div class="meta-item">📅 마감: <strong>'+req.bid_deadline+'</strong></div>':'')+
+                '</div>';
+        }
+    } catch(e) {
+        if (summaryEl) summaryEl.innerHTML = '<p class="text-sm text-muted">의뢰 정보를 불러올 수 없습니다.</p>';
+    }
+}
+
+function calcBidTotal() {
+    var priceEl      = document.getElementById('bid-unit-price');
+    var totalDisplay = document.getElementById('bid-total-display');
+    var totalAmount  = document.getElementById('bid-total-amount');
+    if (!priceEl || !totalDisplay || !totalAmount) return;
+    var price = parseInt(priceEl.value) || 0;
+    if (price > 0 && _pendingBidQuantity > 0) {
+        totalDisplay.style.display = 'block';
+        totalAmount.textContent = (price * _pendingBidQuantity).toLocaleString() + '원';
+    } else {
+        totalDisplay.style.display = 'none';
+    }
+}
+
+function showBidFileName(input) {
+    var el = document.getElementById('bid-file-name');
+    if (!el || !input.files.length) return;
+    var f = input.files[0];
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:6px;font-size:13px">' +
+        '<span>📎 '+escHtml(f.name)+' ('+(f.size/1024).toFixed(0)+'KB)</span>' +
+        '<button onclick="document.getElementById(\'bid-quote-file\').value=\'\';this.parentElement.parentElement.innerHTML=\'\'" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px">×</button></div>';
+}
+
+async function submitBid() {
+    if (!_pendingBidRequestId) { showToast('오류: 의뢰 정보가 없습니다.','error'); return; }
+    var unitPrice    = parseInt(document.getElementById('bid-unit-price').value) || 0;
+    var deliveryDays = parseInt(document.getElementById('bid-delivery-days').value) || 0;
+    var noteEl       = document.getElementById('bid-note');
+    var note         = noteEl ? noteEl.value.trim() : '';
+    if (!unitPrice)    { showToast('제안 단가를 입력해주세요.','error'); return; }
+    if (!deliveryDays) { showToast('납기 일수를 입력해주세요.','error'); return; }
+    var btn = document.getElementById('submitBidBtn');
+    if (btn) { btn.disabled=true; btn.textContent='제출 중...'; }
+    try {
+        var bid = await Bids.submit({
+            requestId:    _pendingBidRequestId,
+            unitPrice:    unitPrice,
+            deliveryDays: deliveryDays,
+            note:         note
+        });
+        var fileInput = document.getElementById('bid-quote-file');
+        if (fileInput && fileInput.files.length > 0) {
+            try { await Bids.uploadQuoteFile(bid.id, fileInput.files[0]); }
+            catch(fe) { console.warn('견적서 업로드 실패:', fe.message); }
+        }
+        closeModal('submitBidModal');
+        showToast('입찰이 완료되었습니다! 🎉','success');
+        loadMfgBids();
+        loadMfgDashboard();
+    } catch(e) {
+        showToast('입찰 실패: '+e.message,'error');
+    } finally {
+        if (btn) { btn.disabled=false; btn.textContent='📨 입찰 제출'; }
+    }
+}
+
+async function updateBidStatus(requestId, newStatus, btn) {
+    if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
+    try {
+        await Bids.updateRequestStatus(requestId, newStatus);
+        var labels = { producing:'생산 중으로 변경되었습니다.', shipping:'배송 중으로 변경되었습니다.', completed:'완료 처리되었습니다.' };
+        showToast(labels[newStatus] || '상태가 변경되었습니다.','success');
+        loadMfgBids();
+        loadMfgDashboard();
+    } catch(e) {
+        showToast('오류: '+e.message,'error');
+        if (btn) { btn.disabled=false; }
+    }
+}
 
 // ── 마켓플레이스 ───────────────────────────────────────
 function showMpTab(tab, btn) {

@@ -905,6 +905,51 @@
     </div>
 </div>
 
+<!-- 입찰 제출 모달 -->
+<div class="modal-overlay" id="submitBidModal">
+    <div class="modal" style="max-width:520px">
+        <button class="modal-close" onclick="closeModal('submitBidModal')">×</button>
+        <h3>📨 입찰 제출</h3>
+        <div id="submit-bid-req-summary" style="background:var(--bg);border-radius:8px;padding:12px 16px;margin-bottom:16px">
+            <div style="text-align:center;padding:8px;color:var(--gray)">⏳ 로딩 중...</div>
+        </div>
+        <div class="form-group">
+            <label>제안 단가 (원) *</label>
+            <input type="number" id="bid-unit-price" placeholder="예: 2500" oninput="calcBidTotal()">
+        </div>
+        <div class="form-group">
+            <label>납기 일수 *</label>
+            <input type="number" id="bid-delivery-days" placeholder="예: 14">
+        </div>
+        <div id="bid-total-display" style="display:none;background:rgba(108,92,231,0.08);border-radius:8px;padding:12px 16px;margin-bottom:8px">
+            <div class="flex-between">
+                <span class="text-sm text-muted">예상 총 금액</span>
+                <strong class="text-primary" id="bid-total-amount" style="font-size:18px">-</strong>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>메모 (선택)</label>
+            <textarea id="bid-note" placeholder="특이사항, 가능한 옵션 등을 적어주세요."></textarea>
+        </div>
+        <div class="form-group">
+            <label>견적서 파일 첨부 (선택)</label>
+            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:20px;text-align:center;cursor:pointer"
+                onclick="document.getElementById('bid-quote-file').click()"
+                onmouseover="this.style.borderColor='var(--primary)'"
+                onmouseout="this.style.borderColor='#E2E8F0'">
+                <div style="font-size:24px;margin-bottom:4px">📎</div>
+                <p class="text-xs text-muted">PDF, Excel 등 견적서 파일</p>
+                <input type="file" id="bid-quote-file" accept=".pdf,.xlsx,.xls,.doc,.docx" style="display:none" onchange="showBidFileName(this)">
+            </div>
+            <div id="bid-file-name" class="mt-8"></div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('submitBidModal')">취소</button>
+            <button class="btn btn-primary" id="submitBidBtn" onclick="submitBid()">📨 입찰 제출</button>
+        </div>
+    </div>
+</div>
+
 <!-- 알림 -->
 <div class="modal-overlay" id="notificationModal">
     <div class="modal" style="max-width:480px">
@@ -922,6 +967,7 @@
 <script src="assets/js/auth.js"></script>
 <script src="assets/js/requests.js"></script>
 <script src="assets/js/dummy-bids.js"></script>
+<script src="assets/js/bids.js"></script>
 <script src="assets/js/app.js"></script>
 
 </body>
