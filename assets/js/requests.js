@@ -81,6 +81,18 @@ var Requests = {
         var res = await q;
         if (res.error) { console.error(res.error); return []; }
         return res.data || [];
+    },
+
+    async getMyBids() {
+        var user = await Auth.getUser();
+        if (!user) return [];
+        var res = await window.supabaseClient
+            .from('bids')
+            .select('*, requests(*)')
+            .eq('manufacturer_id', user.id)
+            .order('created_at', { ascending: false });
+        if (res.error) { console.error(res.error); return []; }
+        return res.data || [];
     }
 };
 

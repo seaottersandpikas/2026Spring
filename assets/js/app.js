@@ -3,6 +3,7 @@ var AppState = {
     currentProfile: null,
     bizCurrentStep: 1,
     pendingMatch:   {},
+    mfgType:        'factory',
     priceHints: {
         '아크릴굿즈':'1,800~3,500원','의류/패브릭':'7,000~25,000원',
         '문구/스티커':'300~1,500원','패키징':'800~3,000원',
@@ -84,6 +85,8 @@ function updateUILoggedIn() {
     setEl('profileEmail',          email);
     setEl('biz-sidebar-name',      name);
     setEl('personal-sidebar-name', name);
+    setEl('mfg-sidebar-name',      name);
+    renderProfileMenu();
     // 로그인 후 현재 활성 페이지가 의뢰 페이지면 즉시 로드
     var bizPage = document.getElementById('page-client-business');
     var perPage = document.getElementById('page-client-personal');
@@ -164,18 +167,35 @@ async function handleLogout() {
 
 // ── 네비게이션 ─────────────────────────────────────────
 function navigateTo(page) {
+    var actualPage = page;
+    if (page === 'manufacturer-factory')  { AppState.mfgType = 'factory';  actualPage = 'manufacturer'; }
+    if (page === 'manufacturer-personal') { AppState.mfgType = 'personal'; actualPage = 'manufacturer'; }
+
     document.querySelectorAll('.page-section').forEach(function(el){ el.classList.remove('active'); });
-    var t = document.getElementById('page-'+page);
+    var t = document.getElementById('page-'+actualPage);
     if (t) t.classList.add('active');
     document.querySelectorAll('#mainNav button').forEach(function(b){ b.classList.remove('active'); });
-    var map = {home:0,'client-select':1,'client-business':1,'client-personal':1,marketplace:2};
-    if (map[page] !== undefined) {
+    var map = {
+        home:0,
+        'manufacturer-select':1,'manufacturer':1,
+        'client-select':2,'client-business':2,'client-personal':2,
+        marketplace:3
+    };
+    if (map[actualPage] !== undefined) {
         var btns = document.querySelectorAll('#mainNav button');
-        if (btns[map[page]]) btns[map[page]].classList.add('active');
+        if (btns[map[actualPage]]) btns[map[actualPage]].classList.add('active');
     }
-    // 페이지 진입 시 데이터 즉시 로드
-    if (page === 'client-business') loadBizDashboard();
-    if (page === 'client-personal') loadPersonalDashboard();
+    if (actualPage === 'client-business') loadBizDashboard();
+    if (actualPage === 'client-personal') loadPersonalDashboard();
+    if (actualPage === 'manufacturer') {
+        var typeLabel = AppState.mfgType === 'factory' ? '공장 생산자' : '개인 생산자';
+        setEl('mfg-sidebar-type-label', typeLabel);
+        var badge = document.getElementById('mfg-type-badge');
+        if (badge) badge.textContent = typeLabel;
+        if (AppState.currentProfile) setEl('mfg-sidebar-name', AppState.currentProfile.nickname || '사용자');
+        loadMfgDashboard();
+    }
+    if (actualPage === 'marketplace') loadMarketplace();
     window.scrollTo(0,0);
 }
 
@@ -211,7 +231,7 @@ function showPersonalTab(tab, btn) {
         var bs = document.querySelectorAll('#page-client-personal .sidebar-menu button');
         if (bs[m[tab]]) bs[m[tab]].classList.add('active');
     }
-    if (tab==='myorders')     loadMyRequests('personal');
+    if (tab==='myorders')     loadMyRequestsSplit();
     if (tab==='recent-match') loadMatchHistoryPersonal();
     if (tab==='dashboard')    loadPersonalDashboard();
 }
@@ -687,7 +707,6 @@ async function cancelRequest(requestId) {
     } catch(e) { showToast('오류: '+e.message,'error'); }
 }
 
-// ── 필터 ───────────────────────────────────────────────
 function filterBizStatus(status, btn) {
     if (btn) {
         document.querySelectorAll('#biz-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
@@ -701,18 +720,386 @@ function filterBizStatus(status, btn) {
     });
 }
 
-function filterPersonalStatus(status, btn) {
+// ── 개인 의뢰 관리 유형 탭 전환 ───────────────────────
+function switchOrderType(type, btn) {
+    document.querySelectorAll('.order-type-tab').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    var ind = document.getElementById('individual-orders-section');
+    var grp = document.getElementById('group-orders-section');
+    if (type === 'individual') {
+        if (ind) ind.style.display = 'block';
+        if (grp) grp.style.display = 'none';
+    } else {
+        if (ind) ind.style.display = 'none';
+        if (grp) grp.style.display = 'block';
+    }
+}
+
+function filterIndividualStatus(status, btn) {
     if (btn) {
-        document.querySelectorAll('#personal-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
+        document.querySelectorAll('#individual-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
         btn.classList.add('active');
     }
-    document.querySelectorAll('#personal-myorders-list .request-card').forEach(function(c){
+    document.querySelectorAll('#personal-individual-list .request-card').forEach(function(c){
         var show = status==='all' ? true
-            : status==='group'     ? c.dataset.requestType==='group'
-            : status==='completed' ? (c.dataset.status==='matched'||c.dataset.status==='producing'||c.dataset.status==='shipping'||c.dataset.status==='completed')
+            : status==='completed' ? (['matched','producing','shipping','completed'].indexOf(c.dataset.status) >= 0)
             : c.dataset.status===status;
         c.style.display = show ? 'block' : 'none';
     });
+}
+
+function filterGroupStatus(status, btn) {
+    if (btn) {
+        document.querySelectorAll('#group-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
+        btn.classList.add('active');
+    }
+    document.querySelectorAll('#personal-group-list .request-card').forEach(function(c){
+        var show = status==='all' ? true
+            : status==='completed' ? (['matched','producing','shipping','completed'].indexOf(c.dataset.status) >= 0)
+            : c.dataset.status===status;
+        c.style.display = show ? 'block' : 'none';
+    });
+}
+
+// ── 의뢰 목록 분할 로드 (일반 / 공동구매) ─────────────
+async function loadMyRequestsSplit() {
+    var indList = document.getElementById('personal-individual-list');
+    var grpList = document.getElementById('personal-group-list');
+    if (!indList || !grpList) return;
+
+    if (!AppState.currentUser) {
+        var msg = '<div class="empty-state"><div class="empty-icon">🔐</div><p>로그인 후 확인할 수 있습니다.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">로그인</button></div>';
+        indList.innerHTML = msg; grpList.innerHTML = msg; return;
+    }
+    indList.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    grpList.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var all = await Requests.getMyRequests();
+        var individual = all.filter(function(r){ return r.request_type === 'personal'; });
+        var group      = all.filter(function(r){ return r.request_type === 'group'; });
+
+        if (!individual.length) {
+            indList.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>등록된 개인 의뢰가 없습니다.</p><button class="btn btn-primary" onclick="showPersonalTab(\'individual\',null)">의뢰 만들기</button></div>';
+        } else {
+            indList.innerHTML = individual.map(renderRequestCard).join('');
+        }
+        if (!group.length) {
+            grpList.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><p>등록된 공동구매 의뢰가 없습니다.</p><button class="btn btn-primary" onclick="showPersonalTab(\'group\',null)">공동구매 만들기</button></div>';
+        } else {
+            grpList.innerHTML = group.map(renderRequestCard).join('');
+        }
+    } catch(e) {
+        console.error(e);
+        indList.innerHTML = '<div class="empty-state"><p>오류가 발생했습니다.</p></div>';
+        grpList.innerHTML = '<div class="empty-state"><p>오류가 발생했습니다.</p></div>';
+    }
+}
+
+// ── 프로필 드롭다운 메뉴 (역할별) ──────────────────────
+function renderProfileMenu() {
+    var menuEl = document.getElementById('profileMenuItems');
+    if (!menuEl) return;
+    var p    = AppState.currentProfile;
+    var type = p ? p.user_type : '';
+
+    var badge = document.getElementById('profileUserTypeBadge');
+    if (badge) {
+        var typeLabels = { personal:'개인 의뢰자', business:'사업자 의뢰자', manufacturer:'생산자' };
+        badge.textContent = typeLabels[type] || type;
+        badge.style.display = type ? 'inline-block' : 'none';
+    }
+
+    var items = [];
+    if (type === 'manufacturer') {
+        var mType = AppState.mfgType || 'factory';
+        items = [
+            { label:'📊 내 입찰 현황',   action:"navigateTo('manufacturer-"+mType+"');showMfgTab('bids',null);closeDropdown()" },
+            { label:'👤 내 프로필',       action:"navigateTo('manufacturer-"+mType+"');showMfgTab('profile',null);closeDropdown()" },
+            { label:'🔍 추천 의뢰 목록', action:"navigateTo('manufacturer-"+mType+"');showMfgTab('requests',null);closeDropdown()" },
+            { label:'💳 결제/정산',       action:"navigateTo('manufacturer-"+mType+"');showMfgTab('payments',null);closeDropdown()" },
+            { label:'⚙️ 계정 설정',       action:"closeDropdown();showToast('구현 예정','info')" }
+        ];
+    } else if (type === 'business') {
+        items = [
+            { label:'📁 내 의뢰 관리', action:"navigateTo('client-business');showBizTab('manage',null);closeDropdown()" },
+            { label:'📊 대시보드',     action:"navigateTo('client-business');closeDropdown()" },
+            { label:'💳 결제/정산',    action:"navigateTo('client-business');showBizTab('payments',null);closeDropdown()" },
+            { label:'⚙️ 계정 설정',    action:"closeDropdown();showToast('구현 예정','info')" }
+        ];
+    } else {
+        items = [
+            { label:'📁 내 의뢰 관리',  action:"navigateTo('client-personal');showPersonalTab('myorders',null);closeDropdown()" },
+            { label:'👥 공동구매 내역', action:"navigateTo('client-personal');showPersonalTab('myorders',null);switchOrderType('group',null);closeDropdown()" },
+            { label:'🛒 마켓플레이스',  action:"navigateTo('marketplace');closeDropdown()" },
+            { label:'⚙️ 계정 설정',     action:"closeDropdown();showToast('구현 예정','info')" }
+        ];
+    }
+
+    menuEl.innerHTML = items.map(function(item){
+        return '<li><button onclick="' + item.action + '">' + item.label + '</button></li>';
+    }).join('') +
+    '<li style="border-top:1px solid #E2E8F0;margin-top:4px;padding-top:4px"><button style="color:var(--danger)" onclick="handleLogout()">로그아웃</button></li>';
+}
+
+// ── 생산자 탭 전환 ─────────────────────────────────────
+function showMfgTab(tab, btn) {
+    document.querySelectorAll('#page-manufacturer .main-content > .tab-content')
+        .forEach(function(el){ el.classList.remove('active'); });
+    var el = document.getElementById('mfg-'+tab);
+    if (el) el.classList.add('active');
+    document.querySelectorAll('#page-manufacturer .sidebar-menu button')
+        .forEach(function(b){ b.classList.remove('active'); });
+    if (btn) { btn.classList.add('active'); }
+    else {
+        var m = {dashboard:0, requests:1, bids:2, profile:3, payments:4};
+        var bs = document.querySelectorAll('#page-manufacturer .sidebar-menu button');
+        if (m[tab] !== undefined && bs[m[tab]]) bs[m[tab]].classList.add('active');
+    }
+    if (tab === 'dashboard') loadMfgDashboard();
+    if (tab === 'bids')      loadMfgBids();
+    if (tab === 'requests')  loadMfgAvailableRequests();
+}
+
+// ── 생산자 대시보드 ────────────────────────────────────
+async function loadMfgDashboard() {
+    if (!AppState.currentUser) return;
+    try {
+        var bids = await Requests.getMyBids();
+        setEl('mfg-count-all',       bids.length);
+        setEl('mfg-dash-bidding',    bids.filter(function(b){ return b.status==='pending'||b.status==='submitted'; }).length);
+        setEl('mfg-dash-producing',  bids.filter(function(b){ return b.requests&&b.requests.status==='producing'; }).length);
+        setEl('mfg-dash-completed',  bids.filter(function(b){ return b.status==='selected'&&b.requests&&b.requests.status==='completed'; }).length);
+    } catch(e) { console.error(e); }
+}
+
+// ── 생산자 입찰 현황 5단계 로드 ───────────────────────
+async function loadMfgBids() {
+    if (!AppState.currentUser) return;
+    var sections = {
+        bidding:   document.getElementById('mfg-bid-list-bidding'),
+        matched:   document.getElementById('mfg-bid-list-matched'),
+        producing: document.getElementById('mfg-bid-list-producing'),
+        shipping:  document.getElementById('mfg-bid-list-shipping'),
+        completed: document.getElementById('mfg-bid-list-completed')
+    };
+    Object.values(sections).forEach(function(el){
+        if (el) el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--gray)">로딩 중...</div>';
+    });
+    try {
+        var bids = await Requests.getMyBids();
+        var cat = { bidding:[], matched:[], producing:[], shipping:[], completed:[] };
+        bids.forEach(function(bid) {
+            var rs = bid.requests ? bid.requests.status : null;
+            if      (bid.status==='selected' && rs==='completed') cat.completed.push(bid);
+            else if (bid.status==='selected' && rs==='shipping')  cat.shipping.push(bid);
+            else if (bid.status==='selected' && rs==='producing') cat.producing.push(bid);
+            else if (bid.status==='selected')                     cat.matched.push(bid);
+            else                                                  cat.bidding.push(bid);
+        });
+        var emptyLabels = {
+            bidding:'진행 중인 입찰이 없습니다.', matched:'매칭 완료된 건이 없습니다.',
+            producing:'생산 진행 중인 건이 없습니다.', shipping:'배송 중인 건이 없습니다.', completed:'완료된 건이 없습니다.'
+        };
+        Object.keys(cat).forEach(function(key) {
+            setEl('mfg-bcount-'+key, cat[key].length);
+            var el = sections[key]; if (!el) return;
+            el.innerHTML = cat[key].length
+                ? cat[key].map(renderMfgBidCard).join('')
+                : '<div class="empty-state" style="padding:20px"><p class="text-sm">'+emptyLabels[key]+'</p></div>';
+        });
+    } catch(e) {
+        console.error(e);
+        Object.values(sections).forEach(function(el){ if(el) el.innerHTML='<div style="padding:16px;text-align:center;color:var(--danger)">오류가 발생했습니다.</div>'; });
+    }
+}
+
+function renderMfgBidCard(bid) {
+    var req = bid.requests || {};
+    var title = escHtml(req.title || '(의뢰 정보 없음)');
+    var qty   = (req.quantity || 0).toLocaleString();
+    var date  = bid.created_at ? new Date(bid.created_at).toLocaleDateString('ko-KR') : '-';
+    var price = (bid.unit_price || 0).toLocaleString();
+    return '<div class="mfg-bid-card" onclick="openMfgBidDetail(\''+bid.id+'\')">' +
+        '<div class="flex-between">' +
+        '<div><strong>'+title+'</strong><p class="text-xs text-muted" style="margin-top:4px">'+escHtml(req.category||'')+(req.category?' | ':'')+'수량 '+qty+'개</p></div>' +
+        '<div style="text-align:right"><div style="font-weight:700;color:var(--primary)">'+price+'원<span class="text-xs text-muted">/개</span></div><div class="text-xs text-muted">'+date+'</div></div>' +
+        '</div></div>';
+}
+
+// ── 생산자 입찰 상세 팝업 ──────────────────────────────
+async function openMfgBidDetail(bidId) {
+    openModal('mfgBidDetailModal');
+    var body    = document.getElementById('mfg-bid-detail-body');
+    var titleEl = document.getElementById('mfg-bid-detail-title');
+    if (body) body.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var bids = await Requests.getMyBids();
+        var bid  = bids.find(function(b){ return b.id===bidId; });
+        if (!bid) throw new Error('입찰 정보를 찾을 수 없습니다.');
+        var req  = bid.requests || {};
+        if (titleEl) titleEl.textContent = '📄 '+(req.title||'입찰 상세');
+        var tMap = {business:'사업자 의뢰',personal:'개인 의뢰',group:'공동구매 의뢰'};
+        var total = (bid.unit_price||0) * (req.quantity||0);
+        body.innerHTML =
+            '<h5 style="margin-bottom:12px;font-size:13px;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px">의뢰 정보</h5>' +
+            '<table class="data-table mb-16">' +
+            '<tr><td style="width:120px;font-weight:600">의뢰 유형</td><td>'+(tMap[req.request_type]||req.request_type||'-')+'</td></tr>' +
+            '<tr><td style="font-weight:600">카테고리</td><td>'+escHtml(req.category||'-')+'</td></tr>' +
+            '<tr><td style="font-weight:600">수량</td><td>'+(req.quantity||0).toLocaleString()+'개</td></tr>' +
+            '<tr><td style="font-weight:600">희망 단가</td><td>'+(req.target_price||0).toLocaleString()+'원</td></tr>' +
+            (req.bid_deadline?'<tr><td style="font-weight:600">입찰 마감일</td><td>'+req.bid_deadline+'</td></tr>':'')+
+            (req.design_guide?'<tr><td style="font-weight:600">디자인 가이드</td><td style="white-space:pre-wrap">'+escHtml(req.design_guide)+'</td></tr>':'')+
+            (req.detail_note?'<tr><td style="font-weight:600">상세 요청</td><td style="white-space:pre-wrap">'+escHtml(req.detail_note)+'</td></tr>':'')+
+            '</table>' +
+            '<div class="divider"></div>' +
+            '<h5 style="margin-bottom:12px;font-size:13px;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px">내 견적</h5>' +
+            '<table class="estimate-table">' +
+            '<thead><tr><th>항목</th><th>수량</th><th>단가</th><th>금액</th></tr></thead>' +
+            '<tbody><tr><td>'+escHtml(req.title||'-')+' 제작비</td><td>'+(req.quantity||0).toLocaleString()+'개</td><td>'+(bid.unit_price||0).toLocaleString()+'원</td><td>'+total.toLocaleString()+'원</td></tr></tbody>' +
+            '<tfoot><tr style="font-weight:700"><td colspan="3" style="text-align:right">합계</td><td class="text-primary">'+total.toLocaleString()+'원</td></tr></tfoot>' +
+            '</table>' +
+            '<div style="background:var(--bg);border-radius:8px;padding:12px 16px;margin-top:12px;display:flex;gap:24px;flex-wrap:wrap">' +
+            '<div><div class="text-xs text-muted">예상 납기</div><div style="font-weight:700;font-size:16px;color:var(--primary)">'+(bid.delivery_days||'-')+'일</div></div>' +
+            '<div><div class="text-xs text-muted">총 견적 금액</div><div style="font-weight:700;font-size:16px">'+total.toLocaleString()+'원</div></div>' +
+            '</div>' +
+            (bid.note?'<div class="alert alert-info mt-16"><span>📝</span><span><strong>메모:</strong> '+escHtml(bid.note)+'</span></div>':'')+
+            '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
+            '<button class="btn btn-secondary" onclick="closeModal(\'mfgBidDetailModal\')">닫기</button></div>';
+    } catch(e) {
+        console.error(e);
+        if (body) body.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+    }
+}
+
+// ── 생산자 추천 의뢰 목록 ─────────────────────────────
+async function loadMfgAvailableRequests() {
+    var container = document.getElementById('mfg-requests-list');
+    if (!container) return;
+    if (!AppState.currentUser) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><p>로그인 후 확인할 수 있습니다.</p><button class="btn btn-primary" onclick="openModal(\'loginModal\')">로그인</button></div>';
+        return;
+    }
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var catFilter = document.getElementById('mfg-category-filter');
+        var category  = catFilter ? catFilter.value : '';
+        var q = window.supabaseClient.from('requests').select('*, bids(id)').eq('status','bidding').order('created_at',{ascending:false}).limit(20);
+        if (category) q = q.eq('category', category);
+        var res = await q;
+        if (res.error) throw res.error;
+        var list = res.data || [];
+        if (!list.length) { container.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>현재 입찰 가능한 의뢰가 없습니다.</p></div>'; return; }
+        container.innerHTML = list.map(function(req) {
+            var bidCount = req.bids ? req.bids.length : 0;
+            var diff = req.bid_deadline ? Math.ceil((new Date(req.bid_deadline)-new Date())/86400000) : null;
+            var ddText = diff !== null ? (diff>=0?'D-'+diff:'마감') : '';
+            return '<div class="request-card" style="cursor:pointer" onclick="openRequestDetail(\''+req.id+'\')">' +
+                '<div class="request-card-header"><h4>'+escHtml(req.title)+'</h4><span class="status-badge status-bidding">'+bidCount+'명 입찰중</span></div>' +
+                '<div class="request-meta">' +
+                '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
+                '<div class="meta-item">🔢 수량: <strong>'+(req.quantity||0).toLocaleString()+'개</strong></div>' +
+                '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+                (ddText?'<div class="meta-item">📅 마감: <strong>'+ddText+'</strong></div>':'')+
+                '</div>' +
+                '<div class="request-actions"><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showToast(\'입찰 기능은 Phase 1에서 구현됩니다.\',\'info\')">📨 입찰하기</button></div>' +
+                '</div>';
+        }).join('');
+    } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류가 발생했습니다.</p></div>'; }
+}
+
+function saveMfgProfile() { showToast('프로필 저장 기능은 Phase 1에서 구현됩니다.','info'); }
+
+// ── 마켓플레이스 ───────────────────────────────────────
+function showMpTab(tab, btn) {
+    document.querySelectorAll('#page-marketplace .tab-content').forEach(function(el){ el.classList.remove('active'); });
+    var el = document.getElementById('mp-'+tab);
+    if (el) el.classList.add('active');
+    document.querySelectorAll('#marketplaceTabs .mp-tab').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    if (tab==='mass')  loadMpMassRequests('');
+    if (tab==='group') loadMpGroupRequests();
+}
+
+async function loadMarketplace() { loadMpMassRequests(''); }
+
+async function loadMpMassRequests(category) {
+    var container = document.getElementById('mp-mass-list');
+    if (!container) return;
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var q = window.supabaseClient.from('requests').select('*, bids(id)').eq('request_type','business').eq('status','bidding').order('created_at',{ascending:false}).limit(20);
+        if (category) q = q.eq('category', category);
+        var res = await q; if (res.error) throw res.error;
+        var list = res.data || [];
+        if (!list.length) { container.innerHTML='<div class="empty-state"><div class="empty-icon">📦</div><p>등록된 의뢰가 없습니다.</p></div>'; return; }
+        container.innerHTML = list.map(function(req) {
+            var bidCount = req.bids ? req.bids.length : 0;
+            return '<div class="request-card">' +
+                '<div class="request-card-header"><h4>'+escHtml(req.title)+'</h4><span class="status-badge status-bidding">'+bidCount+'명 입찰중</span></div>' +
+                '<div class="request-meta">' +
+                '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
+                '<div class="meta-item">🔢 수량: <strong>'+(req.quantity||0).toLocaleString()+'개</strong></div>' +
+                '<div class="meta-item">💰 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+                '</div>' +
+                '<div class="request-actions"><button class="btn btn-secondary btn-sm" onclick="openRequestDetail(\''+req.id+'\')">📋 상세 보기</button></div>' +
+                '</div>';
+        }).join('');
+    } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류가 발생했습니다.</p></div>'; }
+}
+
+async function loadMpGroupRequests() {
+    var container = document.getElementById('mp-group-list');
+    if (!container) return;
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var res = await window.supabaseClient.from('requests').select('*').eq('request_type','group').in('status',['bidding','recruiting']).order('created_at',{ascending:false}).limit(20);
+        if (res.error) throw res.error;
+        var list = res.data || [];
+        if (!list.length) { container.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><p>모집 중인 공동구매가 없습니다.</p></div>'; return; }
+        container.innerHTML = list.map(function(req) {
+            var pct = req.min_quantity ? Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
+            return '<div class="request-card">' +
+                '<div class="request-card-header"><h4>👥 '+escHtml(req.title)+'</h4><span class="status-badge status-recruiting">모집중</span></div>' +
+                '<div class="request-meta">' +
+                '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
+                '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+                '</div>' +
+                '<div class="co-purchase-info">' +
+                '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</strong></div>' +
+                '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
+                '</div>' +
+                '<div class="request-actions"><button class="btn btn-primary btn-sm" onclick="joinGroupPurchase(\''+req.id+'\')">참여하기</button></div>' +
+                '</div>';
+        }).join('');
+    } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류가 발생했습니다.</p></div>'; }
+}
+
+var _postType = '', _postRating = 4;
+function openCreatePost(type) {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    _postType = type; _postRating = 4;
+    setEl('createPostTitle', type==='review' ? '✍️ 의뢰 후기 작성' : '🌟 생산자 홍보 등록');
+    var rg = document.getElementById('postRatingGroup');
+    if (rg) rg.style.display = type==='review' ? 'block' : 'none';
+    setPostRating(4);
+    var ti = document.getElementById('postTitleInput');   if (ti) ti.value = '';
+    var ci = document.getElementById('postContentInput'); if (ci) ci.value = '';
+    openModal('createPostModal');
+}
+function setPostRating(n) {
+    _postRating = n;
+    document.querySelectorAll('#postStarRating span').forEach(function(s,i){ s.style.opacity = i<n ? '1' : '0.3'; });
+}
+function submitPost() {
+    var title   = document.getElementById('postTitleInput')   ? document.getElementById('postTitleInput').value.trim()   : '';
+    var content = document.getElementById('postContentInput') ? document.getElementById('postContentInput').value.trim() : '';
+    if (!title||!content) { showToast('제목과 내용을 입력해주세요.','error'); return; }
+    closeModal('createPostModal');
+    showToast('게시물이 등록되었습니다! (DB 연동은 Phase 3에서 구현)','success');
+}
+function joinGroupPurchase(requestId) {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    showToast('공동구매 참여 기능은 Phase 2에서 구현됩니다.','info');
 }
 
 // ── 스텝 ───────────────────────────────────────────────

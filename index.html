@@ -13,6 +13,7 @@
         <div class="logo" onclick="navigateTo('home')"><span>🏭 GoodsFactory</span></div>
         <nav class="nav-links" id="mainNav">
             <button class="active" onclick="navigateTo('home')">홈</button>
+            <button onclick="navigateTo('manufacturer-select')">생산자</button>
             <button onclick="navigateTo('client-select')">의뢰자</button>
             <button onclick="navigateTo('marketplace')">마켓플레이스</button>
         </nav>
@@ -24,13 +25,10 @@
                 <div class="profile-header-info">
                     <strong id="profileName" style="display:block;color:var(--primary);font-size:15px;">사용자</strong>
                     <span id="profileEmail" class="text-xs text-muted"></span>
+                    <span id="profileUserTypeBadge" class="profile-user-type" style="display:none"></span>
                 </div>
-                <ul class="profile-dropdown-menu">
-                    <li><button onclick="navigateTo('client-personal');closeDropdown()">나의 의뢰 관리</button></li>
-                    <li><button onclick="closeDropdown()">계정 설정</button></li>
-                    <li style="border-top:1px solid #E2E8F0;margin-top:4px;padding-top:4px;">
-                        <button style="color:var(--danger)" onclick="handleLogout()">로그아웃</button>
-                    </li>
+                <ul class="profile-dropdown-menu" id="profileMenuItems">
+                    <!-- JS로 동적 생성 (renderProfileMenu) -->
                 </ul>
             </div>
         </div>
@@ -44,7 +42,12 @@
         <div class="home-hero">
             <h1>당신의 아이디어를 현실로</h1>
             <p>굿즈 제작부터 판매까지, 생산자와 의뢰자를 연결하는 스마트 플랫폼</p>
-            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;margin:0 auto 40px;">
+            <div class="role-cards" style="max-width:900px;grid-template-columns:repeat(3,1fr);margin:0 auto 40px;">
+                <div class="role-card" onclick="navigateTo('manufacturer-select')">
+                    <div class="icon" style="background:rgba(108,92,231,0.1)">🏭</div>
+                    <h3>생산자 (Manufacturer)</h3>
+                    <p>공장 또는 개인 제작자로서<br>의뢰를 수주하세요</p>
+                </div>
                 <div class="role-card" onclick="navigateTo('client-select')">
                     <div class="icon" style="background:rgba(0,206,201,0.1)">📋</div>
                     <h3>의뢰자 (Client)</h3>
@@ -61,6 +64,187 @@
                 <div class="stat-card"><div class="stat-num">15,234</div><div class="stat-label">완료된 의뢰</div></div>
                 <div class="stat-card"><div class="stat-num">8,912</div><div class="stat-label">활성 의뢰자</div></div>
                 <div class="stat-card"><div class="stat-num">&#8361;3.2B</div><div class="stat-label">총 거래액</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MANUFACTURER SELECT -->
+    <section id="page-manufacturer-select" class="page-section">
+        <div class="home-hero" style="padding-top:40px">
+            <h1 style="font-size:36px">생산자 유형 선택</h1>
+            <p>공장 생산자 또는 개인 생산자로 참여하세요</p>
+            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;margin:0 auto;">
+                <div class="role-card" onclick="navigateTo('manufacturer-factory')">
+                    <div class="icon" style="background:rgba(108,92,231,0.1)">🏭</div>
+                    <h3>공장 생산자</h3>
+                    <p>대량 생산 시설 보유<br>Mass Production</p>
+                </div>
+                <div class="role-card" onclick="navigateTo('manufacturer-personal')">
+                    <div class="icon" style="background:rgba(0,206,201,0.1)">🧑‍🎨</div>
+                    <h3>개인 생산자</h3>
+                    <p>소규모·수공예 제작<br>Individual Maker</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MANUFACTURER DASHBOARD (공장/개인 공용) -->
+    <section id="page-manufacturer" class="page-section">
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <div style="padding:12px 14px;margin-bottom:8px">
+                    <span class="text-xs text-muted" id="mfg-sidebar-type-label">생산자</span>
+                    <h4 id="mfg-sidebar-name">사용자</h4>
+                    <span class="profile-user-type" id="mfg-type-badge"></span>
+                </div>
+                <ul class="sidebar-menu">
+                    <li><button class="active" onclick="showMfgTab('dashboard',this)">📊 대시보드</button></li>
+                    <li><button onclick="showMfgTab('requests',this)">🔍 추천 의뢰 목록</button></li>
+                    <li><button onclick="showMfgTab('bids',this)">📊 내 입찰 현황</button></li>
+                    <li><button onclick="showMfgTab('profile',this)">👤 내 정보</button></li>
+                    <li><button onclick="showMfgTab('payments',this)">💳 결제/정산</button></li>
+                </ul>
+            </aside>
+            <div class="main-content">
+
+                <!-- 대시보드 -->
+                <div id="mfg-dashboard" class="tab-content active">
+                    <h2 class="section-title">📊 대시보드</h2>
+                    <div class="summary-grid">
+                        <div class="summary-card" onclick="showMfgTab('bids',null)">
+                            <div class="sum-num" style="color:var(--primary)" id="mfg-count-all">-</div>
+                            <div class="sum-label">전체 입찰</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--warning)" id="mfg-dash-bidding">-</div>
+                            <div class="sum-label">입찰 진행중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--secondary)" id="mfg-dash-producing">-</div>
+                            <div class="sum-label">생산 진행중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--success)" id="mfg-dash-completed">-</div>
+                            <div class="sum-label">완료</div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <span>💡</span>
+                        <div>전문 분야 의뢰를 찾아 입찰해보세요!<br>
+                        <a href="#" onclick="showMfgTab('requests',null);return false;" style="color:var(--primary)">추천 의뢰 보기 →</a></div>
+                    </div>
+                </div>
+
+                <!-- 추천 의뢰 목록 -->
+                <div id="mfg-requests" class="tab-content">
+                    <div class="flex-between mb-16">
+                        <h2 class="section-title" style="margin-bottom:0">🔍 추천 의뢰 목록</h2>
+                        <select class="filter-select" id="mfg-category-filter" onchange="loadMfgAvailableRequests()">
+                            <option value="">전체 카테고리</option>
+                            <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                            <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
+                            <option>생활용품</option><option>기타</option>
+                        </select>
+                    </div>
+                    <div id="mfg-requests-list">
+                        <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
+                    </div>
+                </div>
+
+                <!-- 내 입찰 현황 -->
+                <div id="mfg-bids" class="tab-content">
+                    <h2 class="section-title">📊 내 입찰 현황</h2>
+                    <p class="text-sm text-muted mb-16">각 건을 클릭하면 의뢰 내용과 견적을 확인할 수 있습니다.</p>
+
+                    <div class="status-section">
+                        <div class="status-section-header" style="border-left:3px solid var(--warning)">
+                            <span style="width:10px;height:10px;border-radius:50%;background:var(--warning);display:inline-block"></span>
+                            📨 입찰 중
+                            <span id="mfg-bcount-bidding" style="background:rgba(253,203,110,0.3);color:#856404;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:4px">0</span>
+                        </div>
+                        <div id="mfg-bid-list-bidding"><div class="empty-state" style="padding:20px"><p class="text-sm">진행 중인 입찰이 없습니다.</p></div></div>
+                    </div>
+
+                    <div class="status-section">
+                        <div class="status-section-header" style="border-left:3px solid var(--success)">
+                            <span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block"></span>
+                            ✅ 매칭 완료
+                            <span id="mfg-bcount-matched" style="background:rgba(0,184,148,0.2);color:var(--success);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:4px">0</span>
+                        </div>
+                        <div id="mfg-bid-list-matched"><div class="empty-state" style="padding:20px"><p class="text-sm">매칭 완료된 건이 없습니다.</p></div></div>
+                    </div>
+
+                    <div class="status-section">
+                        <div class="status-section-header" style="border-left:3px solid var(--primary)">
+                            <span style="width:10px;height:10px;border-radius:50%;background:var(--primary);display:inline-block"></span>
+                            🔧 생산 중
+                            <span id="mfg-bcount-producing" style="background:rgba(108,92,231,0.15);color:var(--primary);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:4px">0</span>
+                        </div>
+                        <div id="mfg-bid-list-producing"><div class="empty-state" style="padding:20px"><p class="text-sm">생산 진행 중인 건이 없습니다.</p></div></div>
+                    </div>
+
+                    <div class="status-section">
+                        <div class="status-section-header" style="border-left:3px solid #0984e3">
+                            <span style="width:10px;height:10px;border-radius:50%;background:#0984e3;display:inline-block"></span>
+                            🚚 배송 중
+                            <span id="mfg-bcount-shipping" style="background:rgba(9,132,227,0.15);color:#0984e3;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:4px">0</span>
+                        </div>
+                        <div id="mfg-bid-list-shipping"><div class="empty-state" style="padding:20px"><p class="text-sm">배송 중인 건이 없습니다.</p></div></div>
+                    </div>
+
+                    <div class="status-section">
+                        <div class="status-section-header" style="border-left:3px solid #b2bec3">
+                            <span style="width:10px;height:10px;border-radius:50%;background:#b2bec3;display:inline-block"></span>
+                            📦 배송 완료
+                            <span id="mfg-bcount-completed" style="background:rgba(178,190,195,0.3);color:var(--gray);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:4px">0</span>
+                        </div>
+                        <div id="mfg-bid-list-completed"><div class="empty-state" style="padding:20px"><p class="text-sm">완료된 건이 없습니다.</p></div></div>
+                    </div>
+                </div>
+
+                <!-- 내 정보 -->
+                <div id="mfg-profile" class="tab-content">
+                    <h2 class="section-title">👤 내 정보</h2>
+                    <div class="card">
+                        <div class="form-group">
+                            <label>닉네임</label>
+                            <input type="text" id="mfg-profile-nickname" placeholder="닉네임">
+                        </div>
+                        <div class="form-group">
+                            <label>전문 분야</label>
+                            <select id="mfg-profile-specialty">
+                                <option value="">선택하세요</option>
+                                <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                                <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
+                                <option>생활용품</option><option>기타</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>최대 생산 가능 수량</label>
+                                <input type="number" id="mfg-profile-max-qty" placeholder="예: 5000">
+                            </div>
+                            <div class="form-group">
+                                <label>최소 주문 수량 (MOQ)</label>
+                                <input type="number" id="mfg-profile-min-qty" placeholder="예: 100">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>소개글 (의뢰자에게 공개)</label>
+                            <textarea id="mfg-profile-intro" placeholder="제작 경력, 특기, 품질 관리 방식 등을 소개해주세요."></textarea>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end">
+                            <button class="btn btn-primary" onclick="saveMfgProfile()">💾 저장</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 결제/정산 -->
+                <div id="mfg-payments" class="tab-content">
+                    <h2 class="section-title">💳 결제 / 정산 내역</h2>
+                    <div class="empty-state"><div class="empty-icon">💳</div><p>정산 내역이 없습니다.</p></div>
+                </div>
+
             </div>
         </div>
     </section>
@@ -452,15 +636,32 @@
                         <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
                         <button class="btn btn-primary btn-sm" onclick="showPersonalTab('individual',null)">➕ 새 의뢰</button>
                     </div>
-                    <div class="pill-filters" id="personal-status-pills">
-                        <button class="pill-filter active" onclick="filterPersonalStatus('all',this)">전체</button>
-                        <button class="pill-filter" onclick="filterPersonalStatus('bidding',this)">입찰중</button>
-                        <button class="pill-filter" onclick="filterPersonalStatus('group',this)">공동구매</button>
-                        <button class="pill-filter" onclick="filterPersonalStatus('completed',this)">완료</button>
-                        <button class="pill-filter" onclick="filterPersonalStatus('cancelled',this)">취소됨</button>
+                    <div class="order-type-tabs">
+                        <button class="order-type-tab active" onclick="switchOrderType('individual',this)">🎯 일반 의뢰</button>
+                        <button class="order-type-tab" onclick="switchOrderType('group',this)">👥 공동구매 의뢰</button>
                     </div>
-                    <div id="personal-myorders-list">
-                        <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
+                    <div id="individual-orders-section">
+                        <div class="pill-filters" id="individual-status-pills">
+                            <button class="pill-filter active" onclick="filterIndividualStatus('all',this)">전체</button>
+                            <button class="pill-filter" onclick="filterIndividualStatus('bidding',this)">입찰중</button>
+                            <button class="pill-filter" onclick="filterIndividualStatus('matched',this)">매칭완료</button>
+                            <button class="pill-filter" onclick="filterIndividualStatus('completed',this)">완료</button>
+                            <button class="pill-filter" onclick="filterIndividualStatus('cancelled',this)">취소됨</button>
+                        </div>
+                        <div id="personal-individual-list">
+                            <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
+                        </div>
+                    </div>
+                    <div id="group-orders-section" style="display:none">
+                        <div class="pill-filters" id="group-status-pills">
+                            <button class="pill-filter active" onclick="filterGroupStatus('all',this)">전체</button>
+                            <button class="pill-filter" onclick="filterGroupStatus('bidding',this)">입찰중</button>
+                            <button class="pill-filter" onclick="filterGroupStatus('matched',this)">매칭완료</button>
+                            <button class="pill-filter" onclick="filterGroupStatus('completed',this)">완료</button>
+                        </div>
+                        <div id="personal-group-list">
+                            <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
+                        </div>
                     </div>
                 </div>
 
@@ -485,10 +686,49 @@
 
     <!-- MARKETPLACE -->
     <section id="page-marketplace" class="page-section">
-        <div class="empty-state">
-            <div class="empty-icon">🛒</div>
-            <p>마켓플레이스는 추후 구현됩니다.</p>
-            <button class="btn btn-primary" onclick="navigateTo('client-select')">의뢰하러 가기</button>
+        <div class="marketplace-tabs" id="marketplaceTabs">
+            <button class="mp-tab active" onclick="showMpTab('mass',this)">📦 대량생산 의뢰</button>
+            <button class="mp-tab" onclick="showMpTab('group',this)">👥 공동구매 모집</button>
+            <button class="mp-tab" onclick="showMpTab('reviews',this)">✍️ 의뢰 후기</button>
+            <button class="mp-tab" onclick="showMpTab('promo',this)">🌟 생산자 홍보</button>
+        </div>
+
+        <div id="mp-mass" class="tab-content active">
+            <div class="flex-between mb-16">
+                <h2 class="section-title" style="margin-bottom:0">📦 대량생산 의뢰 목록</h2>
+                <select class="filter-select" onchange="loadMpMassRequests(this.value)">
+                    <option value="">전체 카테고리</option>
+                    <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                    <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option><option>생활용품</option>
+                </select>
+            </div>
+            <div id="mp-mass-list"><div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div></div>
+        </div>
+
+        <div id="mp-group" class="tab-content">
+            <h2 class="section-title">👥 공동구매 모집 목록</h2>
+            <div id="mp-group-list"><div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div></div>
+        </div>
+
+        <div id="mp-reviews" class="tab-content">
+            <div class="flex-between mb-16">
+                <h2 class="section-title" style="margin-bottom:0">✍️ 의뢰 후기</h2>
+                <button class="btn btn-primary btn-sm" onclick="openCreatePost('review')">✏️ 후기 작성</button>
+            </div>
+            <div class="feed-grid" id="mp-reviews-grid">
+                <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">✍️</div><p>첫 번째 후기를 작성해보세요!</p></div>
+            </div>
+        </div>
+
+        <div id="mp-promo" class="tab-content">
+            <div class="flex-between mb-16">
+                <h2 class="section-title" style="margin-bottom:0">🌟 생산자 홍보</h2>
+                <button class="btn btn-primary btn-sm" onclick="openCreatePost('promo')">✏️ 홍보 등록</button>
+            </div>
+            <p class="text-sm text-muted mb-16">생산자의 포트폴리오를 탐색하세요. 마음에 드는 생산자에게 직접 의뢰할 수 있습니다.</p>
+            <div class="feed-grid" id="mp-promo-grid">
+                <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🌟</div><p>등록된 홍보가 없습니다.</p></div>
+            </div>
         </div>
     </section>
 </div>
@@ -616,6 +856,51 @@
         <div style="display:flex;gap:12px;justify-content:flex-end">
             <button class="btn btn-secondary" onclick="closeModal('coPurchasePopup');doSubmitPersonalRequest()">개인 의뢰 유지</button>
             <button class="btn btn-primary" onclick="closeModal('coPurchasePopup');showPersonalTab('group',null)">공동구매로 전환 →</button>
+        </div>
+    </div>
+</div>
+
+<!-- 생산자 입찰 상세 모달 -->
+<div class="modal-overlay" id="mfgBidDetailModal">
+    <div class="modal" style="max-width:620px">
+        <button class="modal-close" onclick="closeModal('mfgBidDetailModal')">×</button>
+        <h3 id="mfg-bid-detail-title">📄 입찰 상세</h3>
+        <div id="mfg-bid-detail-body"><div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div></div>
+    </div>
+</div>
+
+<!-- 게시물 작성 모달 -->
+<div class="modal-overlay" id="createPostModal">
+    <div class="modal" style="max-width:500px">
+        <button class="modal-close" onclick="closeModal('createPostModal')">×</button>
+        <h3 id="createPostTitle">게시물 작성</h3>
+        <div class="form-group">
+            <label>제목 *</label>
+            <input type="text" id="postTitleInput" placeholder="제목을 입력하세요">
+        </div>
+        <div class="form-group">
+            <label>내용 *</label>
+            <textarea id="postContentInput" placeholder="내용을 입력하세요." style="min-height:120px"></textarea>
+        </div>
+        <div class="form-group" id="postRatingGroup">
+            <label>만족도</label>
+            <div style="display:flex;gap:8px;font-size:28px;cursor:pointer" id="postStarRating">
+                <span onclick="setPostRating(1)">⭐</span><span onclick="setPostRating(2)">⭐</span>
+                <span onclick="setPostRating(3)">⭐</span><span onclick="setPostRating(4)">⭐</span>
+                <span onclick="setPostRating(5)" style="opacity:0.3">⭐</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>이미지 첨부 (선택)</label>
+            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:20px;text-align:center;cursor:pointer" onclick="document.getElementById('postFileInput').click()">
+                <div style="font-size:24px;margin-bottom:4px">📷</div>
+                <p class="text-xs text-muted">클릭하여 이미지 선택</p>
+                <input type="file" id="postFileInput" multiple accept="image/*" style="display:none">
+            </div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('createPostModal')">취소</button>
+            <button class="btn btn-primary" onclick="submitPost()">✏️ 게시</button>
         </div>
     </div>
 </div>

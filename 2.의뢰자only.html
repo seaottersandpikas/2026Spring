@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoodsFactory - 굿즈 제작 및 판매 플랫폼</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #6C5CE7; --primary-dark: #5A4BD1; --primary-light: #A29BFE;
+            --secondary: #00CEC9; --accent: #FD79A8; --dark: #2D3436;
+            --gray: #636E72; --light-gray: #B2BEC3; --bg: #F8F9FA;
+            --white: #FFFFFF; --success: #00B894; --warning: #FDCB6E; --danger: #E17055;
+            --shadow: 0 2px 15px rgba(0,0,0,0.08); --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+            --radius: 12px; --radius-sm: 8px;
+        }
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; overflow-x: hidden; }
+
+        .main-header { background: var(--white); box-shadow: 0 1px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 1000; }
+        .header-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+        .logo { font-size: 24px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .logo span { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links { display: flex; gap: 4px; }
+        .nav-links button { background: none; border: none; padding: 8px 16px; font-size: 14px; font-weight: 600; color: var(--gray); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; }
+        .nav-links button:hover { color: var(--primary); background: rgba(108, 92, 231, 0.06); }
+        .nav-links button.active { color: var(--primary); background: rgba(108, 92, 231, 0.1); }
+        .nav-user { display: flex; align-items: center; gap: 12px; position: relative; }
+        .nav-user .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; cursor: pointer; }
+        .profile-dropdown { position: absolute; top: 50px; right: 0; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 220px; display: none; flex-direction: column; overflow: hidden; z-index: 1001; border: 1px solid #E2E8F0; }
+        .profile-dropdown.show { display: flex; animation: fadeIn 0.2s ease; }
+        .profile-header-info { padding: 16px; border-bottom: 1px solid #E2E8F0; background: var(--bg); }
+        .profile-dropdown-menu { list-style: none; padding: 8px 0; }
+        .profile-dropdown-menu li button { width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; font-size: 14px; color: var(--dark); cursor: pointer; transition: background 0.2s; display: block; }
+        .profile-dropdown-menu li button:hover { background: rgba(108, 92, 231, 0.05); color: var(--primary); }
+
+        .page-container { max-width: 1400px; margin: 0 auto; padding: 24px; min-height: calc(100vh - 64px); }
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .home-hero { text-align: center; padding: 80px 20px 60px; }
+        .home-hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 16px; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .home-hero p { font-size: 18px; color: var(--gray); max-width: 600px; margin: 0 auto 48px; }
+        .role-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1000px; margin: 0 auto; }
+        .role-card { background: var(--white); border-radius: 20px; padding: 40px 32px; text-align: center; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        .role-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary)); transform: scaleX(0); transition: transform 0.3s; }
+        .role-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--primary-light); }
+        .role-card:hover::before { transform: scaleX(1); }
+        .role-card .icon { width: 80px; height: 80px; border-radius: 20px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+        .role-card:nth-child(1) .icon { background: rgba(108, 92, 231, 0.1); }
+        .role-card:nth-child(2) .icon { background: rgba(0, 206, 201, 0.1); }
+        .role-card:nth-child(3) .icon { background: rgba(253, 121, 168, 0.1); }
+        .role-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .role-card p { font-size: 14px; color: var(--gray); }
+        .home-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 1000px; margin: 60px auto 0; }
+        .stat-card { background: var(--white); border-radius: var(--radius); padding: 24px; text-align: center; box-shadow: var(--shadow); }
+        .stat-card .stat-num { font-size: 32px; font-weight: 800; color: var(--primary); }
+        .stat-card .stat-label { font-size: 13px; color: var(--gray); margin-top: 4px; }
+
+        .section-title { font-size: 24px; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
+        .section-title .badge { font-size: 12px; background: var(--primary); color: white; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+        .card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 16px; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-secondary { background: rgba(108, 92, 231, 0.1); color: var(--primary); }
+        .btn-secondary:hover { background: rgba(108, 92, 231, 0.2); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #00a884; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #d35400; }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-outline:hover { background: var(--primary); color: white; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-block { width: 100%; justify-content: center; }
+        .btn-warning { background: var(--warning); color: var(--dark); }
+        .btn-warning:hover { background: #f0c040; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--dark); margin-bottom: 6px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 2px solid #E2E8F0; border-radius: var(--radius-sm); font-size: 14px; transition: border-color 0.2s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-hint { font-size: 12px; color: var(--gray); margin-top: 4px; }
+        .form-error { font-size: 12px; color: var(--danger); margin-top: 4px; display: none; }
+        .form-group.error input, .form-group.error select, .form-group.error textarea { border-color: var(--danger); }
+        .form-group.error .form-error { display: block; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0; }
+        .tab-btn { padding: 12px 20px; background: none; border: none; font-size: 14px; font-weight: 600; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+        .dashboard-layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; }
+        .sidebar { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); height: fit-content; position: sticky; top: 88px; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { margin-bottom: 4px; }
+        .sidebar-menu button { width: 100%; text-align: left; padding: 10px 14px; background: none; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; color: var(--gray); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+        .sidebar-menu button:hover { background: rgba(108, 92, 231, 0.06); color: var(--primary); }
+        .sidebar-menu button.active { background: rgba(108, 92, 231, 0.1); color: var(--primary); font-weight: 600; }
+        .sidebar-menu .menu-badge { margin-left: auto; background: var(--danger); color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
+        .main-content { min-width: 0; }
+
+        .request-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; border-left: 4px solid var(--primary); transition: all 0.2s; }
+        .request-card:hover { box-shadow: var(--shadow-lg); }
+        .request-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .request-card-header h4 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .status-badge { display: inline-flex; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .status-bidding { background: rgba(253, 203, 110, 0.2); color: #E17055; }
+        .status-matched { background: rgba(0, 184, 148, 0.15); color: var(--success); }
+        .status-producing { background: rgba(108, 92, 231, 0.15); color: var(--primary-dark); }
+        .status-shipping { background: rgba(9, 132, 227, 0.15); color: #0984e3; }
+        .status-completed { background: rgba(108, 92, 231, 0.1); color: var(--primary); }
+        .status-recruiting { background: rgba(0, 206, 201, 0.15); color: var(--secondary); }
+        .status-draft { background: rgba(178, 190, 195, 0.2); color: var(--gray); }
+        .status-payment { background: rgba(253, 121, 168, 0.15); color: var(--accent); }
+
+        .request-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .request-meta .meta-item { font-size: 13px; color: var(--gray); display: flex; align-items: center; gap: 4px; }
+        .request-meta .meta-item strong { color: var(--dark); }
+        .request-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+        .bid-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--bg); border-radius: var(--radius-sm); margin-bottom: 8px; transition: all 0.2s; cursor: pointer; }
+        .bid-item:hover { background: rgba(108, 92, 231, 0.04); }
+        .bid-item.top-bid { background: rgba(0, 184, 148, 0.08); border: 1px solid rgba(0, 184, 148, 0.2); }
+        .bid-info { display: flex; align-items: center; gap: 12px; }
+        .bid-rank { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+        .bid-rank.gold { background: #FDCB6E; color: #2D3436; }
+        .bid-rank.silver { background: #B2BEC3; color: white; }
+        .bid-rank.bronze { background: #E17055; color: white; }
+        .bid-price { font-size: 18px; font-weight: 700; color: var(--primary); }
+
+        .progress-bar { height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+        .progress-bar .fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 4px; transition: width 0.5s ease; }
+
+        .co-purchase-info { background: rgba(0, 206, 201, 0.08); border: 1px solid rgba(0, 206, 201, 0.2); border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 12px; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+        .modal { background: var(--white); border-radius: 16px; max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 32px; position: relative; }
+        .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--gray); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; }
+        .modal-close:hover { background: var(--bg); }
+        .modal h3 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { padding: 12px 16px; text-align: left; font-size: 13px; }
+        .data-table th { background: var(--bg); font-weight: 600; color: var(--gray); border-bottom: 2px solid #E2E8F0; }
+        .data-table td { border-bottom: 1px solid #E2E8F0; }
+        .data-table tr:hover td { background: rgba(108, 92, 231, 0.02); }
+
+        .estimate-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        .estimate-table th, .estimate-table td { border: 1px solid #E2E8F0; padding: 10px 12px; font-size: 13px; }
+        .estimate-table th { background: var(--bg); font-weight: 600; }
+
+        .filter-select { padding: 8px 12px; border: 2px solid #E2E8F0; border-radius: var(--radius-sm); font-size: 13px; outline: none; cursor: pointer; background: var(--white); }
+        .filter-select:focus { border-color: var(--primary); }
+
+        .matching-card { background: linear-gradient(135deg, rgba(108,92,231,0.05), rgba(0,206,201,0.05)); border: 1px solid rgba(108,92,231,0.15); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .matching-card .match-info { display: flex; align-items: center; gap: 16px; }
+        .matching-card .match-price { font-size: 18px; font-weight: 700; color: var(--success); }
+
+        /* Stepper */
+        .stepper { display: flex; align-items: center; margin-bottom: 32px; }
+        .step { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--light-gray); }
+        .step.active { color: var(--primary); }
+        .step.done { color: var(--success); }
+        .step-circle { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--light-gray); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+        .step.active .step-circle { border-color: var(--primary); background: var(--primary); color: white; }
+        .step.done .step-circle { border-color: var(--success); background: var(--success); color: white; }
+        .step-line { flex: 1; height: 2px; background: #E2E8F0; margin: 0 12px; }
+        .step-line.done { background: var(--success); }
+
+        /* Summary cards */
+        .summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+        .summary-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); text-align: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .summary-card:hover { border-color: var(--primary-light); }
+        .summary-card.active-filter { border-color: var(--primary); background: rgba(108,92,231,0.03); }
+        .summary-card .sum-num { font-size: 28px; font-weight: 800; }
+        .summary-card .sum-label { font-size: 12px; color: var(--gray); margin-top: 4px; }
+
+        /* Timeline */
+        .timeline { position: relative; padding-left: 32px; }
+        .timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: #E2E8F0; }
+        .timeline-item { position: relative; margin-bottom: 20px; }
+        .timeline-dot { position: absolute; left: -32px; top: 2px; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; z-index: 1; }
+        .timeline-dot.done { background: var(--success); }
+        .timeline-dot.current { background: var(--primary); box-shadow: 0 0 0 4px rgba(108,92,231,0.2); }
+        .timeline-dot.pending { background: #E2E8F0; }
+        .timeline-content { background: var(--white); border-radius: var(--radius-sm); padding: 14px 16px; box-shadow: var(--shadow); }
+        .timeline-content h5 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .timeline-content p { font-size: 12px; color: var(--gray); }
+
+        /* Payment card */
+        .payment-summary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+        .payment-summary h4 { font-size: 14px; font-weight: 600; opacity: 0.8; margin-bottom: 4px; }
+        .payment-summary .pay-amount { font-size: 32px; font-weight: 800; }
+        .payment-summary .pay-detail { font-size: 13px; opacity: 0.7; margin-top: 8px; }
+
+        /* Status flow */
+        .status-flow { display: flex; align-items: center; gap: 0; margin: 16px 0; }
+        .sf-item { flex: 1; text-align: center; position: relative; }
+        .sf-dot { width: 28px; height: 28px; border-radius: 50%; background: #E2E8F0; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .sf-item.done .sf-dot { background: var(--success); color: white; }
+        .sf-item.active .sf-dot { background: var(--primary); color: white; box-shadow: 0 0 0 4px rgba(108,92,231,0.2); }
+        .sf-label { font-size: 11px; color: var(--gray); }
+        .sf-item.done .sf-label, .sf-item.active .sf-label { color: var(--dark); font-weight: 600; }
+        .sf-line { width: 100%; height: 2px; background: #E2E8F0; position: absolute; top: 14px; left: 50%; z-index: 0; }
+        .sf-item.done .sf-line { background: var(--success); }
+
+        /* Alert box */
+        .alert { padding: 14px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; }
+        .alert-info { background: rgba(108,92,231,0.08); border: 1px solid rgba(108,92,231,0.2); color: var(--primary-dark); }
+        .alert-warning { background: rgba(253,203,110,0.2); border: 1px solid rgba(253,203,110,0.4); color: #856404; }
+        .alert-success { background: rgba(0,184,148,0.1); border: 1px solid rgba(0,184,148,0.25); color: #155724; }
+
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--dark); color: white; padding: 14px 24px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; z-index: 3000; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.info { border-left: 4px solid var(--primary); }
+
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .text-muted { color: var(--gray); }
+        .text-primary { color: var(--primary); }
+        .text-success { color: var(--success); }
+        .text-danger { color: var(--danger); }
+        .text-sm { font-size: 13px; }
+        .text-xs { font-size: 11px; }
+        .fw-bold { font-weight: 700; }
+        .mb-8 { margin-bottom: 8px; }
+        .mb-16 { margin-bottom: 16px; }
+        .mb-24 { margin-bottom: 24px; }
+        .mt-8 { margin-top: 8px; }
+        .mt-16 { margin-top: 16px; }
+        .mt-24 { margin-top: 24px; }
+        .ml-8 { margin-left: 8px; }
+        .divider { height: 1px; background: #E2E8F0; margin: 20px 0; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state p { font-size: 14px; margin-bottom: 16px; }
+
+        .pill-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .pill-filter { padding: 6px 14px; border-radius: 20px; border: 1px solid #E2E8F0; background: var(--white); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .pill-filter:hover { border-color: var(--primary); color: var(--primary); }
+        .pill-filter.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+        @media (max-width: 768px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; }
+            .form-row { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: repeat(2,1fr); }
+            .role-cards { grid-template-columns: 1fr; }
+            .home-stats { grid-template-columns: repeat(2,1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="header-inner">
+        <div class="logo" onclick="navigateTo('home')"><span>🏭 GoodsFactory</span></div>
+        <nav class="nav-links" id="mainNav">
+            <button class="active" onclick="navigateTo('home')">홈</button>
+            <button onclick="navigateTo('client-select')">의뢰자</button>
+            <button onclick="navigateTo('marketplace')">마켓플레이스</button>
+        </nav>
+        <div class="nav-user">
+            <button class="btn btn-sm btn-secondary" onclick="openModal('notificationModal')">🔔 <span style="width:8px;height:8px;background:var(--accent);border-radius:50%;display:inline-block;"></span></button>
+            <div class="user-avatar" onclick="toggleUserMenu(event)">U</div>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="profile-header-info">
+                    <strong style="display:block;color:var(--primary);font-size:15px;">김민수</strong>
+                    <span class="text-xs text-muted">user@goodsfactory.com</span>
+                </div>
+                <ul class="profile-dropdown-menu">
+                    <li><button onclick="navigateTo('client-personal')">나의 의뢰 관리</button></li>
+                    <li><button>결제 및 정산 내역</button></li>
+                    <li><button>계정 설정</button></li>
+                    <li style="border-top:1px solid #E2E8F0;margin-top:4px;padding-top:4px;">
+                        <button style="color:var(--danger)" onclick="showToast('로그아웃 되었습니다.','success');document.getElementById('profileDropdown').classList.remove('show');">로그아웃</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="page-container">
+
+    <!-- ========== HOME ========== -->
+    <section id="page-home" class="page-section active">
+        <div class="home-hero">
+            <h1>당신의 아이디어를 현실로</h1>
+            <p>굿즈 제작부터 판매까지, 생산자와 의뢰자를 연결하는 스마트 플랫폼</p>
+            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;">
+                <div class="role-card" onclick="navigateTo('client-select')">
+                    <div class="icon" style="background:rgba(0,206,201,0.1)">📋</div>
+                    <h3>의뢰자 (Client)</h3>
+                    <p>사업자 또는 개인으로서<br>원하는 굿즈를 의뢰하세요</p>
+                </div>
+                <div class="role-card" onclick="navigateTo('marketplace')">
+                    <div class="icon" style="background:rgba(253,121,168,0.1)">🛒</div>
+                    <h3>마켓플레이스</h3>
+                    <p>다양한 굿즈를 구매하고<br>공동구매에 참여하세요</p>
+                </div>
+            </div>
+            <div class="home-stats">
+                <div class="stat-card"><div class="stat-num">2,847</div><div class="stat-label">등록 생산자</div></div>
+                <div class="stat-card"><div class="stat-num">15,234</div><div class="stat-label">완료된 의뢰</div></div>
+                <div class="stat-card"><div class="stat-num">8,912</div><div class="stat-label">활성 의뢰자</div></div>
+                <div class="stat-card"><div class="stat-num">₩3.2B</div><div class="stat-label">총 거래액</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== CLIENT SELECT ========== -->
+    <section id="page-client-select" class="page-section">
+        <div class="home-hero" style="padding-top:40px">
+            <h1 style="font-size:36px">의뢰자 유형 선택</h1>
+            <p>사업자 또는 개인으로 의뢰하세요</p>
+            <div class="role-cards" style="max-width:700px;grid-template-columns:1fr 1fr;">
+                <div class="role-card" onclick="navigateTo('client-business')">
+                    <div class="icon" style="background:rgba(0,206,201,0.1)">🏢</div>
+                    <h3>사업자 의뢰</h3>
+                    <p>대량 생산 의뢰<br>Mass Production</p>
+                </div>
+                <div class="role-card" onclick="navigateTo('client-personal')">
+                    <div class="icon" style="background:rgba(253,121,168,0.1)">👤</div>
+                    <h3>개인 의뢰</h3>
+                    <p>개별 또는 공동구매<br>Individual / Group Order</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== CLIENT BUSINESS ========== -->
+    <section id="page-client-business" class="page-section">
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <div style="padding:12px 14px;margin-bottom:8px">
+                    <span class="text-xs text-muted">사업자 의뢰자</span>
+                    <h4>ABC 스튜디오</h4>
+                </div>
+                <ul class="sidebar-menu">
+                    <li><button class="active" onclick="showBizTab('dashboard',this)">📊 대시보드</button></li>
+                    <li><button onclick="showBizTab('create',this)">➕ 의뢰 생성</button></li>
+                    <li><button onclick="showBizTab('manage',this)">📁 내 의뢰 관리 <span class="menu-badge">5</span></button></li>
+                    <li><button onclick="showBizTab('recent-match',this)">✅ 최근 매칭 조회</button></li>
+                    <li><button onclick="showBizTab('payments',this)">💳 결제/정산</button></li>
+                </ul>
+            </aside>
+            <div class="main-content">
+
+                <!-- Dashboard -->
+                <div id="biz-dashboard" class="tab-content active">
+                    <h2 class="section-title">📊 대시보드</h2>
+                    <div class="summary-grid">
+                        <div class="summary-card" onclick="showBizTab('manage',null); filterBizStatus('all')">
+                            <div class="sum-num" style="color:var(--primary)">5</div>
+                            <div class="sum-label">전체 의뢰</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null); filterBizStatus('bidding')">
+                            <div class="sum-num" style="color:var(--warning)">3</div>
+                            <div class="sum-label">입찰 진행중</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null); filterBizStatus('producing')">
+                            <div class="sum-num" style="color:var(--secondary)">1</div>
+                            <div class="sum-label">제작 진행중</div>
+                        </div>
+                        <div class="summary-card" onclick="showBizTab('manage',null); filterBizStatus('completed')">
+                            <div class="sum-num" style="color:var(--success)">1</div>
+                            <div class="sum-label">완료</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <span>💡</span>
+                        <div><strong>'아크릴 키링' 의뢰에 새 입찰 2건</strong>이 도착했습니다. 확인해보세요!<br>
+                        <a href="#" onclick="showBizTab('manage',null);return false;" style="color:var(--primary)">의뢰 관리로 이동 →</a></div>
+                    </div>
+
+                    <div class="card">
+                        <h4 class="mb-16">📋 최근 활동</h4>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-dot current">🔔</div>
+                                <div class="timeline-content">
+                                    <h5>프린트마스터가 ₩2,100으로 입찰</h5>
+                                    <p>아크릴 키링 의뢰 · 2분 전</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot done">✓</div>
+                                <div class="timeline-content">
+                                    <h5>에코백 인쇄 500개 - 제작 진행 중</h5>
+                                    <p>메이커스 공방 · 공정 60% 완료 · 1시간 전</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot done">✓</div>
+                                <div class="timeline-content">
+                                    <h5>메탈 뱃지 의뢰 등록 완료</h5>
+                                    <p>입찰 마감: 2024-02-25 · 어제</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create Request -->
+                <div id="biz-create" class="tab-content">
+                    <h2 class="section-title">➕ 새 의뢰 생성 <span class="badge">사업자</span></h2>
+
+                    <div class="stepper" id="bizStepper">
+                        <div class="step active" data-step="1"><div class="step-circle">1</div><span>기본 정보</span></div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="2"><div class="step-circle">2</div><span>디자인/상세</span></div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="3"><div class="step-circle">3</div><span>확인/등록</span></div>
+                    </div>
+
+                    <!-- Step 1 -->
+                    <div id="biz-step-1" class="card">
+                        <h4 class="mb-16">📝 기본 정보</h4>
+                        <div class="form-group" id="fg-biz-title">
+                            <label>아이템 명칭 *</label>
+                            <input type="text" placeholder="예: 아크릴 키링, 커스텀 티셔츠 등" id="biz-title">
+                            <div class="form-error">아이템 명칭을 입력해주세요.</div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" id="fg-biz-category">
+                                <label>카테고리 *</label>
+                                <select id="biz-category">
+                                    <option value="">선택하세요</option>
+                                    <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                                    <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
+                                    <option>생활용품</option><option>기타</option>
+                                </select>
+                                <div class="form-error">카테고리를 선택해주세요.</div>
+                            </div>
+                            <div class="form-group" id="fg-biz-qty">
+                                <label>희망 수량 *</label>
+                                <input type="number" placeholder="예: 1000" id="biz-qty">
+                                <div class="form-error">수량을 입력해주세요.</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" id="fg-biz-price">
+                                <label>희망 단가 (₩) *</label>
+                                <input type="number" placeholder="예: 2500" id="biz-price">
+                                <div class="form-hint" id="biz-price-hint">시장 평균 참고가: 카테고리를 선택하면 표시됩니다</div>
+                                <div class="form-error">희망 단가를 입력해주세요.</div>
+                            </div>
+                            <div class="form-group" id="fg-biz-deadline">
+                                <label>입찰 마감일 *</label>
+                                <input type="date" id="biz-deadline">
+                                <div class="form-error">마감일을 선택해주세요.</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+                            <button class="btn btn-primary" onclick="bizStepNext(1)">다음 단계 →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div id="biz-step-2" class="card" style="display:none">
+                        <h4 class="mb-16">🎨 디자인 및 상세 요청</h4>
+                        <div class="form-group">
+                            <label>디자인 가이드라인</label>
+                            <textarea placeholder="디자인 관련 요구사항을 상세히 적어주세요. (크기, 재질, 색상, 인쇄 방식 등)" id="biz-design-guide"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>디자인 파일 첨부</label>
+                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:border-color 0.2s;" onclick="document.getElementById('biz-file-input').click()" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='#E2E8F0'">
+                                <div style="font-size:32px;margin-bottom:8px">📁</div>
+                                <p class="text-sm text-muted">클릭하거나 파일을 드래그하세요</p>
+                                <p class="text-xs text-muted">AI, PSD, PNG, PDF (최대 50MB)</p>
+                                <input type="file" multiple id="biz-file-input" style="display:none" onchange="showUploadedFiles(this,'biz-file-list')">
+                            </div>
+                            <div id="biz-file-list" class="mt-8"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>상세 요청 사항</label>
+                            <textarea placeholder="납품 일정, 포장 방식, 검수 기준 등 추가 요청사항을 적어주세요." id="biz-detail-note"></textarea>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+                            <button class="btn btn-secondary" onclick="bizStepBack(2)">← 이전</button>
+                            <button class="btn btn-primary" onclick="bizStepNext(2)">다음 단계 →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div id="biz-step-3" class="card" style="display:none">
+                        <h4 class="mb-16">✅ 의뢰 내용 확인</h4>
+                        <div class="alert alert-info">
+                            <span>ℹ️</span>
+                            <span>등록 전 내용을 한 번 더 확인해주세요. 등록 후에도 입찰 시작 전까지 수정 가능합니다.</span>
+                        </div>
+                        <table class="data-table" id="biz-confirm-table">
+                            <tr><td style="width:140px;font-weight:600">아이템명</td><td id="confirm-title">-</td></tr>
+                            <tr><td style="font-weight:600">카테고리</td><td id="confirm-category">-</td></tr>
+                            <tr><td style="font-weight:600">희망 수량</td><td id="confirm-qty">-</td></tr>
+                            <tr><td style="font-weight:600">희망 단가</td><td id="confirm-price">-</td></tr>
+                            <tr><td style="font-weight:600">입찰 마감일</td><td id="confirm-deadline">-</td></tr>
+                            <tr><td style="font-weight:600">예상 총액</td><td id="confirm-total" class="text-primary fw-bold">-</td></tr>
+                            <tr><td style="font-weight:600">디자인 가이드</td><td id="confirm-guide">-</td></tr>
+                            <tr><td style="font-weight:600">상세 요청</td><td id="confirm-note">-</td></tr>
+                            <tr><td style="font-weight:600">첨부파일</td><td id="confirm-files">-</td></tr>
+                        </table>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+                            <button class="btn btn-secondary" onclick="bizStepBack(3)">← 수정하기</button>
+                            <button class="btn btn-secondary" onclick="showToast('임시 저장되었습니다.','info')">💾 임시 저장</button>
+                            <button class="btn btn-primary" onclick="submitBizRequest()">🚀 의뢰 등록</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manage Requests -->
+                <div id="biz-manage" class="tab-content">
+                    <div class="flex-between mb-16">
+                        <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
+                        <div style="display:flex;gap:8px">
+                            <select class="filter-select" id="biz-sort-filter">
+                                <option>최신순</option><option>마감 임박순</option><option>금액 높은순</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pill-filters" id="biz-status-pills">
+                        <button class="pill-filter active" onclick="filterBizStatus('all',this)">전체 (5)</button>
+                        <button class="pill-filter" onclick="filterBizStatus('draft',this)">임시저장 (0)</button>
+                        <button class="pill-filter" onclick="filterBizStatus('bidding',this)">입찰중 (3)</button>
+                        <button class="pill-filter" onclick="filterBizStatus('matched',this)">매칭완료 (0)</button>
+                        <button class="pill-filter" onclick="filterBizStatus('producing',this)">제작중 (1)</button>
+                        <button class="pill-filter" onclick="filterBizStatus('completed',this)">완료 (1)</button>
+                    </div>
+
+                    <!-- Bidding requests -->
+                    <div class="request-card" data-status="bidding">
+                        <div class="request-card-header">
+                            <h4>🎯 아크릴 키링 제작 (캐릭터 디자인)</h4>
+                            <span class="status-badge status-bidding">입찰중 (5명)</span>
+                        </div>
+                        <div class="request-meta">
+                            <div class="meta-item">📦 수량: <strong>1,000개</strong></div>
+                            <div class="meta-item">💰 희망 단가: <strong>₩2,500</strong></div>
+                            <div class="meta-item">📅 마감: <strong>2024-02-15 (D-5)</strong></div>
+                            <div class="meta-item">💵 예상 총액: <strong class="text-primary">₩2,500,000</strong></div>
+                        </div>
+                        <div class="divider"></div>
+                        <h5 class="mb-8">📊 입찰 현황 <span class="text-xs text-muted">(클릭하여 상세 견적 확인)</span></h5>
+                        <div class="bid-item top-bid" onclick="openModal('clientEstimateModal')">
+                            <div class="bid-info">
+                                <div class="bid-rank gold">1</div>
+                                <div><strong>프린트마스터</strong><p class="text-xs text-muted">아크릴전문 | ⭐4.9 | 완료 312건</p></div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px">
+                                <div><div class="bid-price">₩2,100</div><div class="text-xs text-muted">납기 7일</div></div>
+                                <button class="btn btn-success btn-sm" onclick="event.stopPropagation();openModal('matchConfirmModal')">✓ 선택</button>
+                            </div>
+                        </div>
+                        <div class="bid-item" onclick="openModal('clientEstimateModal')">
+                            <div class="bid-info">
+                                <div class="bid-rank silver">2</div>
+                                <div><strong>메이커스 공방</strong><p class="text-xs text-muted">아크릴/의류 | ⭐4.8 | 완료 156건</p></div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px">
+                                <div><div class="bid-price">₩2,300</div><div class="text-xs text-muted">납기 10일</div></div>
+                                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openModal('matchConfirmModal')">Override</button>
+                            </div>
+                        </div>
+                        <div class="bid-item" onclick="openModal('clientEstimateModal')">
+                            <div class="bid-info">
+                                <div class="bid-rank bronze">3</div>
+                                <div><strong>굿즈팩토리</strong><p class="text-xs text-muted">종합 | ⭐4.5 | 완료 89건</p></div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px">
+                                <div><div class="bid-price">₩2,400</div><div class="text-xs text-muted">납기 14일</div></div>
+                                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();">Override</button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-muted mt-8">⚠️ 마감일 경과 시 최저가 입찰자에게 자동 매칭됩니다.</p>
+                    </div>
+
+                    <div class="request-card" data-status="bidding">
+                        <div class="request-card-header">
+                            <h4>커스텀 에코백 제작</h4>
+                            <span class="status-badge status-bidding">입찰중 (2명)</span>
+                        </div>
+                        <div class="request-meta">
+                            <div class="meta-item">📦 수량: <strong>800개</strong></div>
+                            <div class="meta-item">💰 희망 단가: <strong>₩4,000</strong></div>
+                            <div class="meta-item">📅 마감: <strong>2024-02-20 (D-10)</strong></div>
+                        </div>
+                        <div class="request-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openModal('bidListModal')">입찰 현황 보기</button>
+                            <button class="btn btn-sm btn-secondary">수정</button>
+                        </div>
+                    </div>
+
+                    <div class="request-card" data-status="bidding">
+                        <div class="request-card-header">
+                            <h4>메탈 뱃지 제작 (사내 행사용)</h4>
+                            <span class="status-badge status-bidding">입찰중 (1명)</span>
+                        </div>
+                        <div class="request-meta">
+                            <div class="meta-item">📦 수량: <strong>200개</strong></div>
+                            <div class="meta-item">💰 희망 단가: <strong>₩3,500</strong></div>
+                            <div class="meta-item">📅 마감: <strong>2024-02-25 (D-15)</strong></div>
+                        </div>
+                        <div class="request-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openModal('bidListModal')">입찰 현황 보기</button>
+                            <button class="btn btn-sm btn-secondary">수정</button>
+                            <button class="btn btn-sm btn-danger" onclick="showToast('의뢰가 취소되었습니다.','error')">취소</button>
+                        </div>
+                    </div>
+
+                    <!-- Producing -->
+                    <div class="request-card" data-status="producing" style="border-left-color:var(--secondary)">
+                        <div class="request-card-header">
+                            <h4>에코백 인쇄 500개</h4>
+                            <span class="status-badge status-producing">제작 진행중</span>
+                        </div>
+                        <div class="request-meta">
+                            <div class="meta-item">생산자: <strong>메이커스 공방</strong></div>
+                            <div class="meta-item">확정 단가: <strong class="text-success">₩3,800</strong></div>
+                            <div class="meta-item">납품 예정: <strong>2024-02-28</strong></div>
+                        </div>
+                        <div class="status-flow">
+                            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">매칭</div></div>
+                            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">결제</div></div>
+                            <div class="sf-item active"><div class="sf-dot">⚙</div><div class="sf-label">제작중</div></div>
+                            <div class="sf-item"><div class="sf-dot">📦</div><div class="sf-label">배송</div></div>
+                            <div class="sf-item"><div class="sf-dot">✓</div><div class="sf-label">완료</div></div>
+                        </div>
+                        <div class="progress-bar mt-8"><div class="fill" style="width:60%"></div></div>
+                        <p class="text-xs text-muted mt-8">인쇄 공정 진행 중 (60%)</p>
+                        <div class="request-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openModal('orderDetailModal')">상세 보기</button>
+                            <button class="btn btn-sm btn-secondary">💬 생산자 메시지</button>
+                        </div>
+                    </div>
+
+                    <!-- Completed -->
+                    <div class="request-card" data-status="completed" style="border-left-color:var(--success)">
+                        <div class="request-card-header">
+                            <h4>포토카드 세트 10,000세트</h4>
+                            <div>
+                                <span class="status-badge status-completed">배송 완료</span>
+                                <button class="btn btn-primary btn-sm ml-8" onclick="openModal('writeReviewModal')">✍️ 후기 작성</button>
+                            </div>
+                        </div>
+                        <div class="request-meta">
+                            <div class="meta-item">확정 단가: <strong class="text-success">₩800/세트</strong></div>
+                            <div class="meta-item">생산자: <strong>프린트마스터</strong></div>
+                            <div class="meta-item">배송완료: <strong>2024-01-20</strong></div>
+                            <div class="meta-item">결제액: <strong class="text-primary">₩8,000,000</strong></div>
+                        </div>
+                        <div class="request-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openModal('completedOrderDetailModal')">상세 보기</button>
+                            <button class="btn btn-sm btn-secondary">🧾 영수증 다운</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Matchings -->
+                <div id="biz-recent-match" class="tab-content">
+                    <h2 class="section-title">✅ 최근 매칭 조회</h2>
+                    <p class="text-sm text-muted mb-16">다른 의뢰자들의 매칭 가격을 참고하세요. (최근 30일)</p>
+                    <div class="form-row mb-16">
+                        <select class="filter-select"><option>전체 카테고리</option><option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option><option>패키징</option></select>
+                        <select class="filter-select"><option>최신순</option><option>단가 낮은순</option><option>수량 많은순</option></select>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>아이템</th><th>카테고리</th><th>수량</th><th>희망단가</th><th>매칭단가</th><th>절감율</th><th>매칭일</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>아크릴 스탠드 7cm</strong></td><td>아크릴굿즈</td><td>2,000개</td><td>₩2,000</td><td class="text-success fw-bold">₩1,800</td><td class="text-success">▼10%</td><td>2024-01-30</td></tr>
+                            <tr><td><strong>후드티 DTG 프린팅</strong></td><td>의류/패브릭</td><td>300개</td><td>₩20,000</td><td class="text-success fw-bold">₩18,500</td><td class="text-success">▼7.5%</td><td>2024-01-28</td></tr>
+                            <tr><td><strong>맞춤 스티커 시트</strong></td><td>문구/스티커</td><td>5,000장</td><td>₩600</td><td class="text-success fw-bold">₩500</td><td class="text-success">▼16.7%</td><td>2024-01-25</td></tr>
+                            <tr><td><strong>자수 캡 모자</strong></td><td>의류/패브릭</td><td>200개</td><td>₩13,000</td><td class="text-success fw-bold">₩12,000</td><td class="text-success">▼7.7%</td><td>2024-01-22</td></tr>
+                            <tr><td><strong>포토카드 세트</strong></td><td>문구/스티커</td><td>10,000세트</td><td>₩1,000</td><td class="text-success fw-bold">₩800</td><td class="text-success">▼20%</td><td>2024-01-20</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Payments -->
+                <div id="biz-payments" class="tab-content">
+                    <h2 class="section-title">💳 결제 / 정산 내역</h2>
+                    <div class="summary-grid" style="grid-template-columns:repeat(3,1fr)">
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--primary)">₩9,900,000</div>
+                            <div class="sum-label">총 결제 금액</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--warning)">₩1,900,000</div>
+                            <div class="sum-label">결제 진행중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--success)">₩8,000,000</div>
+                            <div class="sum-label">결제 완료</div>
+                        </div>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>의뢰명</th><th>생산자</th><th>결제 금액</th><th>결제 방법</th><th>상태</th><th>결제일</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>에코백 인쇄 500개</strong></td><td>메이커스 공방</td><td class="fw-bold">₩1,900,000</td><td>카드</td><td><span class="status-badge status-producing">결제완료·제작중</span></td><td>2024-02-10</td></tr>
+                            <tr><td><strong>포토카드 세트 10,000세트</strong></td><td>프린트마스터</td><td class="fw-bold">₩8,000,000</td><td>계좌이체</td><td><span class="status-badge status-completed">완료</span></td><td>2024-01-12</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== CLIENT PERSONAL ========== -->
+    <section id="page-client-personal" class="page-section">
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <div style="padding:12px 14px;margin-bottom:8px">
+                    <span class="text-xs text-muted">개인 의뢰자</span>
+                    <h4>김민수</h4>
+                </div>
+                <ul class="sidebar-menu">
+                    <li><button class="active" onclick="showPersonalTab('dashboard',this)">📊 대시보드</button></li>
+                    <li><button onclick="showPersonalTab('individual',this)">🎯 개인 의뢰</button></li>
+                    <li><button onclick="showPersonalTab('group',this)">👥 공동제작 의뢰</button></li>
+                    <li><button onclick="showPersonalTab('myorders',this)">📁 내 의뢰 관리 <span class="menu-badge">3</span></button></li>
+                    <li><button onclick="showPersonalTab('recent-match',this)">✅ 최근 매칭 조회</button></li>
+                    <li><button onclick="showPersonalTab('payments',this)">💳 결제/정산</button></li>
+                </ul>
+            </aside>
+            <div class="main-content">
+
+                <!-- Dashboard -->
+                <div id="personal-dashboard" class="tab-content active">
+                    <h2 class="section-title">📊 대시보드</h2>
+                    <div class="summary-grid">
+                        <div class="summary-card" onclick="showPersonalTab('myorders',null)">
+                            <div class="sum-num" style="color:var(--primary)">3</div>
+                            <div class="sum-label">전체 의뢰</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--warning)">1</div>
+                            <div class="sum-label">입찰 진행중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--secondary)">1</div>
+                            <div class="sum-label">공동구매 모집중</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="sum-num" style="color:var(--success)">1</div>
+                            <div class="sum-label">완료</div>
+                        </div>
+                    </div>
+                    <div class="alert alert-success">
+                        <span>🎉</span>
+                        <div>공동구매 '아크릴 키링'에 <strong>5명이 새로 참여</strong>했습니다! (65/100개)</div>
+                    </div>
+                    <div class="card">
+                        <h4 class="mb-16">📋 최근 활동</h4>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-dot current">🔔</div>
+                                <div class="timeline-content">
+                                    <h5>공동구매 참여자 5명 증가</h5>
+                                    <p>아크릴 키링 공동구매 (65/100) · 1시간 전</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot done">✓</div>
+                                <div class="timeline-content">
+                                    <h5>케이스월드가 ₩7,000으로 입찰</h5>
+                                    <p>폰케이스 의뢰 · 3시간 전</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot done">✓</div>
+                                <div class="timeline-content">
+                                    <h5>커스텀 스티커 50장 - 배송 완료</h5>
+                                    <p>후기를 작성해주세요! · 1일 전</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Individual Request -->
+                <div id="personal-individual" class="tab-content">
+                    <h2 class="section-title">🎯 개인 의뢰 생성</h2>
+                    <div class="card">
+                        <div class="form-group">
+                            <label>의뢰 방식 *</label>
+                            <div style="display:flex;gap:16px">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;transition:all 0.2s;" id="radio-bidding">
+                                    <input type="radio" name="request-type" value="bidding" checked onchange="toggleDirectMfg(this)"> <strong>입찰(Bidding)</strong><br><span class="text-xs text-muted">생산자들의 견적을 비교</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;transition:all 0.2s;" id="radio-direct">
+                                    <input type="radio" name="request-type" value="direct" onchange="toggleDirectMfg(this)"> <strong>직접 의뢰</strong><br><span class="text-xs text-muted">특정 생산자에게 직접 요청</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="directMfgField" style="display:none">
+                            <label>생산자 ID 입력 *</label>
+                            <input type="text" placeholder="예: MFG-20240001">
+                            <div class="form-hint">마켓플레이스 > 생산자 홍보에서 메시지를 통해 생산자 ID를 받을 수 있습니다.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>아이템 명칭 *</label>
+                            <input type="text" placeholder="예: 아크릴 키링, 폰케이스 등" id="personalItemName">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>카테고리 *</label>
+                                <select id="personalCategory">
+                                    <option value="">선택하세요</option>
+                                    <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                                    <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
+                                    <option>생활용품</option><option>기타</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>희망 수량 *</label>
+                                <input type="number" placeholder="예: 30" id="personalQty">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>희망 단가 (₩) *</label>
+                                <input type="number" placeholder="예: 3000" id="personalPrice">
+                            </div>
+                            <div class="form-group">
+                                <label>입찰 마감일</label>
+                                <input type="date">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>디자인 가이드라인</label>
+                            <textarea placeholder="디자인 요구사항을 상세히 적어주세요."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>디자인 파일 첨부</label>
+                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById('personal-file-input').click()">
+                                <div style="font-size:24px;margin-bottom:6px">📁</div>
+                                <p class="text-xs text-muted">파일을 선택하세요 (AI, PSD, PNG, PDF)</p>
+                                <input type="file" multiple id="personal-file-input" style="display:none" onchange="showUploadedFiles(this,'personal-file-list')">
+                            </div>
+                            <div id="personal-file-list" class="mt-8"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>상세 요청 사항</label>
+                            <textarea placeholder="추가 요청사항을 적어주세요."></textarea>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+                            <button class="btn btn-secondary">임시 저장</button>
+                            <button class="btn btn-primary" onclick="submitPersonalRequest()">🚀 의뢰 등록</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group Purchase -->
+                <div id="personal-group" class="tab-content">
+                    <h2 class="section-title">👥 공동제작 의뢰 생성</h2>
+                    <div class="alert alert-info">
+                        <span>💡</span>
+                        <div>공동제작 의뢰는 마켓플레이스에 등록되어 참여자를 모집합니다.<br>최소 수량이 채워진 후에만 생산자에게 입찰이 요청됩니다.</div>
+                    </div>
+                    <div class="card">
+                        <div class="form-group">
+                            <label>의뢰 방식 *</label>
+                            <div style="display:flex;gap:16px">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
+                                    <input type="radio" name="group-type" value="bidding" checked onchange="toggleGroupDirectMfg(this)"> <strong>입찰 방식</strong>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 16px;border:2px solid #E2E8F0;border-radius:8px;">
+                                    <input type="radio" name="group-type" value="direct" onchange="toggleGroupDirectMfg(this)"> <strong>직접 의뢰</strong>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="groupDirectMfgField" style="display:none">
+                            <label>생산자 ID 입력 *</label>
+                            <input type="text" placeholder="생산자의 고유 ID를 입력하세요">
+                        </div>
+                        <div class="form-group">
+                            <label>아이템 명칭 *</label>
+                            <input type="text" placeholder="예: 아크릴 키링 공동구매">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>카테고리 *</label>
+                                <select><option value="">선택하세요</option><option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option><option>패키징</option><option>봉제인형</option><option>금속/뱃지</option><option>생활용품</option><option>기타</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>총 목표 수량 *</label>
+                                <input type="number" placeholder="예: 200">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>최소 모집 수량 *</label>
+                                <input type="number" placeholder="예: 100">
+                                <div class="form-hint">이 수량이 채워져야 생산 의뢰가 진행됩니다.</div>
+                            </div>
+                            <div class="form-group">
+                                <label>희망 단가 (₩) *</label>
+                                <input type="number" placeholder="예: 2000">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>공동구매 모집 마감일 *</label>
+                                <input type="date">
+                            </div>
+                            <div class="form-group">
+                                <label>입찰 마감일</label>
+                                <input type="date">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>디자인 가이드라인</label>
+                            <textarea placeholder="디자인 요구사항을 상세히 적어주세요."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>디자인 파일 첨부</label>
+                            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById('group-file-input').click()">
+                                <div style="font-size:24px;margin-bottom:6px">📁</div>
+                                <p class="text-xs text-muted">파일을 선택하세요</p>
+                                <input type="file" multiple id="group-file-input" style="display:none" onchange="showUploadedFiles(this,'group-file-list')">
+                            </div>
+                            <div id="group-file-list" class="mt-8"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>공동구매 상세 설명</label>
+                            <textarea placeholder="옵션, 사이즈, 색상 등 상세 계획을 적어주세요."></textarea>
+                        </div>
+                        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+                            <button class="btn btn-secondary">임시 저장</button>
+                            <button class="btn btn-primary" onclick="showToast('공동제작 의뢰가 마켓플레이스에 등록되었습니다!','success')">🚀 공동구매 등록</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Orders -->
+                <div id="personal-myorders" class="tab-content">
+                    <div class="flex-between mb-16">
+                        <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
+                        <select class="filter-select"><option>최신순</option><option>마감 임박순</option></select>
+                    </div>
+
+                    <div class="pill-filters">
+                        <button class="pill-filter active" onclick="filterPillActive(this)">전체 (3)</button>
+                        <button class="pill-filter" onclick="filterPillActive(this)">입찰중 (1)</button>
+                        <button class="pill-filter" onclick="filterPillActive(this)">공동구매 (1)</button>
+                        <button class="pill-filter" onclick="filterPillActive(this)">완료 (1)</button>
+                    </div>
+
+                    <!-- Bidding -->
+                    <div class="request-card">
+                        <div class="request-card-header">
+                            <h4>🎯 커스텀 폰케이스 (아이폰 15)</h4>
+                            <span class="status-badge status-bidding">입찰중 (3명)</span>
+                        </div>
+                        <div class="request-meta">
+                            <div class="meta-item">📦 수량: <strong>20개</strong></div>
+                            <div class="meta-item">💰 희망 단가: <strong>₩8,000</strong></div>
+                            <div class="meta-item">📅 마감: <strong>2024-02-15 (D-5)</strong></div>
+                        </div>
+                        <div class="divider"></div>
+                        <h5 class="mb-8">📊 입찰 현황</h5>
+                        <div class="bid-item top-bid" onclick="openModal('clientEstimateModal')">
+                            <div class="bid-info">
+                                <div class="bid-rank gold">1</div>
+                                <div><strong>케이스월드</strong><p class="text-xs text-muted">폰케이스 전문 | ⭐4.9</p></div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px">
+                                <div><div class="bid-price">₩7,000</div><div class="text-xs text-muted">납기 5일</div></div>
+                                <button class="btn btn-success btn-sm" onclick="event.stopPropagation();openModal('matchConfirmModal')">✓ 선택</button>
+                            </div>
+                        </div>
+                        <div class="bid-item" onclick="openModal('clientEstimateModal')">
+                            <div class="bid-info">
+                                <div class="bid-rank silver">2</div>
+                                <div><strong>프린트샵</strong><p class="text-xs text-muted">종합굿즈 | ⭐4.6</p></div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px">
+                                <div><div class="bid-price">₩7,500</div><div class="text-xs text-muted">납기 7일</div></div>
+                                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openModal('matchConfirmModal')">Override</button>
+                            </div>
+                        </div>
+                        <div class="bid-item" onclick="openModal('clientEstimateModal')">
+                            <div class="bid-info">
+                                <div class="bid-rank bronze">3</div>
+                                <div><strong>디자인팩토리</strong><p class="text-xs text-muted">종합 | ⭐4.4</p></div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px">
+                                <div><div class="bid-price">₩8,200</div><div class="text-xs text-muted">납기 10일</div></div>
+                                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();">Override</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Group Purchase -->
+                    <div class="request-card" style="border-left-color:var(--secondary)">
+                        <div class="request-card-header">
+                            <h4>👥 아크릴 키링 공동구매</h4>
+                            <span class="status-badge status-recruiting">모집중 65/100</span>
+                        </div>
+                        <div class="request-meta">
+                            <div class="meta-item">📦 목표: <strong>200개</strong></div>
+                            <div class="meta-item">📦 최소: <strong>100개</strong></div>
+                            <div class="meta-item">💰 희망 단가: <strong>₩2,000</strong></div>
+                            <div class="meta-item">📅 모집 마감: <strong>2024-02-20 (D-10)</strong></div>
+                        </div>
+                        <div class="progress-bar"><div class="fill" style="width:65%"></div></div>
+                        <p class="text-xs text-muted mt-8">최소 수량까지 35개 남았습니다</p>
+                        <div class="request-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openModal('groupPurchaseDetailModal')">상세 보기</button>
+                            <button class="btn btn-sm btn-secondary">모집글 공유</button>
+                        </div>
+                    </div>
+
+                    <!-- Completed -->
+                    <div class="request-card" style="border-left-color:var(--success)">
+                        <div class="request-card-header">
+                            <h4>커스텀 스티커 50장</h4>
+                            <div>
+                                <span class="status-badge status-completed">배송 완료</span>
+                                <button class="btn btn-primary btn-sm ml-8" onclick="openModal('writeReviewModal')">✍️ 후기</button>
+                            </div>
+                        </div>
+                        <div class="request-meta">
+                            <div class="meta-item">확정 단가: <strong class="text-success">₩300/장</strong></div>
+                            <div class="meta-item">생산자: <strong>프린트마스터</strong></div>
+                            <div class="meta-item">배송완료: <strong>2024-01-15</strong></div>
+                        </div>
+                        <div class="request-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="openModal('completedOrderDetailModal')">상세 보기</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Match -->
+                <div id="personal-recent-match" class="tab-content">
+                    <h2 class="section-title">✅ 최근 매칭 조회</h2>
+                    <p class="text-sm text-muted mb-16">다른 개인 의뢰자들의 매칭 가격을 참고하세요.</p>
+                    <table class="data-table">
+                        <thead><tr><th>아이템</th><th>수량</th><th>희망단가</th><th>매칭단가</th><th>유형</th><th>매칭일</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>아크릴 키링 5cm</strong></td><td>30개</td><td>₩3,500</td><td class="text-success fw-bold">₩3,000</td><td><span class="status-badge status-completed">개인</span></td><td>2024-01-29</td></tr>
+                            <tr><td><strong>폰케이스 UV프린팅</strong></td><td>10개</td><td>₩9,000</td><td class="text-success fw-bold">₩8,500</td><td><span class="status-badge status-completed">개인</span></td><td>2024-01-27</td></tr>
+                            <tr><td><strong>커스텀 머그컵</strong></td><td>150개</td><td>₩5,000</td><td class="text-success fw-bold">₩4,200</td><td><span class="status-badge status-recruiting">공동구매</span></td><td>2024-01-25</td></tr>
+                            <tr><td><strong>자수 와펜</strong></td><td>200개</td><td>₩2,000</td><td class="text-success fw-bold">₩1,500</td><td><span class="status-badge status-recruiting">공동구매</span></td><td>2024-01-23</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Payments -->
+                <div id="personal-payments" class="tab-content">
+                    <h2 class="section-title">💳 결제 / 정산 내역</h2>
+                    <div class="summary-grid" style="grid-template-columns:repeat(3,1fr)">
+                        <div class="summary-card"><div class="sum-num" style="color:var(--primary)">₩15,000</div><div class="sum-label">총 결제 금액</div></div>
+                        <div class="summary-card"><div class="sum-num" style="color:var(--warning)">₩0</div><div class="sum-label">결제 대기</div></div>
+                        <div class="summary-card"><div class="sum-num" style="color:var(--success)">₩15,000</div><div class="sum-label">결제 완료</div></div>
+                    </div>
+                    <table class="data-table">
+                        <thead><tr><th>의뢰명</th><th>생산자</th><th>결제 금액</th><th>상태</th><th>결제일</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>커스텀 스티커 50장</strong></td><td>프린트마스터</td><td class="fw-bold">₩15,000</td><td><span class="status-badge status-completed">완료</span></td><td>2024-01-10</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== MARKETPLACE (placeholder) ========== -->
+    <section id="page-marketplace" class="page-section">
+        <div class="empty-state">
+            <div class="empty-icon">🛒</div>
+            <p>마켓플레이스는 현재 의뢰자 기능에 집중하여 추후 구현됩니다.</p>
+            <button class="btn btn-primary" onclick="navigateTo('client-select')">의뢰하러 가기</button>
+        </div>
+    </section>
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- Match Confirm Modal -->
+<div class="modal-overlay" id="matchConfirmModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('matchConfirmModal')">×</button>
+        <h3>✅ 매칭 확정</h3>
+        <div class="alert alert-warning">
+            <span>⚠️</span>
+            <span>매칭을 확정하면 취소가 어렵습니다. 견적 내용을 확인 후 진행해주세요.</span>
+        </div>
+        <div class="payment-summary">
+            <h4>최종 결제 예정 금액</h4>
+            <div class="pay-amount">₩2,100,000</div>
+            <div class="pay-detail">아크릴 키링 1,000개 × ₩2,100 (프린트마스터)</div>
+        </div>
+        <table class="data-table mb-16">
+            <tr><td style="width:120px;font-weight:600">생산자</td><td>프린트마스터 (⭐4.9)</td></tr>
+            <tr><td style="font-weight:600">제안 단가</td><td class="text-primary fw-bold">₩2,100 / 개</td></tr>
+            <tr><td style="font-weight:600">예상 납기</td><td>7일</td></tr>
+            <tr><td style="font-weight:600">포장</td><td>개별 OPP 포장 포함</td></tr>
+        </table>
+        <div class="form-group">
+            <label>결제 방법 선택 *</label>
+            <select>
+                <option>신용카드</option>
+                <option>계좌이체</option>
+                <option>카카오페이</option>
+                <option>토스페이</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('matchConfirmModal')">취소</button>
+            <button class="btn btn-success" onclick="closeModal('matchConfirmModal');showToast('매칭이 확정되었습니다! 결제를 진행합니다.','success')">💳 결제 및 매칭 확정</button>
+        </div>
+    </div>
+</div>
+
+<!-- Client Estimate Modal -->
+<div class="modal-overlay" id="clientEstimateModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('clientEstimateModal')">×</button>
+        <h3>📄 생산자 견적서</h3>
+        <div style="display:flex;align-items:center;gap:12px;background:var(--bg);padding:14px;border-radius:8px;margin-bottom:16px">
+            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#e84393,#fd79a8);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px">프</div>
+            <div><strong>프린트마스터</strong> <span class="status-badge status-matched">인증</span><br><span class="text-xs text-muted">⭐4.9 | 아크릴전문 | 312건 완료</span></div>
+        </div>
+        <table class="estimate-table">
+            <thead><tr><th>항목</th><th>수량</th><th>단가</th><th>금액</th></tr></thead>
+            <tbody>
+                <tr><td>아크릴 키링 제작비</td><td>1,000</td><td>₩2,000</td><td>₩2,000,000</td></tr>
+                <tr><td>개별 OPP 포장비</td><td>1,000</td><td>₩100</td><td>₩100,000</td></tr>
+                <tr><td>배송비</td><td>1</td><td>-</td><td>₩0 (무료)</td></tr>
+            </tbody>
+            <tfoot><tr style="font-weight:700"><td colspan="3" style="text-align:right">합계</td><td class="text-primary">₩2,100,000</td></tr></tfoot>
+        </table>
+        <div class="alert alert-info mt-16">
+            <span>📝</span>
+            <span><strong>생산자 메모:</strong> 고품질 아크릴로 제작, 샘플 1개 무료 제공, 납기 7일 예상</span>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" onclick="closeModal('clientEstimateModal')">닫기</button>
+            <button class="btn btn-success" onclick="closeModal('clientEstimateModal');openModal('matchConfirmModal')">이 견적으로 매칭 →</button>
+        </div>
+    </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="orderDetailModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('orderDetailModal')">×</button>
+        <h3>📦 의뢰 진행 상세</h3>
+        <h4 class="mb-8">에코백 인쇄 500개</h4>
+        <div class="status-flow mb-16">
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">의뢰등록<br><span class="text-xs">02/05</span></div></div>
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">매칭확정<br><span class="text-xs">02/08</span></div></div>
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">결제완료<br><span class="text-xs">02/10</span></div></div>
+            <div class="sf-item active"><div class="sf-dot">⚙</div><div class="sf-label">제작중<br><span class="text-xs">60%</span></div></div>
+            <div class="sf-item"><div class="sf-dot">📦</div><div class="sf-label">배송</div></div>
+            <div class="sf-item"><div class="sf-dot">✓</div><div class="sf-label">완료</div></div>
+        </div>
+        <table class="data-table mb-16">
+            <tr><td style="width:120px;font-weight:600">생산자</td><td>메이커스 공방 (⭐4.8)</td></tr>
+            <tr><td style="font-weight:600">확정 단가</td><td class="text-success fw-bold">₩3,800 / 개</td></tr>
+            <tr><td style="font-weight:600">총 결제액</td><td class="text-primary fw-bold">₩1,900,000</td></tr>
+            <tr><td style="font-weight:600">납품 예정일</td><td>2024-02-28</td></tr>
+            <tr><td style="font-weight:600">현재 상태</td><td>인쇄 공정 진행 중 (60%)</td></tr>
+        </table>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('orderDetailModal')">닫기</button>
+            <button class="btn btn-primary">💬 생산자에게 메시지</button>
+        </div>
+    </div>
+</div>
+
+<!-- Completed Order Detail Modal -->
+<div class="modal-overlay" id="completedOrderDetailModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('completedOrderDetailModal')">×</button>
+        <h3>📦 완료된 의뢰 상세</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:16px;border-radius:8px;margin-bottom:16px;">
+            <div><h4>포토카드 세트 10,000세트</h4><span class="status-badge status-completed">배송 완료</span></div>
+            <button class="btn btn-primary btn-sm" onclick="closeModal('completedOrderDetailModal');openModal('writeReviewModal')">✍️ 후기 작성</button>
+        </div>
+        <div class="status-flow mb-16">
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">의뢰<br><span class="text-xs">01/05</span></div></div>
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">매칭<br><span class="text-xs">01/08</span></div></div>
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">결제<br><span class="text-xs">01/12</span></div></div>
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">제작<br><span class="text-xs">01/18</span></div></div>
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">배송<br><span class="text-xs">01/19</span></div></div>
+            <div class="sf-item done"><div class="sf-dot">✓</div><div class="sf-label">완료<br><span class="text-xs">01/20</span></div></div>
+        </div>
+        <table class="estimate-table">
+            <thead><tr><th>항목</th><th>수량</th><th>단가</th><th>금액</th></tr></thead>
+            <tbody>
+                <tr><td>포토카드 세트 제작비</td><td>10,000</td><td>₩800</td><td>₩8,000,000</td></tr>
+                <tr><td>배송비</td><td>1</td><td>-</td><td>₩0</td></tr>
+            </tbody>
+            <tfoot><tr style="font-weight:700"><td colspan="3" style="text-align:right">총 결제 금액</td><td class="text-primary">₩8,000,000</td></tr></tfoot>
+        </table>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary">🧾 영수증</button>
+            <button class="btn btn-secondary" onclick="closeModal('completedOrderDetailModal')">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- Group Purchase Detail Modal -->
+<div class="modal-overlay" id="groupPurchaseDetailModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('groupPurchaseDetailModal')">×</button>
+        <h3>👥 공동구매 상세</h3>
+        <div class="co-purchase-info mb-16">
+            <div class="flex-between"><span class="fw-bold">모집 현황</span><strong class="text-primary">65 / 100개 (최소)</strong></div>
+            <div class="progress-bar mt-8"><div class="fill" style="width:65%"></div></div>
+            <p class="text-xs text-muted mt-8">최소 수량 달성까지 35개 남음 · 마감 D-10</p>
+        </div>
+        <table class="data-table">
+            <tr><td style="width:120px;font-weight:600">아이템</td><td>아크릴 키링 공동구매</td></tr>
+            <tr><td style="font-weight:600">모집 기간</td><td>2024-02-01 ~ 2024-02-20</td></tr>
+            <tr><td style="font-weight:600">목표 수량</td><td>200개 (최소 100개)</td></tr>
+            <tr><td style="font-weight:600">현재 참여</td><td><strong class="text-primary">12명 / 65개</strong></td></tr>
+            <tr><td style="font-weight:600">희망 단가</td><td>₩2,000 / 개</td></tr>
+            <tr><td style="font-weight:600">의뢰 방식</td><td>입찰(Bidding) 방식</td></tr>
+        </table>
+        <div class="alert alert-info mt-16">
+            <span>💡</span>
+            <span>최소 수량(100개) 달성 시 모집이 종료되며, 생산자들에게 자동으로 입찰이 요청됩니다.</span>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+            <button class="btn btn-secondary" onclick="closeModal('groupPurchaseDetailModal')">닫기</button>
+            <button class="btn btn-primary" onclick="closeModal('groupPurchaseDetailModal');showToast('공유 링크가 복사되었습니다!','success')">🔗 모집글 공유</button>
+        </div>
+    </div>
+</div>
+
+<!-- Bid List Modal (for requests with fewer bids shown inline) -->
+<div class="modal-overlay" id="bidListModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('bidListModal')">×</button>
+        <h3>📊 입찰 현황 - 커스텀 에코백</h3>
+        <div class="request-meta mb-16">
+            <div class="meta-item">📦 수량: <strong>800개</strong></div>
+            <div class="meta-item">💰 희망 단가: <strong>₩4,000</strong></div>
+            <div class="meta-item">📅 마감: <strong>2024-02-20</strong></div>
+        </div>
+        <div class="bid-item top-bid" onclick="openModal('clientEstimateModal')">
+            <div class="bid-info">
+                <div class="bid-rank gold">1</div>
+                <div><strong>에코프린트</strong><p class="text-xs text-muted">패브릭 전문 | ⭐4.7</p></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+                <div class="bid-price">₩3,600</div>
+                <button class="btn btn-success btn-sm" onclick="event.stopPropagation();closeModal('bidListModal');openModal('matchConfirmModal')">선택</button>
+            </div>
+        </div>
+        <div class="bid-item">
+            <div class="bid-info">
+                <div class="bid-rank silver">2</div>
+                <div><strong>메이커스 공방</strong><p class="text-xs text-muted">아크릴/의류 | ⭐4.8</p></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+                <div class="bid-price">₩3,900</div>
+                <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();">Override</button>
+            </div>
+        </div>
+        <p class="text-xs text-muted mt-16">⚠️ 입찰을 클릭하면 상세 견적서를 확인할 수 있습니다.</p>
+    </div>
+</div>
+
+<!-- Write Review Modal -->
+<div class="modal-overlay" id="writeReviewModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal('writeReviewModal')">×</button>
+        <h3>✍️ 의뢰 후기 작성</h3>
+        <div class="form-group">
+            <label>완료된 의뢰 선택</label>
+            <select><option>포토카드 세트 10,000세트 - 프린트마스터</option><option>커스텀 스티커 50장 - 프린트마스터</option></select>
+        </div>
+        <div class="form-group">
+            <label>만족도</label>
+            <div style="display:flex;gap:8px;font-size:28px;cursor:pointer" id="starRating">
+                <span onclick="setRating(1)">⭐</span><span onclick="setRating(2)">⭐</span><span onclick="setRating(3)">⭐</span><span onclick="setRating(4)">⭐</span><span onclick="setRating(5)" style="opacity:0.3">⭐</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>후기 내용</label>
+            <textarea placeholder="품질, 소통, 납기 등에 대한 후기를 남겨주세요."></textarea>
+        </div>
+        <div class="form-group">
+            <label>사진 첨부</label>
+            <input type="file" multiple>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('writeReviewModal')">취소</button>
+            <button class="btn btn-primary" onclick="closeModal('writeReviewModal');showToast('후기가 등록되었습니다!','success')">등록</button>
+        </div>
+    </div>
+</div>
+
+<!-- Co-Purchase Recommendation Popup -->
+<div class="modal-overlay" id="coPurchasePopup">
+    <div class="modal" style="max-width:480px">
+        <button class="modal-close" onclick="closeModal('coPurchasePopup')">×</button>
+        <h3>💡 공동구매를 추천합니다!</h3>
+        <div id="coPurchaseReason" style="background:rgba(253,203,110,0.15);border:1px solid rgba(253,203,110,0.3);border-radius:8px;padding:14px;margin-bottom:16px"></div>
+        <p class="text-sm mb-16">공동구매로 진행하면 <strong>더 많은 사람들과 함께 제작</strong>하여 단가를 낮출 수 있습니다.</p>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('coPurchasePopup');showToast('개인 의뢰로 등록되었습니다.','info')">개인 의뢰 유지</button>
+            <button class="btn btn-primary" onclick="closeModal('coPurchasePopup');showPersonalTab('group',null);showToast('공동구매 페이지로 이동합니다.','info')">공동구매로 전환 →</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Modal -->
+<div class="modal-overlay" id="notificationModal">
+    <div class="modal" style="max-width:480px">
+        <button class="modal-close" onclick="closeModal('notificationModal')">×</button>
+        <h3>🔔 알림</h3>
+        <div style="border-bottom:1px solid #E2E8F0;padding:12px 0">
+            <div class="flex-between"><strong class="text-sm">새 입찰: 프린트마스터 ₩2,100</strong><span class="text-xs text-muted">2분 전</span></div>
+            <p class="text-xs text-muted mt-8">아크릴 키링 의뢰에 새 입찰이 도착했습니다.</p>
+        </div>
+        <div style="border-bottom:1px solid #E2E8F0;padding:12px 0">
+            <div class="flex-between"><strong class="text-sm">공동구매 참여 +5명</strong><span class="text-xs text-muted">1시간 전</span></div>
+            <p class="text-xs text-muted mt-8">아크릴 키링 공동구매 (65/100)</p>
+        </div>
+        <div style="border-bottom:1px solid #E2E8F0;padding:12px 0">
+            <div class="flex-between"><strong class="text-sm">제작 진행률 업데이트</strong><span class="text-xs text-muted">3시간 전</span></div>
+            <p class="text-xs text-muted mt-8">에코백 500개 - 인쇄 공정 60% 완료</p>
+        </div>
+        <div style="padding:12px 0">
+            <div class="flex-between"><strong class="text-sm">배송 완료</strong><span class="text-xs text-muted">1일 전</span></div>
+            <p class="text-xs text-muted mt-8">커스텀 스티커 50장이 배송 완료되었습니다. 후기를 작성해주세요!</p>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    // ===== NAVIGATION =====
+    function navigateTo(page) {
+        document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById('page-' + page);
+        if (target) target.classList.add('active');
+        document.querySelectorAll('#mainNav button').forEach(btn => btn.classList.remove('active'));
+        const navMap = { 'home': 0, 'client-select': 1, 'client-business': 1, 'client-personal': 1, 'marketplace': 2 };
+        const idx = navMap[page];
+        if (idx >= 0) { const btns = document.querySelectorAll('#mainNav button'); if(btns[idx]) btns[idx].classList.add('active'); }
+        window.scrollTo(0, 0);
+    }
+
+    // ===== TABS =====
+    function showBizTab(tab, btn) {
+        document.querySelectorAll('#page-client-business .main-content > .tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById('biz-' + tab)?.classList.add('active');
+        document.querySelectorAll('#page-client-business .sidebar-menu button').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        else {
+            const buttons = document.querySelectorAll('#page-client-business .sidebar-menu button');
+            const tabMap = {'dashboard':0,'create':1,'manage':2,'recent-match':3,'payments':4};
+            if(buttons[tabMap[tab]]) buttons[tabMap[tab]].classList.add('active');
+        }
+    }
+
+    function showPersonalTab(tab, btn) {
+        document.querySelectorAll('#page-client-personal .main-content > .tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById('personal-' + tab)?.classList.add('active');
+        document.querySelectorAll('#page-client-personal .sidebar-menu button').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        else {
+            const buttons = document.querySelectorAll('#page-client-personal .sidebar-menu button');
+            const tabMap = {'dashboard':0,'individual':1,'group':2,'myorders':3,'recent-match':4,'payments':5};
+            if(buttons[tabMap[tab]]) buttons[tabMap[tab]].classList.add('active');
+        }
+    }
+
+    // ===== BIZ REQUEST STEPPER =====
+    let bizCurrentStep = 1;
+    const priceHints = {
+        '아크릴굿즈': '₩1,800~₩3,500', '의류/패브릭': '₩7,000~₩25,000',
+        '문구/스티커': '₩300~₩1,500', '패키징': '₩800~₩3,000',
+        '봉제인형': '₩10,000~₩30,000', '금속/뱃지': '₩2,000~₩5,000',
+        '생활용품': '₩3,000~₩15,000'
+    };
+
+    document.getElementById('biz-category')?.addEventListener('change', function() {
+        const hint = priceHints[this.value];
+        document.getElementById('biz-price-hint').textContent = hint ? '시장 평균 참고가: ' + hint : '카테고리를 선택하면 표시됩니다';
+    });
+
+    function bizStepNext(step) {
+        if (step === 1) {
+            let valid = true;
+            [['fg-biz-title','biz-title'],['fg-biz-category','biz-category'],['fg-biz-qty','biz-qty'],['fg-biz-price','biz-price'],['fg-biz-deadline','biz-deadline']].forEach(([fg, id]) => {
+                const el = document.getElementById(id);
+                const fgEl = document.getElementById(fg);
+                if (!el.value.trim()) { fgEl.classList.add('error'); valid = false; } else { fgEl.classList.remove('error'); }
+            });
+            if (!valid) { showToast('필수 항목을 입력해주세요.','error'); return; }
+        }
+        document.getElementById('biz-step-' + step).style.display = 'none';
+        document.getElementById('biz-step-' + (step + 1)).style.display = 'block';
+        bizCurrentStep = step + 1;
+        updateStepper();
+
+        if (step === 2) {
+            const title = document.getElementById('biz-title').value;
+            const cat = document.getElementById('biz-category').value;
+            const qty = document.getElementById('biz-qty').value;
+            const price = document.getElementById('biz-price').value;
+            const deadline = document.getElementById('biz-deadline').value;
+            const guide = document.getElementById('biz-design-guide').value || '-';
+            const note = document.getElementById('biz-detail-note').value || '-';
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-category').textContent = cat;
+            document.getElementById('confirm-qty').textContent = Number(qty).toLocaleString() + '개';
+            document.getElementById('confirm-price').textContent = '₩' + Number(price).toLocaleString();
+            document.getElementById('confirm-deadline').textContent = deadline;
+            document.getElementById('confirm-total').textContent = '₩' + (Number(qty) * Number(price)).toLocaleString();
+            document.getElementById('confirm-guide').textContent = guide;
+            document.getElementById('confirm-note').textContent = note;
+            const fileInput = document.getElementById('biz-file-input');
+            document.getElementById('confirm-files').textContent = fileInput.files.length > 0 ? Array.from(fileInput.files).map(f => f.name).join(', ') : '없음';
+        }
+    }
+
+    function bizStepBack(step) {
+        document.getElementById('biz-step-' + step).style.display = 'none';
+        document.getElementById('biz-step-' + (step - 1)).style.display = 'block';
+        bizCurrentStep = step - 1;
+        updateStepper();
+    }
+
+    function updateStepper() {
+        document.querySelectorAll('#bizStepper .step').forEach((s, i) => {
+            s.classList.remove('active', 'done');
+            if (i + 1 < bizCurrentStep) s.classList.add('done');
+            else if (i + 1 === bizCurrentStep) s.classList.add('active');
+        });
+        document.querySelectorAll('#bizStepper .step-line').forEach((l, i) => {
+            l.classList.toggle('done', i + 1 < bizCurrentStep);
+        });
+    }
+
+    function submitBizRequest() {
+        showToast('의뢰가 성공적으로 등록되었습니다!', 'success');
+        setTimeout(() => { showBizTab('manage', null); }, 1000);
+    }
+
+    // ===== PERSONAL REQUEST =====
+    function toggleDirectMfg(radio) {
+        document.getElementById('directMfgField').style.display = radio.value === 'direct' ? 'block' : 'none';
+        document.getElementById('radio-bidding').style.borderColor = radio.value === 'bidding' ? 'var(--primary)' : '#E2E8F0';
+        document.getElementById('radio-direct').style.borderColor = radio.value === 'direct' ? 'var(--primary)' : '#E2E8F0';
+    }
+
+    function toggleGroupDirectMfg(radio) {
+        document.getElementById('groupDirectMfgField').style.display = radio.value === 'direct' ? 'block' : 'none';
+    }
+
+    function submitPersonalRequest() {
+        const qty = parseInt(document.getElementById('personalQty')?.value) || 0;
+        const price = parseInt(document.getElementById('personalPrice')?.value) || 0;
+        let reasons = [];
+        if (qty > 50) reasons.push('📦 수량 ' + qty + '개는 공동구매로 진행하면 더 유리한 단가를 받을 수 있습니다.');
+        if (price > 0 && price < 1500) reasons.push('💰 희망 단가(₩' + price.toLocaleString() + ')가 낮습니다. 공동구매로 물량을 모아보세요.');
+        if (reasons.length > 0) {
+            document.getElementById('coPurchaseReason').innerHTML = reasons.map(r => '<p class="text-sm" style="margin-bottom:8px">' + r + '</p>').join('');
+            openModal('coPurchasePopup');
+        } else {
+            showToast('개인 의뢰가 등록되었습니다!', 'success');
+        }
+    }
+
+    // ===== FILTER =====
+    function filterBizStatus(status, btn) {
+        if (btn) {
+            document.querySelectorAll('#biz-status-pills .pill-filter').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        document.querySelectorAll('#biz-manage .request-card').forEach(card => {
+            if (status === 'all') { card.style.display = 'block'; }
+            else { card.style.display = card.dataset.status === status ? 'block' : 'none'; }
+        });
+    }
+
+    function filterPillActive(btn) {
+        btn.parentElement.querySelectorAll('.pill-filter').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    // ===== FILE UPLOAD DISPLAY =====
+    function showUploadedFiles(input, listId) {
+        const list = document.getElementById(listId);
+        list.innerHTML = '';
+        Array.from(input.files).forEach(f => {
+            const size = (f.size / 1024 / 1024).toFixed(1);
+            list.innerHTML += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:13px"><span>📎 ' + f.name + ' (' + size + 'MB)</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px">×</button></div>';
+        });
+    }
+
+    // ===== STAR RATING =====
+    function setRating(n) {
+        document.querySelectorAll('#starRating span').forEach((s, i) => { s.style.opacity = i < n ? '1' : '0.3'; });
+    }
+
+    // ===== MODALS & TOAST =====
+    function openModal(id) { document.getElementById(id)?.classList.add('show'); }
+    function closeModal(id) { document.getElementById(id)?.classList.remove('show'); }
+    document.querySelectorAll('.modal-overlay').forEach(o => { o.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); }); });
+
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast ' + type + ' show';
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    function toggleUserMenu(event) {
+        if(event) event.stopPropagation();
+        document.getElementById('profileDropdown').classList.toggle('show');
+    }
+    document.addEventListener('click', function(e) {
+        const d = document.getElementById('profileDropdown');
+        if(d && d.classList.contains('show') && !e.target.closest('.nav-user')) d.classList.remove('show');
+    });
+</script>
+</body>
+</html>
