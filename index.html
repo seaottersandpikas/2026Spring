@@ -18,7 +18,7 @@
             <button onclick="navigateTo('marketplace')">마켓플레이스</button>
         </nav>
         <div class="nav-user">
-            <button class="btn btn-sm btn-secondary" onclick="openModal('notificationModal')">🔔</button>
+            <button class="btn btn-sm btn-secondary" onclick="openNotificationModal()" style="position:relative">🔔<span id="notif-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:var(--danger);color:white;font-size:10px;font-weight:700;border-radius:50%;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 3px"></span></button>
             <button class="btn btn-sm btn-primary" id="loginNavBtn" onclick="openModal('loginModal')">로그인</button>
             <div class="user-avatar" onclick="toggleUserMenu(event)" id="userAvatar" style="display:none">U</div>
             <div class="profile-dropdown" id="profileDropdown">
@@ -905,6 +905,32 @@
     </div>
 </div>
 
+<!-- 공동구매 참여 모달 -->
+<div class="modal-overlay" id="joinGroupModal">
+    <div class="modal" style="max-width:480px">
+        <button class="modal-close" onclick="closeModal('joinGroupModal')">×</button>
+        <h3>👥 공동구매 참여</h3>
+        <div id="join-group-summary" style="background:var(--bg);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+            <div style="text-align:center;color:var(--gray)">⏳ 로딩 중...</div>
+        </div>
+        <div class="form-group">
+            <label>참여 수량 *</label>
+            <input type="number" id="join-group-qty" placeholder="예: 1" min="1" value="1">
+            <div class="form-hint" id="join-group-qty-hint"></div>
+        </div>
+        <div id="join-group-total" style="display:none;background:rgba(0,206,201,0.08);border:1px solid rgba(0,206,201,0.2);border-radius:8px;padding:12px 16px;margin-bottom:8px">
+            <div class="flex-between">
+                <span class="text-sm text-muted">예상 결제 금액</span>
+                <strong style="color:var(--secondary);font-size:16px" id="join-group-total-amount">-</strong>
+            </div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('joinGroupModal')">취소</button>
+            <button class="btn btn-primary" id="joinGroupBtn" onclick="submitGroupParticipation()">👥 참여하기</button>
+        </div>
+    </div>
+</div>
+
 <!-- 입찰 제출 모달 -->
 <div class="modal-overlay" id="submitBidModal">
     <div class="modal" style="max-width:520px">
@@ -954,8 +980,13 @@
 <div class="modal-overlay" id="notificationModal">
     <div class="modal" style="max-width:480px">
         <button class="modal-close" onclick="closeModal('notificationModal')">×</button>
-        <h3>🔔 알림</h3>
-        <div style="padding:20px 0;text-align:center;color:var(--gray)"><p>새로운 알림이 없습니다.</p></div>
+        <div class="flex-between" style="margin-bottom:16px">
+            <h3 style="margin-bottom:0">🔔 알림</h3>
+            <button class="btn btn-sm btn-secondary" onclick="markAllNotificationsRead()">모두 읽음</button>
+        </div>
+        <div id="notif-list">
+            <div style="text-align:center;padding:32px;color:var(--gray)"><div style="font-size:36px;margin-bottom:12px">🔔</div><p>새로운 알림이 없습니다.</p></div>
+        </div>
     </div>
 </div>
 
@@ -968,6 +999,7 @@
 <script src="assets/js/requests.js"></script>
 <script src="assets/js/dummy-bids.js"></script>
 <script src="assets/js/bids.js"></script>
+<script src="assets/js/notifications.js"></script>
 <script src="assets/js/app.js"></script>
 
 </body>

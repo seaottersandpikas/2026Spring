@@ -14,6 +14,7 @@ var AppState = {
 
 var _pendingBidRequestId = null;
 var _pendingBidQuantity  = 0;
+var _pendingGroupRequestId = null;
 
 // ── 초기화 ─────────────────────────────────────────────
 function initApp() {
@@ -90,6 +91,7 @@ function updateUILoggedIn() {
     setEl('personal-sidebar-name', name);
     setEl('mfg-sidebar-name',      name);
     renderProfileMenu();
+    updateNotificationBadge();
     // 로그인 후 현재 활성 페이지가 의뢰 페이지면 즉시 로드
     var bizPage = document.getElementById('page-client-business');
     var perPage = document.getElementById('page-client-personal');
@@ -250,6 +252,7 @@ async function loadBizDashboard() {
         setEl('biz-count-producing', b.filter(function(x){ return x.status==='producing'; }).length);
         setEl('biz-count-completed', b.filter(function(x){ return x.status==='matched'||x.status==='producing'||x.status==='shipping'||x.status==='completed'; }).length);
     } catch(e){ console.error(e); }
+    autoMatchOverdueBids();
 }
 
 async function loadPersonalDashboard() {
@@ -262,6 +265,7 @@ async function loadPersonalDashboard() {
         setEl('per-count-group',     p.filter(function(x){ return x.request_type==='group'; }).length);
         setEl('per-count-completed', p.filter(function(x){ return x.status==='matched'||x.status==='producing'||x.status==='shipping'||x.status==='completed'; }).length);
     } catch(e){ console.error(e); }
+    autoMatchOverdueBids();
 }
 
 // ── 의뢰 목록 ──────────────────────────────────────────
@@ -570,6 +574,9 @@ async function submitBizRequest() {
             detail_note:  document.getElementById('biz-detail-note').value,
             status: 'bidding', bidding_type: 'bidding'
         });
+        // 디자인 파일 업로드 (실패해도 의뢰는 등록됨)
+        try { await uploadRequestFiles(newReq.id, document.getElementById('biz-file-input')); }
+        catch(fe){ console.warn('파일 업로드 오류:', fe.message); }
         // 더미 입찰 생성 (실패해도 의뢰는 등록됨)
         try {
             await DummyBids.generateBids(newReq.id, category, price, qty);
@@ -623,6 +630,9 @@ async function doSubmitPersonalRequest() {
             direct_manufacturer_id: bType==='direct'?document.getElementById('directMfgId').value:null,
             status: 'bidding'
         });
+        // 디자인 파일 업로드
+        try { await uploadRequestFiles(newReq.id, document.getElementById('personal-file-input')); }
+        catch(fe){ console.warn('파일 업로드 오류:', fe.message); }
         if (bType==='bidding') {
             try { await DummyBids.generateBids(newReq.id, category, price, qty); } catch(e){ console.error(e); }
         }
@@ -681,6 +691,13 @@ async function executeSelectBid() {
     if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
     try {
         await Requests.selectBid(pm.requestId, pm.bidId, pm.name, pm.price);
+        // 생산자에게 매칭 알림
+        try {
+            var bidOwnerRes = await window.supabaseClient.from('bids').select('manufacturer_id').eq('id',pm.bidId).single();
+            if (!bidOwnerRes.error && bidOwnerRes.data) {
+                await Notifications.create(bidOwnerRes.data.manufacturer_id, 'bid_selected', '입찰이 선택되었습니다! ✅', pm.name+' 님의 입찰이 선택되었습니다. 생산을 시작해주세요!', pm.requestId);
+            }
+        } catch(ne){ console.warn('알림 생성 실패:', ne.message); }
         closeModal('matchConfirmModal');
         AppState.pendingMatch = {};
         showToast('매칭이 확정되었습니다! 🎉','success');
@@ -1157,6 +1174,13 @@ async function submitBid() {
             try { await Bids.uploadQuoteFile(bid.id, fileInput.files[0]); }
             catch(fe) { console.warn('견적서 업로드 실패:', fe.message); }
         }
+        // 의뢰자에게 입찰 알림
+        try {
+            var reqOwnerRes = await window.supabaseClient.from('requests').select('user_id,title').eq('id',_pendingBidRequestId).single();
+            if (!reqOwnerRes.error && reqOwnerRes.data) {
+                await Notifications.create(reqOwnerRes.data.user_id, 'new_bid', '새 입찰이 도착했습니다 📨', reqOwnerRes.data.title+' 의뢰에 새 입찰이 등록되었습니다.', _pendingBidRequestId);
+            }
+        } catch(ne){ console.warn('알림 생성 실패:', ne.message); }
         closeModal('submitBidModal');
         showToast('입찰이 완료되었습니다! 🎉','success');
         loadMfgBids();
@@ -1172,6 +1196,15 @@ async function updateBidStatus(requestId, newStatus, btn) {
     if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
     try {
         await Bids.updateRequestStatus(requestId, newStatus);
+        // 의뢰자에게 상태 변경 알림
+        try {
+            var reqOwnerRes2 = await window.supabaseClient.from('requests').select('user_id,title').eq('id',requestId).single();
+            if (!reqOwnerRes2.error && reqOwnerRes2.data) {
+                var statusTitles = { producing:'🔧 생산이 시작되었습니다', shipping:'🚚 배송이 시작되었습니다', completed:'📦 배송이 완료되었습니다' };
+                await Notifications.create(reqOwnerRes2.data.user_id, 'status_changed', statusTitles[newStatus]||'상태 변경', reqOwnerRes2.data.title+' 의뢰 상태가 변경되었습니다.', requestId);
+                updateNotificationBadge();
+            }
+        } catch(ne){ console.warn('알림 생성 실패:', ne.message); }
         var labels = { producing:'생산 중으로 변경되었습니다.', shipping:'배송 중으로 변경되었습니다.', completed:'완료 처리되었습니다.' };
         showToast(labels[newStatus] || '상태가 변경되었습니다.','success');
         loadMfgBids();
@@ -1182,6 +1215,129 @@ async function updateBidStatus(requestId, newStatus, btn) {
     }
 }
 
+// ── 파일 업로드 (의뢰 디자인 파일) ────────────────────
+async function uploadRequestFiles(requestId, fileInput) {
+    if (!fileInput || !fileInput.files || !fileInput.files.length) return;
+    var files = Array.from(fileInput.files);
+    for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        try {
+            var safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            var path = requestId + '/' + Date.now() + '_' + i + '_' + safeName;
+            var upRes = await window.supabaseClient.storage
+                .from('request-files').upload(path, f, { upsert: false });
+            if (upRes.error) { console.warn('업로드 실패:', f.name, upRes.error.message); continue; }
+            var urlData = window.supabaseClient.storage.from('request-files').getPublicUrl(upRes.data.path);
+            await window.supabaseClient.from('request_files').insert([{
+                request_id: requestId,
+                file_name:  f.name,
+                file_url:   urlData.data.publicUrl,
+                file_size:  f.size
+            }]);
+        } catch(fe){ console.warn('파일 처리 오류:', f.name, fe.message); }
+    }
+}
+
+// ── 알림 ─────────────────────────────────────────────
+async function updateNotificationBadge() {
+    if (!AppState.currentUser) return;
+    try {
+        var count = await Notifications.getUnreadCount();
+        var badge = document.getElementById('notif-badge');
+        if (!badge) return;
+        if (count > 0) {
+            badge.textContent = count > 9 ? '9+' : String(count);
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch(e){ console.warn('배지 업데이트 실패:', e.message); }
+}
+
+async function openNotificationModal() {
+    openModal('notificationModal');
+    var listEl = document.getElementById('notif-list');
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray)">⏳ 로딩 중...</div>';
+    try {
+        var notifs = await Notifications.getMyNotifications();
+        renderNotificationList(notifs);
+        await Notifications.markAllRead();
+        updateNotificationBadge();
+    } catch(e) {
+        if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray)">알림을 불러올 수 없습니다.</div>';
+    }
+}
+
+async function markAllNotificationsRead() {
+    try {
+        await Notifications.markAllRead();
+        updateNotificationBadge();
+        var listEl = document.getElementById('notif-list');
+        if (listEl) listEl.querySelectorAll('[data-unread]').forEach(function(el){ el.removeAttribute('data-unread'); el.style.background=''; });
+        showToast('모두 읽음 처리했습니다.','info');
+    } catch(e){ showToast('오류: '+e.message,'error'); }
+}
+
+function renderNotificationList(notifs) {
+    var listEl = document.getElementById('notif-list');
+    if (!listEl) return;
+    if (!notifs || !notifs.length) {
+        listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray)"><div style="font-size:36px;margin-bottom:12px">🔔</div><p>새로운 알림이 없습니다.</p></div>';
+        return;
+    }
+    var icons = { new_bid:'📨', bid_selected:'✅', status_changed:'🔧', auto_matched:'⚡' };
+    listEl.innerHTML = notifs.map(function(n) {
+        var date = new Date(n.created_at).toLocaleDateString('ko-KR');
+        var time = new Date(n.created_at).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'});
+        var icon = icons[n.type] || '🔔';
+        var bg   = !n.is_read ? 'background:rgba(108,92,231,0.04);' : '';
+        return '<div style="padding:14px 0;border-bottom:1px solid #E2E8F0;'+bg+'">' +
+            '<div style="display:flex;gap:12px;align-items:flex-start">' +
+            '<div style="font-size:22px;flex-shrink:0;margin-top:1px">'+icon+'</div>' +
+            '<div style="flex:1;min-width:0">' +
+            '<div class="flex-between">' +
+            '<strong style="font-size:13px;line-height:1.4">'+escHtml(n.title)+'</strong>' +
+            (!n.is_read?'<span style="width:8px;height:8px;background:var(--primary);border-radius:50%;display:inline-block;flex-shrink:0;margin-left:6px"></span>':'')+
+            '</div>' +
+            (n.message?'<p class="text-xs text-muted" style="margin-top:3px;line-height:1.5">'+escHtml(n.message)+'</p>':'')+
+            '<span class="text-xs text-muted" style="margin-top:4px;display:block">'+date+' '+time+'</span>' +
+            '</div></div></div>';
+    }).join('');
+}
+
+// ── 자동 매칭 (마감 의뢰) ─────────────────────────────
+async function autoMatchOverdueBids() {
+    if (!AppState.currentUser) return;
+    try {
+        var today = new Date().toISOString().split('T')[0];
+        var res = await window.supabaseClient
+            .from('requests')
+            .select('id, title, bids(*)')
+            .eq('user_id', AppState.currentUser.id)
+            .eq('status', 'bidding')
+            .not('bid_deadline', 'is', null)
+            .lt('bid_deadline', today);
+        if (res.error || !res.data || !res.data.length) return;
+        var overdue = res.data.filter(function(r){ return r.bids && r.bids.length > 0; });
+        if (!overdue.length) return;
+        for (var i = 0; i < overdue.length; i++) {
+            var req = overdue[i];
+            var sorted = req.bids.slice().sort(function(a,b){ return a.unit_price - b.unit_price; });
+            var lowest = sorted[0];
+            try {
+                await Requests.selectBid(req.id, lowest.id, lowest.manufacturer_name || '생산자', lowest.unit_price);
+                try {
+                    await Notifications.create(lowest.manufacturer_id, 'auto_matched', '⚡ 자동 매칭되었습니다!', escHtml(req.title)+' 의뢰에 자동 매칭되었습니다. 생산을 시작해주세요!', req.id);
+                } catch(ne){}
+                showToast('"'+req.title+'" 마감 의뢰 자동 매칭 완료 ⚡', 'success');
+            } catch(me){ console.warn('자동 매칭 실패:', req.id, me.message); }
+        }
+        // 목록 갱신
+        loadMyRequests('business');
+        loadMyRequestsSplit();
+    } catch(e){ console.warn('자동 매칭 체크 오류:', e.message); }
+}
+
 // ── 마켓플레이스 ───────────────────────────────────────
 function showMpTab(tab, btn) {
     document.querySelectorAll('#page-marketplace .tab-content').forEach(function(el){ el.classList.remove('active'); });
@@ -1189,8 +1345,10 @@ function showMpTab(tab, btn) {
     if (el) el.classList.add('active');
     document.querySelectorAll('#marketplaceTabs .mp-tab').forEach(function(b){ b.classList.remove('active'); });
     if (btn) btn.classList.add('active');
-    if (tab==='mass')  loadMpMassRequests('');
-    if (tab==='group') loadMpGroupRequests();
+    if (tab==='mass')    loadMpMassRequests('');
+    if (tab==='group')   loadMpGroupRequests();
+    if (tab==='reviews') loadMpReviews();
+    if (tab==='promo')   loadMpPromo();
 }
 
 async function loadMarketplace() { loadMpMassRequests(''); }
@@ -1263,16 +1421,186 @@ function setPostRating(n) {
     _postRating = n;
     document.querySelectorAll('#postStarRating span').forEach(function(s,i){ s.style.opacity = i<n ? '1' : '0.3'; });
 }
-function submitPost() {
+async function submitPost() {
     var title   = document.getElementById('postTitleInput')   ? document.getElementById('postTitleInput').value.trim()   : '';
     var content = document.getElementById('postContentInput') ? document.getElementById('postContentInput').value.trim() : '';
-    if (!title||!content) { showToast('제목과 내용을 입력해주세요.','error'); return; }
-    closeModal('createPostModal');
-    showToast('게시물이 등록되었습니다! (DB 연동은 Phase 3에서 구현)','success');
+    if (!title || !content) { showToast('제목과 내용을 입력해주세요.','error'); return; }
+    if (!AppState.currentUser) { closeModal('createPostModal'); openModal('loginModal'); return; }
+    var btn = document.querySelector('#createPostModal .btn-primary');
+    if (btn) { btn.disabled=true; btn.textContent='게시 중...'; }
+    try {
+        var p = AppState.currentProfile;
+        var res = await window.supabaseClient.from('posts').insert([{
+            user_id:     AppState.currentUser.id,
+            post_type:   _postType,
+            title:       title,
+            content:     content,
+            rating:      _postType === 'review' ? _postRating : null,
+            author_name: p ? (p.nickname || '사용자') : '사용자',
+            author_type: p ? p.user_type : ''
+        }]);
+        if (res.error) throw res.error;
+        closeModal('createPostModal');
+        showToast('게시물이 등록되었습니다! 🎉','success');
+        if (_postType === 'review') loadMpReviews();
+        else loadMpPromo();
+    } catch(e) {
+        showToast('등록 실패: '+e.message,'error');
+    } finally {
+        if (btn) { btn.disabled=false; btn.textContent='✏️ 게시'; }
+    }
 }
-function joinGroupPurchase(requestId) {
+
+async function loadMpReviews() {
+    var grid = document.getElementById('mp-reviews-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)">⏳ 로딩 중...</div>';
+    try {
+        var res = await window.supabaseClient.from('posts')
+            .select('*').eq('post_type','review')
+            .order('created_at',{ascending:false}).limit(30);
+        if (res.error) throw res.error;
+        var list = res.data || [];
+        if (!list.length) {
+            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">✍️</div><p>첫 번째 후기를 작성해보세요!</p></div>';
+            return;
+        }
+        grid.innerHTML = list.map(function(post){ return renderFeedCard(post); }).join('');
+    } catch(e) {
+        console.error(e);
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>오류가 발생했습니다.</p></div>';
+    }
+}
+
+async function loadMpPromo() {
+    var grid = document.getElementById('mp-promo-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)">⏳ 로딩 중...</div>';
+    try {
+        var res = await window.supabaseClient.from('posts')
+            .select('*').eq('post_type','promo')
+            .order('created_at',{ascending:false}).limit(30);
+        if (res.error) throw res.error;
+        var list = res.data || [];
+        if (!list.length) {
+            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🌟</div><p>등록된 홍보가 없습니다.</p></div>';
+            return;
+        }
+        grid.innerHTML = list.map(function(post){ return renderFeedCard(post); }).join('');
+    } catch(e) {
+        console.error(e);
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>오류가 발생했습니다.</p></div>';
+    }
+}
+
+function renderFeedCard(post) {
+    var date   = new Date(post.created_at).toLocaleDateString('ko-KR');
+    var stars  = '';
+    if (post.post_type === 'review' && post.rating) {
+        stars = '<div style="color:#f39c12;font-size:15px;margin-top:4px">';
+        for (var i = 0; i < 5; i++) stars += i < post.rating ? '★' : '☆';
+        stars += '</div>';
+    }
+    var typeBadge = post.post_type === 'promo'
+        ? '<span class="status-badge status-matched" style="margin-left:6px">생산자</span>'
+        : '';
+    return '<div class="feed-card">' +
+        '<div class="flex-between" style="margin-bottom:6px">' +
+        '<div>' +
+        '<strong style="font-size:14px">'+escHtml(post.author_name||'사용자')+'</strong>'+typeBadge+
+        '<span class="text-xs text-muted" style="margin-left:6px">'+date+'</span>' +
+        stars +
+        '</div>' +
+        '</div>' +
+        '<h4 style="font-size:15px;font-weight:700;margin:8px 0 6px;color:var(--dark)">'+escHtml(post.title)+'</h4>' +
+        '<p class="text-sm" style="color:var(--gray);line-height:1.65;white-space:pre-wrap;word-break:break-word">'+escHtml(post.content)+'</p>' +
+        '</div>';
+}
+async function joinGroupPurchase(requestId) {
     if (!AppState.currentUser) { openModal('loginModal'); return; }
-    showToast('공동구매 참여 기능은 Phase 2에서 구현됩니다.','info');
+    _pendingGroupRequestId = requestId;
+    var qtyEl = document.getElementById('join-group-qty');
+    if (qtyEl) qtyEl.value = '1';
+    var totalEl = document.getElementById('join-group-total');
+    if (totalEl) totalEl.style.display = 'none';
+    var summaryEl = document.getElementById('join-group-summary');
+    if (summaryEl) summaryEl.innerHTML = '<div style="text-align:center;color:var(--gray)">⏳ 로딩 중...</div>';
+    openModal('joinGroupModal');
+    try {
+        var res = await window.supabaseClient.from('requests')
+            .select('title,category,quantity,min_quantity,current_quantity,target_price,recruit_deadline')
+            .eq('id', requestId).single();
+        if (res.error) throw res.error;
+        var req = res.data;
+        var remaining = Math.max(0, (req.min_quantity||0) - (req.current_quantity||0));
+        var hintEl = document.getElementById('join-group-qty-hint');
+        if (hintEl) hintEl.textContent = '최소 모집 잔여: '+remaining.toLocaleString()+'개';
+        if (qtyEl) {
+            qtyEl.oninput = function() {
+                var qty = parseInt(this.value)||0;
+                var totalDisp = document.getElementById('join-group-total');
+                var totalAmt  = document.getElementById('join-group-total-amount');
+                if (qty > 0 && req.target_price > 0) {
+                    if (totalDisp) totalDisp.style.display = 'block';
+                    if (totalAmt)  totalAmt.textContent = (qty * req.target_price).toLocaleString()+'원';
+                } else {
+                    if (totalDisp) totalDisp.style.display = 'none';
+                }
+            };
+        }
+        if (summaryEl) {
+            var pct = req.min_quantity ? Math.min(100, Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
+            summaryEl.innerHTML =
+                '<div class="flex-between" style="margin-bottom:10px">' +
+                '<strong>'+escHtml(req.title)+'</strong>' +
+                '<span class="status-badge status-recruiting">모집중</span>' +
+                '</div>' +
+                '<div class="request-meta">' +
+                '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
+                '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+                (req.recruit_deadline?'<div class="meta-item">📅 마감: <strong>'+req.recruit_deadline+'</strong></div>':'')+
+                '</div>' +
+                '<div style="margin-top:10px">' +
+                '<div class="flex-between text-xs text-muted"><span>모집 현황</span><span>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</span></div>' +
+                '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
+                '</div>';
+        }
+    } catch(e) {
+        if (summaryEl) summaryEl.innerHTML = '<p class="text-sm text-muted">정보를 불러올 수 없습니다.</p>';
+    }
+}
+
+async function submitGroupParticipation() {
+    if (!_pendingGroupRequestId) { showToast('오류: 의뢰 정보가 없습니다.','error'); return; }
+    var qty = parseInt(document.getElementById('join-group-qty').value) || 0;
+    if (qty < 1) { showToast('수량을 1개 이상 입력해주세요.','error'); return; }
+    var btn = document.getElementById('joinGroupBtn');
+    if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
+    try {
+        var partRes = await window.supabaseClient.from('group_participants').insert([{
+            request_id: _pendingGroupRequestId,
+            user_id:    AppState.currentUser.id,
+            quantity:   qty
+        }]);
+        if (partRes.error) {
+            if (partRes.error.code === '23505') throw new Error('이미 이 공동구매에 참여하셨습니다.');
+            throw partRes.error;
+        }
+        // 현재 수량 갱신 (read-modify-write; 단일 사용자 환경에서 충분)
+        var reqRes = await window.supabaseClient.from('requests')
+            .select('current_quantity').eq('id', _pendingGroupRequestId).single();
+        var newQty = ((reqRes.data ? reqRes.data.current_quantity : 0) || 0) + qty;
+        await window.supabaseClient.from('requests')
+            .update({ current_quantity: newQty }).eq('id', _pendingGroupRequestId);
+        closeModal('joinGroupModal');
+        showToast('공동구매에 참여했습니다! 🎉','success');
+        loadMpGroupRequests();
+        loadPersonalDashboard();
+    } catch(e) {
+        showToast('참여 실패: '+e.message,'error');
+    } finally {
+        if (btn) { btn.disabled=false; btn.textContent='👥 참여하기'; }
+    }
 }
 
 // ── 스텝 ───────────────────────────────────────────────
