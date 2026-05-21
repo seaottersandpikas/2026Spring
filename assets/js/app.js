@@ -221,6 +221,7 @@ function showBizTab(tab, btn) {
     if (tab==='manage')       loadMyRequests('business');
     if (tab==='recent-match') loadMatchHistoryBiz();
     if (tab==='dashboard')    loadBizDashboard();
+    if (tab==='payments')     loadBizPayments();
 }
 
 function showPersonalTab(tab, btn) {
@@ -239,6 +240,7 @@ function showPersonalTab(tab, btn) {
     if (tab==='myorders')     loadMyRequestsSplit();
     if (tab==='recent-match') loadMatchHistoryPersonal();
     if (tab==='dashboard')    loadPersonalDashboard();
+    if (tab==='payments')     loadPersonalPayments();
 }
 
 // ── 대시보드 ───────────────────────────────────────────
@@ -253,6 +255,7 @@ async function loadBizDashboard() {
         setEl('biz-count-completed', b.filter(function(x){ return x.status==='matched'||x.status==='producing'||x.status==='shipping'||x.status==='completed'; }).length);
     } catch(e){ console.error(e); }
     autoMatchOverdueBids();
+    Requests.autoCompleteOverdueShipping().catch(function(e){ console.warn('auto-complete 실패:', e.message); });
 }
 
 async function loadPersonalDashboard() {
@@ -266,6 +269,7 @@ async function loadPersonalDashboard() {
         setEl('per-count-completed', p.filter(function(x){ return x.status==='matched'||x.status==='producing'||x.status==='shipping'||x.status==='completed'; }).length);
     } catch(e){ console.error(e); }
     autoMatchOverdueBids();
+    Requests.autoCompleteOverdueShipping().catch(function(e){ console.warn('auto-complete 실패:', e.message); });
 }
 
 // ── 의뢰 목록 ──────────────────────────────────────────
@@ -506,6 +510,27 @@ async function openRequestDetail(requestId) {
               files.map(function(f){return '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:13px"><a href="'+f.file_url+'" target="_blank" style="color:var(--primary)">📎 '+escHtml(f.file_name)+'</a></div>';}).join('')
             : '';
 
+        // Phase 4: 결제·배송 정보 섹션
+        var txnRows = '';
+        if (req.payment_status && req.payment_status !== 'unpaid') {
+            txnRows += '<div class="divider"></div><h5 style="margin-bottom:12px">💳 결제 / 배송 정보</h5>' +
+                '<table class="data-table mb-16">' +
+                (req.paid_at?'<tr><td style="width:120px;font-weight:600">결제일</td><td>'+new Date(req.paid_at).toLocaleString('ko-KR')+'</td></tr>':'')+
+                (req.payment_method?'<tr><td style="font-weight:600">결제 방법</td><td>'+escHtml(req.payment_method)+'</td></tr>':'')+
+                (req.payment_amount?'<tr><td style="font-weight:600">결제 금액</td><td class="text-primary fw-bold">'+Number(req.payment_amount).toLocaleString()+'원</td></tr>':'')+
+                '<tr><td style="font-weight:600">결제 상태</td><td>'+(req.payment_status==='released'?'<span class="badge" style="background:#d1fae5;color:#065f46">정산 완료</span>':'<span class="badge" style="background:#fef3c7;color:#92400e">에스크로 보관 중</span>')+'</td></tr>' +
+                (req.tracking_number?'<tr><td style="font-weight:600">송장번호</td><td><code>'+escHtml(req.tracking_number)+'</code></td></tr>':'')+
+                (req.shipped_at?'<tr><td style="font-weight:600">배송 시작일</td><td>'+new Date(req.shipped_at).toLocaleString('ko-KR')+'</td></tr>':'')+
+                (req.completed_at?'<tr><td style="font-weight:600">거래 완료일</td><td>'+new Date(req.completed_at).toLocaleString('ko-KR')+'</td></tr>':'')+
+                '</table>';
+        }
+
+        // Phase 4: 의뢰자 액션 (수령 확인)
+        var ownerAction = '';
+        if (req.status === 'shipping') {
+            ownerAction = '<button class="btn btn-success" onclick="confirmDeliveryAction(\''+req.id+'\')">📦 수령 확인 (정산 완료)</button>';
+        }
+
         body.innerHTML =
             '<table class="data-table mb-16">' +
             '<tr><td style="width:120px;font-weight:600">의뢰 유형</td><td>'+(tMap[req.request_type]||req.request_type)+'</td></tr>' +
@@ -518,9 +543,10 @@ async function openRequestDetail(requestId) {
             '<tr><td style="font-weight:600">등록일</td><td>'+new Date(req.created_at).toLocaleString('ko-KR')+'</td></tr>' +
             (req.design_guide?'<tr><td style="font-weight:600">디자인 가이드</td><td style="white-space:pre-wrap">'+escHtml(req.design_guide)+'</td></tr>':'')+
             (req.detail_note?'<tr><td style="font-weight:600">상세 요청</td><td style="white-space:pre-wrap">'+escHtml(req.detail_note)+'</td></tr>':'')+
-            '</table>'+bidsSection+filesSection+
+            '</table>'+bidsSection+filesSection+txnRows+
             '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
             (req.status==='bidding'?'<button class="btn btn-danger btn-sm" onclick="closeModal(\'requestDetailModal\');cancelRequest(\''+req.id+'\')">의뢰 취소</button>':'')+
+            ownerAction +
             '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>' +
             '</div>';
     } catch(e) {
@@ -688,19 +714,21 @@ async function executeSelectBid() {
     var pm  = AppState.pendingMatch;
     if (!pm.requestId||!pm.bidId) { showToast('오류: 매칭 정보가 없습니다.','error'); return; }
     var btn = document.getElementById('matchConfirmBtn');
-    if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
+    var pmEl = document.getElementById('matchPayMethod');
+    var paymentMethod = pmEl ? pmEl.value : '신용카드';
+    if (btn) { btn.disabled=true; btn.textContent='결제 처리 중...'; }
     try {
-        await Requests.selectBid(pm.requestId, pm.bidId, pm.name, pm.price);
+        await Requests.confirmMatch(pm.requestId, pm.bidId, pm.name, pm.price, paymentMethod);
         // 생산자에게 매칭 알림
         try {
             var bidOwnerRes = await window.supabaseClient.from('bids').select('manufacturer_id').eq('id',pm.bidId).single();
             if (!bidOwnerRes.error && bidOwnerRes.data) {
-                await Notifications.create(bidOwnerRes.data.manufacturer_id, 'bid_selected', '입찰이 선택되었습니다! ✅', pm.name+' 님의 입찰이 선택되었습니다. 생산을 시작해주세요!', pm.requestId);
+                await Notifications.create(bidOwnerRes.data.manufacturer_id, 'bid_selected', '🎉 입찰이 선정되었습니다!', '결제가 완료되었으니 제작을 시작해주세요. ('+paymentMethod+')', pm.requestId);
             }
         } catch(ne){ console.warn('알림 생성 실패:', ne.message); }
         closeModal('matchConfirmModal');
         AppState.pendingMatch = {};
-        showToast('매칭이 확정되었습니다! 🎉','success');
+        showToast('💳 결제가 완료되었습니다 (가상 에스크로) 🎉','success');
         // 즉시 목록 & 대시보드 갱신
         await loadMyRequests('business');
         await loadMyRequests('personal');
@@ -879,6 +907,7 @@ function showMfgTab(tab, btn) {
     if (tab === 'bids')      loadMfgBids();
     if (tab === 'requests')  loadMfgAvailableRequests();
     if (tab === 'profile')   loadMfgProfile();
+    if (tab === 'payments')  loadMfgPayments();
 }
 
 // ── 생산자 대시보드 ────────────────────────────────────
@@ -891,6 +920,7 @@ async function loadMfgDashboard() {
         setEl('mfg-dash-producing',  bids.filter(function(b){ return b.requests&&b.requests.status==='producing'; }).length);
         setEl('mfg-dash-completed',  bids.filter(function(b){ return b.status==='selected'&&b.requests&&b.requests.status==='completed'; }).length);
     } catch(e) { console.error(e); }
+    Requests.autoCompleteOverdueShipping().catch(function(e){ console.warn('auto-complete 실패:', e.message); });
 }
 
 // ── 생산자 입찰 현황 5단계 로드 ───────────────────────
@@ -945,11 +975,13 @@ function renderMfgBidCard(bid) {
     var actionBtn = '';
     if (bid.status === 'selected') {
         if (rs === 'matched') {
-            actionBtn = '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();updateBidStatus(\''+req.id+'\',\'producing\',this)">🔧 생산 시작</button>';
+            actionBtn = '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();startProductionAction(\''+req.id+'\')">🏭 제작 시작</button>';
         } else if (rs === 'producing') {
-            actionBtn = '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();updateBidStatus(\''+req.id+'\',\'shipping\',this)">🚚 배송 시작</button>';
+            actionBtn = '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openShipModal(\''+req.id+'\')">🚚 배송 시작</button>';
         } else if (rs === 'shipping') {
-            actionBtn = '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();updateBidStatus(\''+req.id+'\',\'completed\',this)">✅ 배송 완료</button>';
+            actionBtn = '<span class="badge" style="background:#fef3c7;color:#92400e">의뢰자 수령 확인 대기</span>';
+        } else if (rs === 'completed') {
+            actionBtn = '<span class="badge" style="background:#d1fae5;color:#065f46">정산 완료</span>';
         }
     }
 
@@ -999,7 +1031,9 @@ async function openMfgBidDetail(bidId) {
             '<div><div class="text-xs text-muted">총 견적 금액</div><div style="font-weight:700;font-size:16px">'+total.toLocaleString()+'원</div></div>' +
             '</div>' +
             (bid.note?'<div class="alert alert-info mt-16"><span>📝</span><span><strong>메모:</strong> '+escHtml(bid.note)+'</span></div>':'')+
+            renderMfgTransactionSection(bid, req) +
             '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">' +
+            renderMfgActionButtons(bid, req) +
             '<button class="btn btn-secondary" onclick="closeModal(\'mfgBidDetailModal\')">닫기</button></div>';
     } catch(e) {
         console.error(e);
@@ -1192,27 +1226,10 @@ async function submitBid() {
     }
 }
 
+// [DEPRECATED Phase 4] 권한 검증 우회 통로. startProductionAction / openShipModal / confirmDeliveryAction 사용.
 async function updateBidStatus(requestId, newStatus, btn) {
-    if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
-    try {
-        await Bids.updateRequestStatus(requestId, newStatus);
-        // 의뢰자에게 상태 변경 알림
-        try {
-            var reqOwnerRes2 = await window.supabaseClient.from('requests').select('user_id,title').eq('id',requestId).single();
-            if (!reqOwnerRes2.error && reqOwnerRes2.data) {
-                var statusTitles = { producing:'🔧 생산이 시작되었습니다', shipping:'🚚 배송이 시작되었습니다', completed:'📦 배송이 완료되었습니다' };
-                await Notifications.create(reqOwnerRes2.data.user_id, 'status_changed', statusTitles[newStatus]||'상태 변경', reqOwnerRes2.data.title+' 의뢰 상태가 변경되었습니다.', requestId);
-                updateNotificationBadge();
-            }
-        } catch(ne){ console.warn('알림 생성 실패:', ne.message); }
-        var labels = { producing:'생산 중으로 변경되었습니다.', shipping:'배송 중으로 변경되었습니다.', completed:'완료 처리되었습니다.' };
-        showToast(labels[newStatus] || '상태가 변경되었습니다.','success');
-        loadMfgBids();
-        loadMfgDashboard();
-    } catch(e) {
-        showToast('오류: '+e.message,'error');
-        if (btn) { btn.disabled=false; }
-    }
+    showToast('이 기능은 새 흐름으로 대체되었습니다.','warning');
+    if (btn) { btn.disabled=false; }
 }
 
 // ── 파일 업로드 (의뢰 디자인 파일) ────────────────────
@@ -1691,6 +1708,190 @@ function escHtml(str){
     if(!str)return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
+
+// =====================================================
+// Phase 4: 거래 완결성 (Transaction Closure)
+// =====================================================
+
+// 생산자 입찰 상세에 표시할 결제·배송 정보
+function renderMfgTransactionSection(bid, req) {
+    if (!req || !req.payment_status || req.payment_status === 'unpaid') return '';
+    var rows = '<div class="divider"></div>' +
+        '<h5 style="margin-bottom:12px;font-size:13px;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px">결제 / 배송 / 정산</h5>' +
+        '<table class="data-table mb-16">' +
+        (req.paid_at?'<tr><td style="width:120px;font-weight:600">결제일</td><td>'+new Date(req.paid_at).toLocaleString('ko-KR')+'</td></tr>':'')+
+        (req.payment_amount?'<tr><td style="font-weight:600">매칭 금액</td><td class="text-primary fw-bold">'+Number(req.payment_amount).toLocaleString()+'원</td></tr>':'')+
+        '<tr><td style="font-weight:600">정산 상태</td><td>'+(req.payment_status==='released'?'<span class="badge" style="background:#d1fae5;color:#065f46">정산 완료</span>':'<span class="badge" style="background:#fef3c7;color:#92400e">에스크로 보관 중 (수령 확인 대기)</span>')+'</td></tr>' +
+        (req.tracking_number?'<tr><td style="font-weight:600">송장번호</td><td><code>'+escHtml(req.tracking_number)+'</code></td></tr>':'')+
+        (req.shipped_at?'<tr><td style="font-weight:600">배송 시작일</td><td>'+new Date(req.shipped_at).toLocaleString('ko-KR')+'</td></tr>':'')+
+        (req.completed_at?'<tr><td style="font-weight:600">정산 완료일</td><td>'+new Date(req.completed_at).toLocaleString('ko-KR')+'</td></tr>':'')+
+        '</table>';
+    return rows;
+}
+
+// 생산자 입찰 상세에서 노출할 액션 버튼 (선정된 본인 입찰만)
+function renderMfgActionButtons(bid, req) {
+    if (!bid || bid.status !== 'selected' || !req) return '';
+    if (req.status === 'matched') {
+        return '<button class="btn btn-primary" onclick="startProductionAction(\''+req.id+'\')">🏭 제작 시작</button>';
+    }
+    if (req.status === 'producing') {
+        return '<button class="btn btn-primary" onclick="openShipModal(\''+req.id+'\')">🚚 배송 시작 (송장 입력)</button>';
+    }
+    return '';
+}
+
+async function startProductionAction(requestId) {
+    if (!confirm('제작을 시작하시겠습니까?\n의뢰자에게 알림이 전달됩니다.')) return;
+    try {
+        await Requests.startProduction(requestId);
+        // 의뢰자에게 알림
+        try {
+            var r = await window.supabaseClient.from('requests').select('user_id, title').eq('id', requestId).single();
+            if (!r.error && r.data) {
+                await Notifications.create(r.data.user_id, 'status_changed', '🏭 제작이 시작되었습니다', '['+r.data.title+'] 제작이 시작되었습니다.', requestId);
+            }
+        } catch(ne){ console.warn('알림 실패:', ne.message); }
+        closeModal('mfgBidDetailModal');
+        showToast('🏭 제작 시작 처리 완료','success');
+        loadMfgBids();
+        loadMfgDashboard();
+    } catch(e) {
+        showToast('오류: '+e.message,'error');
+    }
+}
+
+function openShipModal(requestId) {
+    var hidden = document.getElementById('shipRequestId');
+    var input  = document.getElementById('shipTrackingNumber');
+    if (hidden) hidden.value = requestId;
+    if (input)  input.value  = '';
+    openModal('shipModal');
+}
+
+async function submitShipping() {
+    var requestId = (document.getElementById('shipRequestId')||{}).value;
+    var tracking  = ((document.getElementById('shipTrackingNumber')||{}).value || '').trim();
+    var carrier   = (document.getElementById('shipCarrier')||{}).value || '';
+    if (!requestId) { showToast('의뢰 정보 누락','error'); return; }
+    if (!tracking)  { showToast('송장번호를 입력해주세요','error'); return; }
+    var btn = document.getElementById('shipSubmitBtn');
+    if (btn) { btn.disabled=true; btn.textContent='처리 중...'; }
+    try {
+        var fullTracking = carrier ? (carrier+' '+tracking) : tracking;
+        await Requests.markShipped(requestId, fullTracking);
+        try {
+            var r = await window.supabaseClient.from('requests').select('user_id, title').eq('id', requestId).single();
+            if (!r.error && r.data) {
+                await Notifications.create(r.data.user_id, 'status_changed', '🚚 배송이 시작되었습니다', '['+r.data.title+'] 송장: '+fullTracking, requestId);
+            }
+        } catch(ne){ console.warn('알림 실패:', ne.message); }
+        closeModal('shipModal');
+        closeModal('mfgBidDetailModal');
+        showToast('🚚 배송 시작 처리 완료','success');
+        loadMfgBids();
+        loadMfgDashboard();
+    } catch(e) {
+        showToast('오류: '+e.message,'error');
+    } finally {
+        if (btn) { btn.disabled=false; btn.textContent='🚚 배송 시작'; }
+    }
+}
+
+async function confirmDeliveryAction(requestId) {
+    if (!confirm('수령 확인 시 정산이 완료되며, 거래가 종료됩니다.\n계속하시겠습니까?')) return;
+    try {
+        await Requests.confirmDelivery(requestId);
+        // 생산자에게 정산 완료 알림
+        try {
+            var r = await window.supabaseClient.from('requests').select('matched_bid_id, title').eq('id', requestId).single();
+            if (!r.error && r.data && r.data.matched_bid_id) {
+                var b = await window.supabaseClient.from('bids').select('manufacturer_id').eq('id', r.data.matched_bid_id).single();
+                if (!b.error && b.data) {
+                    await Notifications.create(b.data.manufacturer_id, 'status_changed', '✅ 거래가 완료되었습니다', '['+r.data.title+'] 의뢰자가 수령을 확인하여 정산이 완료되었습니다.', requestId);
+                }
+            }
+        } catch(ne){ console.warn('알림 실패:', ne.message); }
+        closeModal('requestDetailModal');
+        showToast('📦 수령 확인 완료, 정산이 완료되었습니다','success');
+        await loadMyRequests('business');
+        await loadMyRequests('personal');
+        loadBizDashboard();
+        loadPersonalDashboard();
+    } catch(e) {
+        showToast('오류: '+e.message,'error');
+    }
+}
+
+// ── 결제·정산 탭 렌더 ────────────────────────────────────
+async function loadMfgPayments() {
+    var box = document.getElementById('mfg-payments-body');
+    if (!box) return;
+    if (!AppState.currentUser) {
+        box.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><p>로그인 후 확인할 수 있습니다.</p></div>';
+        return;
+    }
+    box.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    var list = await Requests.getPaymentHistory('manufacturer');
+    if (!list.length) {
+        box.innerHTML = '<div class="empty-state"><div class="empty-icon">💳</div><p>정산 내역이 없습니다.</p></div>';
+        return;
+    }
+    var rows = list.map(function(r){
+        var statusBadge = r.payment_status==='released'
+            ? '<span class="badge" style="background:#d1fae5;color:#065f46">정산 완료</span>'
+            : '<span class="badge" style="background:#fef3c7;color:#92400e">에스크로 보관 중</span>';
+        var amt = r.payment_amount ? Number(r.payment_amount).toLocaleString()+'원' : '-';
+        return '<tr>' +
+            '<td>'+(r.paid_at?new Date(r.paid_at).toLocaleDateString('ko-KR'):'-')+'</td>' +
+            '<td>'+escHtml(r.title||'-')+'</td>' +
+            '<td class="text-primary fw-bold">'+amt+'</td>' +
+            '<td>'+statusBadge+'</td>' +
+            '<td>'+(r.completed_at?new Date(r.completed_at).toLocaleDateString('ko-KR'):'-')+'</td>' +
+            '</tr>';
+    }).join('');
+    box.innerHTML = '<table class="data-table">' +
+        '<thead><tr><th>매칭일</th><th>의뢰명</th><th>금액</th><th>정산 상태</th><th>정산일</th></tr></thead>' +
+        '<tbody>'+rows+'</tbody></table>';
+}
+
+async function loadClientPayments(bodyId) {
+    var box = document.getElementById(bodyId);
+    if (!box) return;
+    if (!AppState.currentUser) {
+        box.innerHTML = '<div class="empty-state"><div class="empty-icon">🔐</div><p>로그인 후 확인할 수 있습니다.</p></div>';
+        return;
+    }
+    box.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    var list = await Requests.getPaymentHistory('client');
+    if (!list.length) {
+        box.innerHTML = '<div class="empty-state"><div class="empty-icon">💳</div><p>결제 내역이 없습니다.</p></div>';
+        return;
+    }
+    var rows = list.map(function(r){
+        var statusBadge = r.payment_status==='released'
+            ? '<span class="badge" style="background:#d1fae5;color:#065f46">정산 완료</span>'
+            : (r.payment_status==='paid'
+                ? '<span class="badge" style="background:#fef3c7;color:#92400e">에스크로 보관 중</span>'
+                : '<span class="badge">'+escHtml(r.payment_status)+'</span>');
+        var amt = r.payment_amount ? Number(r.payment_amount).toLocaleString()+'원' : '-';
+        return '<tr>' +
+            '<td>'+(r.paid_at?new Date(r.paid_at).toLocaleDateString('ko-KR'):'-')+'</td>' +
+            '<td>'+escHtml(r.title||'-')+'</td>' +
+            '<td>'+escHtml(r.payment_method||'-')+'</td>' +
+            '<td class="text-primary fw-bold">'+amt+'</td>' +
+            '<td>'+statusBadge+'</td>' +
+            '<td>'+(r.completed_at?new Date(r.completed_at).toLocaleDateString('ko-KR'):'-')+'</td>' +
+            '</tr>';
+    }).join('');
+    box.innerHTML = '<table class="data-table">' +
+        '<thead><tr><th>결제일</th><th>의뢰명</th><th>결제수단</th><th>금액</th><th>상태</th><th>거래완료일</th></tr></thead>' +
+        '<tbody>'+rows+'</tbody></table>';
+}
+
+function loadBizPayments()      { return loadClientPayments('biz-payments-body'); }
+function loadPersonalPayments() { return loadClientPayments('personal-payments-body'); }
+
 document.addEventListener('click',function(e){
     var d=document.getElementById('profileDropdown');
     if(d&&d.classList.contains('show')&&!e.target.closest('.nav-user'))d.classList.remove('show');

@@ -82,15 +82,11 @@ var Bids = {
         return !res.error && res.data && res.data.length > 0;
     },
 
-    // ── 의뢰 상태 업데이트 (생산자가 진행상황 변경) ───
+    // ── [DEPRECATED] Phase 4부터 권한 검증을 위해
+    //    Requests.startProduction / markShipped / confirmDelivery 사용.
+    //    이 함수는 권한 우회 통로이므로 직접 호출 금지.
     async updateRequestStatus(requestId, newStatus) {
-        var res = await window.supabaseClient
-            .from('requests')
-            .update({ status: newStatus, updated_at: new Date().toISOString() })
-            .eq('id', requestId)
-            .select().single();
-        if (res.error) throw res.error;
-        return res.data;
+        throw new Error('Bids.updateRequestStatus는 deprecated입니다. Requests.startProduction/markShipped/confirmDelivery를 사용하세요.');
     },
 
     // ── 생산자 프로필 저장 ─────────────────────────────
