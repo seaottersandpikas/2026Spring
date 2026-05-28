@@ -377,7 +377,7 @@ function renderRequestCard(req) {
             '</div>';
     }
 
-    return '<div class="request-card" data-status="'+req.status+'" data-request-type="'+req.request_type+'" data-id="'+req.id+'">' +
+    return '<div class="request-card" data-status="'+req.status+'" data-request-type="'+req.request_type+'" data-id="'+req.id+'" data-title="'+escHtml(req.title||'').toLowerCase()+'" data-category="'+escHtml(req.category||'')+'">' +
         '<div class="request-card-header">' +
         '<h4>'+(req.request_type==='group'?'👥 ':'')+escHtml(req.title)+'</h4>' +
         '<span class="status-badge '+s.cls+'">'+s.label+(req.status==='bidding'?' ('+bidCount+'명)':'')+'</span>' +
@@ -769,11 +769,24 @@ function filterBizStatus(status, btn) {
         document.querySelectorAll('#biz-status-pills .pill-filter').forEach(function(p){p.classList.remove('active');});
         btn.classList.add('active');
     }
-    document.querySelectorAll('#biz-manage-list .request-card').forEach(function(c){
-        var show = status==='all' ? true
-            : status==='completed' ? (c.dataset.status==='matched'||c.dataset.status==='producing'||c.dataset.status==='shipping'||c.dataset.status==='completed')
-            : c.dataset.status===status;
-        c.style.display = show ? 'block' : 'none';
+    _bizStatusFilter = status;
+    applyBizFilter();
+}
+
+var _bizStatusFilter = 'all';
+function filterBizKeyword() { applyBizFilter(); }
+
+function applyBizFilter() {
+    var keyword  = ((document.getElementById('biz-search-keyword') || {}).value || '').trim().toLowerCase();
+    var category = (document.getElementById('biz-category-filter') || {}).value || '';
+    var status   = _bizStatusFilter || 'all';
+    document.querySelectorAll('#biz-manage-list .request-card').forEach(function(c) {
+        var matchStatus = status === 'all' ? true
+            : status === 'completed' ? (['matched','producing','shipping','completed'].indexOf(c.dataset.status) >= 0)
+            : c.dataset.status === status;
+        var matchKeyword  = !keyword  || (c.dataset.title  || '').toLowerCase().indexOf(keyword) >= 0;
+        var matchCategory = !category || (c.dataset.category || '') === category;
+        c.style.display = (matchStatus && matchKeyword && matchCategory) ? 'block' : 'none';
     });
 }
 
@@ -1060,14 +1073,26 @@ async function loadMfgAvailableRequests() {
     }
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
     try {
-        var catFilter = document.getElementById('mfg-category-filter');
-        var category  = catFilter ? catFilter.value : '';
-        var q = window.supabaseClient.from('requests').select('*, bids(id)').eq('status','bidding').order('created_at',{ascending:false}).limit(20);
+        var catFilter  = document.getElementById('mfg-category-filter');
+        var keyword    = (document.getElementById('mfg-keyword-filter') || {}).value || '';
+        var sortVal    = (document.getElementById('mfg-sort-filter') || {}).value || 'recent';
+        var category   = catFilter ? catFilter.value : '';
+
+        var q = window.supabaseClient.from('requests').select('*, bids(id)').eq('status','bidding');
+
         if (category) q = q.eq('category', category);
+        if (keyword.trim()) q = q.ilike('title', '%' + keyword.trim() + '%');
+
+        if (sortVal === 'price_high') q = q.order('target_price', { ascending: false });
+        else if (sortVal === 'price_low') q = q.order('target_price', { ascending: true });
+        else if (sortVal === 'qty_high') q = q.order('quantity', { ascending: false });
+        else q = q.order('created_at', { ascending: false });
+
+        q = q.limit(30);
         var res = await q;
         if (res.error) throw res.error;
         var list = res.data || [];
-        if (!list.length) { container.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>현재 입찰 가능한 의뢰가 없습니다.</p></div>'; return; }
+        if (!list.length) { container.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>검색 결과가 없습니다.</p></div>'; return; }
         container.innerHTML = list.map(function(req) {
             var bidCount = req.bids ? req.bids.length : 0;
             var diff = req.bid_deadline ? Math.ceil((new Date(req.bid_deadline)-new Date())/86400000) : null;
@@ -1499,6 +1524,7 @@ async function loadMpReviews() {
             return;
         }
         grid.innerHTML = list.map(function(post){ return renderFeedCard(post); }).join('');
+        applyMpReviewFilter();
     } catch(e) {
         console.error(e);
         grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>오류가 발생했습니다.</p></div>';
@@ -1551,7 +1577,7 @@ function renderFeedCard(post) {
         }
     }
 
-    return '<div class="feed-card">' +
+    return '<div class="feed-card" data-rating="'+(post.rating||0)+'" data-title="'+escHtml((post.title||'').toLowerCase())+'" data-author="'+escHtml((post.author_name||'').toLowerCase())+'">' +
         '<div class="flex-between" style="margin-bottom:6px">' +
         '<div>' +
         '<strong style="font-size:14px">'+escHtml(post.author_name||'사용자')+'</strong>'+typeBadge+
@@ -1924,6 +1950,28 @@ async function loadClientPayments(bodyId) {
 
 function loadBizPayments()      { return loadClientPayments('biz-payments-body'); }
 function loadPersonalPayments() { return loadClientPayments('personal-payments-body'); }
+
+// ── Phase 8: 마켓플레이스 후기 필터 ─────────────────────
+var _mpReviewMinRating = 0;
+function filterMpReviews(minRating, btn) {
+    _mpReviewMinRating = minRating;
+    if (btn) {
+        document.querySelectorAll('#mp-reviews .pill-filter').forEach(function(p){ p.classList.remove('active'); });
+        btn.classList.add('active');
+    }
+    applyMpReviewFilter();
+}
+function filterMpReviewsKeyword() { applyMpReviewFilter(); }
+function applyMpReviewFilter() {
+    var keyword = ((document.getElementById('mp-reviews-keyword') || {}).value || '').trim().toLowerCase();
+    document.querySelectorAll('#mp-reviews-grid .feed-card').forEach(function(c) {
+        var rating  = parseInt(c.dataset.rating || '0', 10);
+        var text    = (c.dataset.title || '') + ' ' + (c.dataset.author || '');
+        var matchR  = _mpReviewMinRating === 0 || rating >= _mpReviewMinRating;
+        var matchK  = !keyword || text.toLowerCase().indexOf(keyword) >= 0;
+        c.style.display = (matchR && matchK) ? '' : 'none';
+    });
+}
 
 // ── Phase 7: 거래 후기 모달 핸들러 ──────────────────────
 var _reviewRating = 4;

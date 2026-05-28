@@ -139,11 +139,20 @@
                 <div id="mfg-requests" class="tab-content">
                     <div class="flex-between mb-16">
                         <h2 class="section-title" style="margin-bottom:0">🔍 추천 의뢰 목록</h2>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+                        <input type="text" id="mfg-keyword-filter" placeholder="키워드 검색..." style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px" oninput="loadMfgAvailableRequests()">
                         <select class="filter-select" id="mfg-category-filter" onchange="loadMfgAvailableRequests()">
                             <option value="">전체 카테고리</option>
                             <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
                             <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
                             <option>생활용품</option><option>기타</option>
+                        </select>
+                        <select class="filter-select" id="mfg-sort-filter" onchange="loadMfgAvailableRequests()">
+                            <option value="recent">최신순</option>
+                            <option value="price_high">희망단가 높은순</option>
+                            <option value="price_low">희망단가 낮은순</option>
+                            <option value="qty_high">수량 많은순</option>
                         </select>
                     </div>
                     <div id="mfg-requests-list">
@@ -424,6 +433,15 @@
                     <div class="flex-between mb-16">
                         <h2 class="section-title" style="margin-bottom:0">📁 내 의뢰 관리</h2>
                         <button class="btn btn-primary btn-sm" onclick="showBizTab('create',null)">➕ 새 의뢰</button>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+                        <input type="text" id="biz-search-keyword" placeholder="의뢰명 검색..." style="flex:1;min-width:160px;padding:7px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px" oninput="filterBizKeyword()">
+                        <select class="filter-select" id="biz-category-filter" onchange="filterBizKeyword()">
+                            <option value="">전체 카테고리</option>
+                            <option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option>
+                            <option>패키징</option><option>봉제인형</option><option>금속/뱃지</option>
+                            <option>생활용품</option><option>기타</option>
+                        </select>
                     </div>
                     <div class="pill-filters" id="biz-status-pills">
                         <button class="pill-filter active" onclick="filterBizStatus('all',this)">전체</button>
@@ -723,6 +741,15 @@
             <div class="flex-between mb-16">
                 <h2 class="section-title" style="margin-bottom:0">✍️ 의뢰 후기</h2>
                 <button class="btn btn-primary btn-sm" onclick="openCreatePost('review')">✏️ 후기 작성</button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+                <div class="pill-filters" style="margin:0">
+                    <button class="pill-filter active" onclick="filterMpReviews(0,this)">전체</button>
+                    <button class="pill-filter" onclick="filterMpReviews(5,this)">★5</button>
+                    <button class="pill-filter" onclick="filterMpReviews(4,this)">★4 이상</button>
+                    <button class="pill-filter" onclick="filterMpReviews(3,this)">★3 이상</button>
+                </div>
+                <input type="text" id="mp-reviews-keyword" placeholder="후기 검색..." style="flex:1;min-width:140px;padding:7px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:14px" oninput="filterMpReviewsKeyword()">
             </div>
             <div class="feed-grid" id="mp-reviews-grid">
                 <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">✍️</div><p>첫 번째 후기를 작성해보세요!</p></div>
