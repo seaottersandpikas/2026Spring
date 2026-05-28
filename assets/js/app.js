@@ -960,18 +960,20 @@ async function loadMfgBids() {
     });
     try {
         var bids = await Requests.getMyBids();
-        var cat = { bidding:[], matched:[], producing:[], shipping:[], completed:[] };
+        var cat = { bidding:[], matched:[], producing:[], shipping:[], completed:[], rejected:[] };
         bids.forEach(function(bid) {
             var rs = bid.requests ? bid.requests.status : null;
             if      (bid.status==='selected' && rs==='completed') cat.completed.push(bid);
             else if (bid.status==='selected' && rs==='shipping')  cat.shipping.push(bid);
             else if (bid.status==='selected' && rs==='producing') cat.producing.push(bid);
             else if (bid.status==='selected')                     cat.matched.push(bid);
+            else if (bid.status==='rejected')                     cat.rejected.push(bid);
             else                                                  cat.bidding.push(bid);
         });
         var emptyLabels = {
             bidding:'진행 중인 입찰이 없습니다.', matched:'매칭 완료된 건이 없습니다.',
-            producing:'생산 진행 중인 건이 없습니다.', shipping:'배송 중인 건이 없습니다.', completed:'완료된 건이 없습니다.'
+            producing:'생산 진행 중인 건이 없습니다.', shipping:'배송 중인 건이 없습니다.',
+            completed:'완료된 건이 없습니다.', rejected:'탈락된 입찰이 없습니다.'
         };
         Object.keys(cat).forEach(function(key) {
             setEl('mfg-bcount-'+key, cat[key].length);
