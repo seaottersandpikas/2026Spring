@@ -16,7 +16,7 @@ var Requests = {
         if (!user) return [];
         var res = await window.supabaseClient
             .from('requests')
-            .select('*, bids(*)')
+            .select('*, bids(*, manufacturer:profiles!manufacturer_id(avg_rating, total_reviews, completed_count, nickname, specialty))')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
         if (res.error) { console.error(res.error); return []; }
@@ -26,7 +26,7 @@ var Requests = {
     async getById(id) {
         var res = await window.supabaseClient
             .from('requests')
-            .select('*, bids(*), request_files(*)')
+            .select('*, bids(*, manufacturer:profiles!manufacturer_id(avg_rating, total_reviews, completed_count, nickname, specialty)), request_files(*)')
             .eq('id', id)
             .single();
         if (res.error) { console.error(res.error); return null; }
@@ -226,7 +226,7 @@ var Requests = {
         if (!user) return [];
         var res = await window.supabaseClient
             .from('bids')
-            .select('*, requests(*)')
+            .select('*, requests(*), manufacturer:profiles!manufacturer_id(avg_rating, total_reviews, completed_count, nickname, specialty)')
             .eq('manufacturer_id', user.id)
             .order('created_at', { ascending: false });
         if (res.error) { console.error(res.error); return []; }

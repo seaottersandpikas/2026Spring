@@ -834,23 +834,43 @@
     </div>
 </div>
 
-<!-- 후기 작성 -->
+<!-- 거래 후기 작성 (Phase 7) -->
 <div class="modal-overlay" id="writeReviewModal">
-    <div class="modal">
+    <div class="modal" style="max-width:520px">
         <button class="modal-close" onclick="closeModal('writeReviewModal')">×</button>
-        <h3>✍️ 후기 작성</h3>
+        <h3>✍️ 거래 후기 작성</h3>
+        <div class="alert alert-info"><span>🎉</span><span>거래가 완료되었습니다! 생산자에 대한 평가를 남겨주세요.</span></div>
         <div class="form-group">
-            <label>만족도</label>
-            <div style="display:flex;gap:8px;font-size:28px;cursor:pointer" id="starRating">
-                <span onclick="setRating(1)">⭐</span><span onclick="setRating(2)">⭐</span>
-                <span onclick="setRating(3)">⭐</span><span onclick="setRating(4)">⭐</span>
-                <span onclick="setRating(5)" style="opacity:0.3">⭐</span>
-            </div>
+            <label>생산자</label>
+            <div id="reviewMfgLabel" style="font-weight:600;padding:8px 12px;background:var(--bg);border-radius:6px">-</div>
         </div>
-        <div class="form-group"><label>후기 내용</label><textarea placeholder="품질, 소통, 납기 등에 대한 후기를 남겨주세요."></textarea></div>
+        <div class="form-group">
+            <label>의뢰</label>
+            <div id="reviewRequestLabel" style="font-weight:600;padding:8px 12px;background:var(--bg);border-radius:6px">-</div>
+        </div>
+        <div class="form-group">
+            <label>만족도 *</label>
+            <div style="display:flex;gap:8px;font-size:28px;cursor:pointer;user-select:none" id="reviewStarRating">
+                <span onclick="setReviewRating(1)">⭐</span><span onclick="setReviewRating(2)">⭐</span>
+                <span onclick="setReviewRating(3)">⭐</span><span onclick="setReviewRating(4)">⭐</span>
+                <span onclick="setReviewRating(5)" style="opacity:0.3">⭐</span>
+            </div>
+            <div class="text-xs text-muted mt-8" id="reviewRatingLabel">★ 4점</div>
+        </div>
+        <div class="form-group">
+            <label>제목 *</label>
+            <input type="text" id="reviewTitle" placeholder="예: 깔끔한 마감, 빠른 배송">
+        </div>
+        <div class="form-group">
+            <label>후기 내용 *</label>
+            <textarea id="reviewContent" placeholder="품질, 소통, 납기 등에 대한 후기를 남겨주세요." style="min-height:100px"></textarea>
+        </div>
+        <input type="hidden" id="reviewRequestId">
+        <input type="hidden" id="reviewManufacturerId">
+        <input type="hidden" id="reviewBidId">
         <div style="display:flex;gap:12px;justify-content:flex-end">
-            <button class="btn btn-secondary" onclick="closeModal('writeReviewModal')">취소</button>
-            <button class="btn btn-primary" onclick="closeModal('writeReviewModal');showToast('후기가 등록되었습니다!','success')">등록</button>
+            <button class="btn btn-secondary" onclick="closeModal('writeReviewModal')">나중에</button>
+            <button class="btn btn-primary" id="reviewSubmitBtn" onclick="submitReview()">✍️ 후기 등록</button>
         </div>
     </div>
 </div>
@@ -1034,6 +1054,7 @@
 <script src="assets/js/dummy-bids.js"></script>
 <script src="assets/js/bids.js"></script>
 <script src="assets/js/notifications.js"></script>
+<script src="assets/js/reviews.js"></script>
 <script src="assets/js/app.js"></script>
 
 </body>

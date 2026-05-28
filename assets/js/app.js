@@ -392,16 +392,25 @@ function renderRequestCard(req) {
         '<div class="request-actions">' +
         '<button class="btn btn-sm btn-secondary" onclick="openRequestDetail(\''+req.id+'\')">📋 상세 보기</button>' +
         (req.status==='bidding'?'<button class="btn btn-sm btn-danger" onclick="cancelRequest(\''+req.id+'\')">취소</button>':'')+
-        (req.status==='completed'?'<button class="btn btn-sm btn-primary" onclick="openModal(\'writeReviewModal\')">✍️ 후기 작성</button>':'')+
+        (req.status==='completed'?'<button class="btn btn-sm btn-primary" onclick="openReviewModal(\''+req.id+'\')">✍️ 후기 작성</button>':'')+
         '</div></div>';
 }
 
 // ── 생산자 정보 헬퍼 ───────────────────────────────────
+// Phase 7: bid.manufacturer (profiles join) 우선 사용 → 실제 평점 노출
 function getMakerInfo(bid) {
+    var m = bid && bid.manufacturer ? bid.manufacturer : null;
+    var rating = (m && m.avg_rating != null && m.total_reviews > 0)
+        ? Number(m.avg_rating).toFixed(1)
+        : '신규';
+    var completed = (m && m.completed_count != null)
+        ? m.completed_count
+        : (bid.manufacturer_completed != null ? bid.manufacturer_completed : 0);
     return {
-        specialty:      bid.manufacturer_specialty || '종합 굿즈',
-        rating:         bid.manufacturer_rating    || '4.5',
-        completedCount: bid.manufacturer_completed || '-'
+        specialty:      (m && m.specialty) || bid.manufacturer_specialty || '종합 굿즈',
+        rating:         rating,
+        completedCount: completed,
+        totalReviews:   m ? (m.total_reviews || 0) : 0
     };
 }
 
@@ -1474,7 +1483,8 @@ async function loadMpReviews() {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)">⏳ 로딩 중...</div>';
     try {
         var res = await window.supabaseClient.from('posts')
-            .select('*').eq('post_type','review')
+            .select('*, manufacturer:profiles!manufacturer_id(nickname, specialty), request:requests!request_id(title, category)')
+            .eq('post_type','review')
             .order('created_at',{ascending:false}).limit(30);
         if (res.error) throw res.error;
         var list = res.data || [];
@@ -1521,6 +1531,20 @@ function renderFeedCard(post) {
     var typeBadge = post.post_type === 'promo'
         ? '<span class="status-badge status-matched" style="margin-left:6px">생산자</span>'
         : '';
+
+    // Phase 7: 거래 후기 컨텍스트 (생산자명 + 의뢰명)
+    var txContext = '';
+    if (post.post_type === 'review' && post.request_id) {
+        var mfgName = (post.manufacturer && post.manufacturer.nickname) ? post.manufacturer.nickname : null;
+        var reqTitle = (post.request && post.request.title) ? post.request.title : null;
+        if (mfgName || reqTitle) {
+            txContext = '<div class="text-xs" style="margin:6px 0 4px;padding:6px 8px;background:var(--bg);border-radius:4px;color:var(--gray)">' +
+                (mfgName  ? '🏭 '+escHtml(mfgName)+' ' : '') +
+                (reqTitle ? '· 📦 '+escHtml(reqTitle) : '') +
+                '</div>';
+        }
+    }
+
     return '<div class="feed-card">' +
         '<div class="flex-between" style="margin-bottom:6px">' +
         '<div>' +
@@ -1529,6 +1553,7 @@ function renderFeedCard(post) {
         stars +
         '</div>' +
         '</div>' +
+        txContext +
         '<h4 style="font-size:15px;font-weight:700;margin:8px 0 6px;color:var(--dark)">'+escHtml(post.title)+'</h4>' +
         '<p class="text-sm" style="color:var(--gray);line-height:1.65;white-space:pre-wrap;word-break:break-word">'+escHtml(post.content)+'</p>' +
         '</div>';
@@ -1818,6 +1843,8 @@ async function confirmDeliveryAction(requestId) {
         await loadMyRequests('personal');
         loadBizDashboard();
         loadPersonalDashboard();
+        // Phase 7: 거래 후기 작성 모달 자동 오픈
+        setTimeout(function(){ openReviewModal(requestId); }, 600);
     } catch(e) {
         showToast('오류: '+e.message,'error');
     }
@@ -1891,6 +1918,100 @@ async function loadClientPayments(bodyId) {
 
 function loadBizPayments()      { return loadClientPayments('biz-payments-body'); }
 function loadPersonalPayments() { return loadClientPayments('personal-payments-body'); }
+
+// ── Phase 7: 거래 후기 모달 핸들러 ──────────────────────
+var _reviewRating = 4;
+function setReviewRating(n) {
+    _reviewRating = n;
+    document.querySelectorAll('#reviewStarRating span').forEach(function(s,i){
+        s.style.opacity = i < n ? '1' : '0.3';
+    });
+    var lbl = document.getElementById('reviewRatingLabel');
+    if (lbl) lbl.textContent = '★ '+n+'점';
+}
+
+async function openReviewModal(requestId) {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    try {
+        if (await Reviews.hasReviewed(requestId)) {
+            showToast('이미 후기를 작성하셨습니다.', 'info');
+            return;
+        }
+        var req = await Requests.getById(requestId);
+        if (!req) { showToast('의뢰를 찾을 수 없습니다.', 'error'); return; }
+        if (req.status !== 'completed') {
+            showToast('거래가 완료된 의뢰만 후기를 작성할 수 있습니다.', 'error');
+            return;
+        }
+        var bid = (req.bids || []).find(function(b){ return b.id === req.matched_bid_id; });
+        if (!bid) { showToast('매칭된 입찰 정보를 찾을 수 없습니다.', 'error'); return; }
+
+        var mfgName = (bid.manufacturer && bid.manufacturer.nickname)
+            ? bid.manufacturer.nickname
+            : (bid.manufacturer_name || '생산자');
+
+        var rid = document.getElementById('reviewRequestId');
+        var mid = document.getElementById('reviewManufacturerId');
+        var bidEl = document.getElementById('reviewBidId');
+        if (rid)   rid.value = req.id;
+        if (mid)   mid.value = bid.manufacturer_id;
+        if (bidEl) bidEl.value = bid.id;
+
+        var mfgLbl = document.getElementById('reviewMfgLabel');
+        var reqLbl = document.getElementById('reviewRequestLabel');
+        if (mfgLbl) mfgLbl.textContent = mfgName;
+        if (reqLbl) reqLbl.textContent = '['+(req.category||'기타')+'] '+(req.title||'-');
+
+        var titleIn = document.getElementById('reviewTitle');
+        var contIn  = document.getElementById('reviewContent');
+        if (titleIn) titleIn.value = '';
+        if (contIn)  contIn.value  = '';
+        setReviewRating(4);
+        openModal('writeReviewModal');
+    } catch(e) {
+        console.error(e);
+        showToast('후기 모달 오픈 실패: '+e.message, 'error');
+    }
+}
+
+async function submitReview() {
+    var requestId      = (document.getElementById('reviewRequestId')||{}).value;
+    var manufacturerId = (document.getElementById('reviewManufacturerId')||{}).value;
+    var bidId          = (document.getElementById('reviewBidId')||{}).value;
+    var title          = (document.getElementById('reviewTitle')||{}).value || '';
+    var content        = (document.getElementById('reviewContent')||{}).value || '';
+
+    if (!title.trim() || !content.trim()) {
+        showToast('제목과 내용을 입력해주세요.', 'error');
+        return;
+    }
+    if (!requestId || !manufacturerId) {
+        showToast('의뢰/생산자 정보가 없습니다.', 'error');
+        return;
+    }
+
+    var btn = document.getElementById('reviewSubmitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
+    try {
+        await Reviews.submit({
+            requestId:      requestId,
+            manufacturerId: manufacturerId,
+            bidId:          bidId || null,
+            rating:         _reviewRating,
+            title:          title.trim(),
+            content:        content.trim()
+        });
+        closeModal('writeReviewModal');
+        showToast('후기가 등록되었습니다! 🎉', 'success');
+        try { await loadMyRequests('business'); } catch(e){}
+        try { await loadMyRequests('personal'); } catch(e){}
+        try { await loadMpReviews(); } catch(e){}
+    } catch(e) {
+        showToast('후기 등록 실패: '+e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '✍️ 후기 등록'; }
+    }
+}
 
 document.addEventListener('click',function(e){
     var d=document.getElementById('profileDropdown');

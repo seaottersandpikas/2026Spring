@@ -32,8 +32,6 @@ var Bids = {
             manufacturer_id:        user.id,
             manufacturer_name:      profile ? (profile.nickname || '생산자') : '생산자',
             manufacturer_specialty: profile ? (profile.specialty || '') : '',
-            manufacturer_rating:    5.0,
-            manufacturer_completed: 0,
             unit_price:             data.unitPrice,
             total_price:            data.unitPrice * quantity,
             delivery_days:          data.deliveryDays,
