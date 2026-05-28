@@ -19,7 +19,18 @@ var Requests = {
             .select('*, bids(*, manufacturer:profiles!manufacturer_id(avg_rating, total_reviews, completed_count, nickname, specialty))')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
-        if (res.error) { console.error(res.error); return []; }
+        if (res.error) {
+            // FK 미정의 시 join 없이 재시도
+            if (res.error.code === 'PGRST200') {
+                var res2 = await window.supabaseClient
+                    .from('requests').select('*, bids(*)')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+                if (res2.error) { console.error(res2.error); return []; }
+                return res2.data || [];
+            }
+            console.error(res.error); return [];
+        }
         return res.data || [];
     },
 
@@ -29,7 +40,16 @@ var Requests = {
             .select('*, bids(*, manufacturer:profiles!manufacturer_id(avg_rating, total_reviews, completed_count, nickname, specialty)), request_files(*)')
             .eq('id', id)
             .single();
-        if (res.error) { console.error(res.error); return null; }
+        if (res.error) {
+            if (res.error.code === 'PGRST200') {
+                var res2 = await window.supabaseClient
+                    .from('requests').select('*, bids(*), request_files(*)')
+                    .eq('id', id).single();
+                if (res2.error) { console.error(res2.error); return null; }
+                return res2.data;
+            }
+            console.error(res.error); return null;
+        }
         return res.data;
     },
 
@@ -229,7 +249,17 @@ var Requests = {
             .select('*, requests(*), manufacturer:profiles!manufacturer_id(avg_rating, total_reviews, completed_count, nickname, specialty)')
             .eq('manufacturer_id', user.id)
             .order('created_at', { ascending: false });
-        if (res.error) { console.error(res.error); return []; }
+        if (res.error) {
+            if (res.error.code === 'PGRST200') {
+                var res2 = await window.supabaseClient
+                    .from('bids').select('*, requests(*)')
+                    .eq('manufacturer_id', user.id)
+                    .order('created_at', { ascending: false });
+                if (res2.error) { console.error(res2.error); return []; }
+                return res2.data || [];
+            }
+            console.error(res.error); return [];
+        }
         return res.data || [];
     }
 };

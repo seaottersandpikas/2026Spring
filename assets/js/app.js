@@ -1486,6 +1486,12 @@ async function loadMpReviews() {
             .select('*, manufacturer:profiles!manufacturer_id(nickname, specialty), request:requests!request_id(title, category)')
             .eq('post_type','review')
             .order('created_at',{ascending:false}).limit(30);
+        if (res.error && res.error.code === 'PGRST200') {
+            // FK 미정의 시 join 없이 재시도
+            res = await window.supabaseClient.from('posts')
+                .select('*').eq('post_type','review')
+                .order('created_at',{ascending:false}).limit(30);
+        }
         if (res.error) throw res.error;
         var list = res.data || [];
         if (!list.length) {
