@@ -63,3 +63,18 @@
   - 로그아웃을 선택하면 페이지를 리프레시 해야지만 로그아웃 됨 (바로 로그아웃이 되지 않는 문제): **Resolved**
   - 의뢰 등록을 하면 너무 오래 걸림 (등록 대기 중으로 떠 있을 때 DB를 확인해보니 정보가 안 넘어가 있었음: 의뢰 등록을 하면 너무 오래 걸림 (등록 대기 중으로 떠 있을 때 DB를 확인해보니 정보가 안 넘어가 있었음): **Resolved**
   - 로그인을 하고 의뢰 탭에 가서 대시보드를 들어가면 생성한 의뢰가 바로 보이지 않는 문제 (다른 탭을 갔다가 돌아오면 뜸): **Resolved**
+ 
+---
+중간고사 이후
+- **Phase 0** — UI 구조 개편: 프로필 메뉴, 의뢰 타입 탭(대량생산/개인), 제조사 입찰 카드, 마켓플레이스 탭
+- **Phase 1** — 실제 입찰 시스템: `submitBidModal`, Supabase `bids` 테이블, 제조사 프로필 DB 저장
+- **Phase 2** — 공동구매 참여(`joinGroupModal`, `group_participants`), 실제 포스트 시스템(`posts` 테이블)
+- **Phase 3** — 알림 시스템(`notifications.js`), 벨 버튼+미읽음 뱃지, 디자인 파일 업로드(`request_files`)
+- **Phase 4** — 거래 완결: 입찰→매칭→생산→배송→완료→정산 전체 플로우
+  - `requests` 테이블 컬럼 추가: `payment_status`, `paid_at`, `tracking_number`, `shipped_at`, `completed_at`, `payment_amount`, `payment_method`, `matched_bid_id`
+  - `requests.js` 함수: `confirmMatch`, `startProduction`, `markShipped`, `confirmDelivery`, `autoCompleteOverdueShipping`(7일 자동완료), `getPaymentHistory`
+  - Migration: `migrations/phase4_transaction_closure.sql`
+- **Phase 7** — 신뢰/평판 시스템: `reviews.js`, 별점 1–5, 거래 완료 후 자동 리뷰 모달, 중복 방지
+  - `profiles` 테이블: `avg_rating`, `total_reviews`, `completed_count` 캐시 집계
+  - Migration: `migrations/phase7_trust_reputation.sql`
+
