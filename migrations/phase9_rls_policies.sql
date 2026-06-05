@@ -19,9 +19,16 @@ CREATE POLICY "requests_select_public" ON requests
 CREATE POLICY "requests_insert_own" ON requests
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- 수정: 본인만 (상태 전환도 포함)
-CREATE POLICY "requests_update_own" ON requests
-  FOR UPDATE USING (auth.uid() = user_id);
+-- 수정: 의뢰자 본인 OR 매칭된 생산자 (제작시작/배송시작 등 상태 전환 허용)
+CREATE POLICY "requests_update_participant" ON requests
+  FOR UPDATE USING (
+    auth.uid() = user_id
+    OR auth.uid() = (
+      SELECT manufacturer_id FROM bids
+      WHERE id = requests.matched_bid_id
+      LIMIT 1
+    )
+  );
 
 -- 삭제: 본인만
 CREATE POLICY "requests_delete_own" ON requests
