@@ -147,17 +147,15 @@ function navigateAsRole(roleGroup) {
 function _navigateByRole(roleGroup, userType) {
     if (roleGroup === 'manufacturer') {
         if (userType && userType !== 'manufacturer') {
-            showToast('생산자 계정으로 로그인하세요.', 'error'); return;
+            showToast('생산자 계정으로 로그인해야 이용할 수 있습니다. (현재: 의뢰자 계정)', 'error'); return;
         }
-        // manufacturer_type에 따라 바로 대시보드로
         var mType = (AppState.currentProfile && AppState.currentProfile.manufacturer_type) || AppState.mfgType || 'factory';
         AppState.mfgType = mType;
         navigateTo('manufacturer');
     } else {
         if (userType === 'manufacturer') {
-            showToast('의뢰자 계정으로 로그인하세요.', 'error'); return;
+            showToast('의뢰자 계정으로 로그인해야 이용할 수 있습니다. (현재: 생산자 계정)', 'error'); return;
         }
-        // user_type에 따라 바로 대시보드로
         if (userType === 'business') {
             navigateTo('client-business');
         } else {
