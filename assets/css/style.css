@@ -412,14 +412,15 @@ body {
 .home-hero {
     background: #f4f3f8 !important;
     text-align: left !important;
-    padding: 0 32px !important;
+    padding: 0 !important;
     max-width: 100% !important;
 }
 .home-hero-inner {
     max-width: 1160px; margin: 0 auto;
     display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
-    align-items: end; padding: 80px 0 0;
+    align-items: end; padding: 80px 32px 0;
 }
+.home-hero-text { padding-bottom: 80px; }
 .home-hero h1 {
     font-family: 'Jua', sans-serif !important;
     font-size: 46px !important; font-weight: 900 !important;
@@ -573,20 +574,20 @@ body {
     font-weight: 700 !important;
 }
 
-/* 홈 페이지는 page-container 패딩 무력화 */
+/* 홈 페이지는 page-container 패딩/max-width 무력화 */
 #page-home {
     margin: -24px;
+    width: calc(100% + 48px);
+    max-width: none;
 }
-#page-home .home-section,
-#page-home .home-process-bg,
-#page-home .home-feat-bg,
-#page-home .home-stats-bar {
-    /* full-width 보장 */
-}
+
+@media (max-width: 900px) {
     .home-hero-inner { grid-template-columns: 1fr; }
     .home-role-grid { grid-template-columns: 1fr; }
     .home-steps { grid-template-columns: repeat(2,1fr); }
     .home-feat-grid { grid-template-columns: 1fr; }
+    .home-stats-bar { gap: 32px; flex-wrap: wrap; }
+}
     .home-stats-bar { gap: 32px; flex-wrap: wrap; }
 }
     </style>
