@@ -92,11 +92,70 @@ function updateUILoggedIn() {
     setEl('mfg-sidebar-name',      name);
     renderProfileMenu();
     updateNotificationBadge();
+    applyRoleBasedUI();
+    // 로그인 후 pending role 이 있으면 이동
+    var pendingRole = (document.getElementById('loginPendingRole') || {}).value || '';
+    if (pendingRole) {
+        document.getElementById('loginPendingRole').value = '';
+        _navigateByRole(pendingRole, p ? p.user_type : '');
+    }
     // 로그인 후 현재 활성 페이지가 의뢰 페이지면 즉시 로드
     var bizPage = document.getElementById('page-client-business');
     var perPage = document.getElementById('page-client-personal');
     if (bizPage && bizPage.classList.contains('active')) loadBizDashboard();
     if (perPage && perPage.classList.contains('active')) loadPersonalDashboard();
+}
+
+// 역할에 따라 네비게이션/버튼 표시 분리
+function applyRoleBasedUI() {
+    var p    = AppState.currentProfile;
+    var type = p ? p.user_type : '';
+    var isManufacturer = (type === 'manufacturer');
+    var isClient       = (type === 'personal' || type === 'business');
+
+    // 네비 버튼 시각적 비활성화
+    var navMfg    = document.querySelector('#mainNav button[onclick*="manufacturer-select"]');
+    var navClient = document.querySelector('#mainNav button[onclick*="client-select"]');
+    if (navMfg && navClient) {
+        navMfg.style.opacity    = (!type || isManufacturer) ? '1' : '0.4';
+        navClient.style.opacity = (!type || isClient)       ? '1' : '0.4';
+    }
+
+    // 마켓플레이스: 후기작성=소비자전용, 홍보등록=생산자전용
+    var reviewBtn = document.getElementById('mp-write-review-btn');
+    var promoBtn  = document.getElementById('mp-write-promo-btn');
+    if (reviewBtn) reviewBtn.style.display = (!type || isClient) ? '' : 'none';
+    if (promoBtn)  promoBtn.style.display  = (!type || isManufacturer) ? '' : 'none';
+}
+
+// 홈 role-card 클릭: 비로그인이면 로그인 유도, 로그인이면 바로 이동
+function navigateAsRole(roleGroup) {
+    if (!AppState.currentUser) {
+        var hint = roleGroup === 'manufacturer'
+            ? '🏭 생산자로 이용하려면 로그인하세요.'
+            : '📋 의뢰자로 이용하려면 로그인하세요.';
+        var hintEl = document.getElementById('loginRoleHint');
+        var pendEl = document.getElementById('loginPendingRole');
+        if (hintEl) { hintEl.textContent = hint; hintEl.style.display = 'block'; }
+        if (pendEl) pendEl.value = roleGroup;
+        openModal('loginModal');
+        return;
+    }
+    _navigateByRole(roleGroup, AppState.currentProfile ? AppState.currentProfile.user_type : '');
+}
+
+function _navigateByRole(roleGroup, userType) {
+    if (roleGroup === 'manufacturer') {
+        if (userType && userType !== 'manufacturer') {
+            showToast('생산자 계정으로 로그인하세요.', 'error'); return;
+        }
+        navigateTo('manufacturer-select');
+    } else {
+        if (userType === 'manufacturer') {
+            showToast('의뢰자 계정으로 로그인하세요.', 'error'); return;
+        }
+        navigateTo('client-select');
+    }
 }
 
 function updateUILoggedOut() {
@@ -107,6 +166,8 @@ function updateUILoggedOut() {
     // 프로필 드롭다운도 닫기
     var dd = document.getElementById('profileDropdown');
     if (dd) dd.classList.remove('show');
+    // 역할 분리 UI 리셋
+    applyRoleBasedUI();
 }
 
 // ── 로그인 ─────────────────────────────────────────────
@@ -124,6 +185,8 @@ async function handleLogin() {
         closeModal('loginModal');
         document.getElementById('loginEmail').value    = '';
         document.getElementById('loginPassword').value = '';
+        var hintEl = document.getElementById('loginRoleHint');
+        if (hintEl) { hintEl.style.display = 'none'; hintEl.textContent = ''; }
         showToast('로그인되었습니다! 😊', 'success');
     } catch(e) {
         var msg = e.message || '';
@@ -1401,7 +1464,12 @@ function showMpTab(tab, btn) {
     if (tab==='mass')    loadMpMassRequests('');
     if (tab==='group')   loadMpGroupRequests();
     if (tab==='reviews') loadMpReviews();
-    if (tab==='promo')   loadMpPromo();
+    if (tab==='promo') {
+        // promo grid class 리셋 (피드그리드→프로모그리드로 전환)
+        var pg = document.getElementById('mp-promo-grid');
+        if (pg) pg.className = 'feed-grid';
+        loadMpPromo();
+    }
 }
 
 async function loadMarketplace() { loadMpMassRequests(''); }
@@ -1461,6 +1529,14 @@ async function loadMpGroupRequests() {
 var _postType = '', _postRating = 4;
 function openCreatePost(type) {
     if (!AppState.currentUser) { openModal('loginModal'); return; }
+    var p = AppState.currentProfile;
+    // 권한 체크
+    if (type === 'promo' && p && p.user_type !== 'manufacturer') {
+        showToast('생산자 계정만 홍보글을 등록할 수 있습니다.', 'error'); return;
+    }
+    if (type === 'review' && p && p.user_type === 'manufacturer') {
+        showToast('의뢰자 계정으로 후기를 작성하세요.', 'error'); return;
+    }
     _postType = type; _postRating = 4;
     setEl('createPostTitle', type==='review' ? '✍️ 의뢰 후기 작성' : '🌟 생산자 홍보 등록');
     var rg = document.getElementById('postRatingGroup');
@@ -1468,12 +1544,32 @@ function openCreatePost(type) {
     setPostRating(4);
     var ti = document.getElementById('postTitleInput');   if (ti) ti.value = '';
     var ci = document.getElementById('postContentInput'); if (ci) ci.value = '';
+    var fi = document.getElementById('postFileInput');    if (fi) fi.value = '';
+    var pr = document.getElementById('postImagePreview'); if (pr) pr.innerHTML = '';
     openModal('createPostModal');
 }
 function setPostRating(n) {
     _postRating = n;
     document.querySelectorAll('#postStarRating span').forEach(function(s,i){ s.style.opacity = i<n ? '1' : '0.3'; });
 }
+
+function previewPostImages(input) {
+    var pr = document.getElementById('postImagePreview');
+    if (!pr) return;
+    pr.innerHTML = '';
+    var files = Array.from(input.files).slice(0, 5);
+    files.forEach(function(f) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #E2E8F0';
+            pr.appendChild(img);
+        };
+        reader.readAsDataURL(f);
+    });
+}
+
 async function submitPost() {
     var title   = document.getElementById('postTitleInput')   ? document.getElementById('postTitleInput').value.trim()   : '';
     var content = document.getElementById('postContentInput') ? document.getElementById('postContentInput').value.trim() : '';
@@ -1483,7 +1579,7 @@ async function submitPost() {
     if (btn) { btn.disabled=true; btn.textContent='게시 중...'; }
     try {
         var p = AppState.currentProfile;
-        var res = await window.supabaseClient.from('posts').insert([{
+        var insertRes = await window.supabaseClient.from('posts').insert([{
             user_id:     AppState.currentUser.id,
             post_type:   _postType,
             title:       title,
@@ -1491,8 +1587,33 @@ async function submitPost() {
             rating:      _postType === 'review' ? _postRating : null,
             author_name: p ? (p.nickname || '사용자') : '사용자',
             author_type: p ? p.user_type : ''
-        }]);
-        if (res.error) throw res.error;
+        }]).select().single();
+        if (insertRes.error) throw insertRes.error;
+        var postId = insertRes.data.id;
+
+        // 이미지 업로드
+        var fileInput = document.getElementById('postFileInput');
+        var imageUrls = [];
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            var files = Array.from(fileInput.files).slice(0, 5);
+            for (var i = 0; i < files.length; i++) {
+                try {
+                    var f = files[i];
+                    var safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    var path = postId + '/' + Date.now() + '_' + i + '_' + safeName;
+                    var upRes = await window.supabaseClient.storage
+                        .from('post-images').upload(path, f, { upsert: false });
+                    if (!upRes.error) {
+                        var urlData = window.supabaseClient.storage.from('post-images').getPublicUrl(upRes.data.path);
+                        imageUrls.push(urlData.data.publicUrl);
+                    }
+                } catch(fe){ console.warn('이미지 업로드 실패:', fe.message); }
+            }
+            if (imageUrls.length > 0) {
+                await window.supabaseClient.from('posts').update({ images: imageUrls }).eq('id', postId);
+            }
+        }
+
         closeModal('createPostModal');
         showToast('게시물이 등록되었습니다! 🎉','success');
         if (_postType === 'review') loadMpReviews();
@@ -1514,7 +1635,6 @@ async function loadMpReviews() {
             .eq('post_type','review')
             .order('created_at',{ascending:false}).limit(30);
         if (res.error && res.error.code === 'PGRST200') {
-            // FK 미정의 시 join 없이 재시도
             res = await window.supabaseClient.from('posts')
                 .select('*').eq('post_type','review')
                 .order('created_at',{ascending:false}).limit(30);
@@ -1536,7 +1656,7 @@ async function loadMpReviews() {
 async function loadMpPromo() {
     var grid = document.getElementById('mp-promo-grid');
     if (!grid) return;
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)">⏳ 로딩 중...</div>';
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray)">⏳ 로딩 중...</div>';
     try {
         var res = await window.supabaseClient.from('posts')
             .select('*').eq('post_type','promo')
@@ -1547,10 +1667,12 @@ async function loadMpPromo() {
             grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🌟</div><p>등록된 홍보가 없습니다.</p></div>';
             return;
         }
-        grid.innerHTML = list.map(function(post){ return renderFeedCard(post); }).join('');
+        // 홍보글은 promo-grid (세로 중앙 정렬, 큰 카드)
+        grid.className = 'promo-grid';
+        grid.innerHTML = list.map(function(post){ return renderPromoCard(post); }).join('');
     } catch(e) {
         console.error(e);
-        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>오류가 발생했습니다.</p></div>';
+        grid.innerHTML = '<div class="empty-state"><p>오류가 발생했습니다.</p></div>';
     }
 }
 
@@ -1565,11 +1687,14 @@ function renderFeedCard(post) {
     var typeBadge = post.post_type === 'promo'
         ? '<span class="status-badge status-matched" style="margin-left:6px">생산자</span>'
         : '';
+    var cancelBadge = post.cancel_reason
+        ? '<span class="status-badge status-draft" style="margin-left:6px">취소거래</span>'
+        : '';
 
-    // Phase 7: 거래 후기 컨텍스트 (생산자명 + 의뢰명)
+    // Phase 7: 거래 후기 컨텍스트
     var txContext = '';
     if (post.post_type === 'review' && post.request_id) {
-        var mfgName = (post.manufacturer && post.manufacturer.nickname) ? post.manufacturer.nickname : null;
+        var mfgName  = (post.manufacturer && post.manufacturer.nickname) ? post.manufacturer.nickname : null;
         var reqTitle = (post.request && post.request.title) ? post.request.title : null;
         if (mfgName || reqTitle) {
             txContext = '<div class="text-xs" style="margin:6px 0 4px;padding:6px 8px;background:var(--bg);border-radius:4px;color:var(--gray)">' +
@@ -1579,18 +1704,164 @@ function renderFeedCard(post) {
         }
     }
 
-    return '<div class="feed-card" data-rating="'+(post.rating||0)+'" data-title="'+escHtml((post.title||'').toLowerCase())+'" data-author="'+escHtml((post.author_name||'').toLowerCase())+'">' +
+    // 썸네일 이미지
+    var thumbHtml = '';
+    if (post.images && post.images.length > 0) {
+        thumbHtml = '<img src="'+escHtml(post.images[0])+'" style="width:100%;height:140px;object-fit:cover;border-radius:6px;margin-top:10px" alt="이미지">';
+    }
+
+    return '<div class="feed-card" onclick="openPostDetail(\''+post.id+'\')" data-rating="'+(post.rating||0)+'" data-title="'+escHtml((post.title||'').toLowerCase())+'" data-author="'+escHtml((post.author_name||'').toLowerCase())+'">' +
         '<div class="flex-between" style="margin-bottom:6px">' +
         '<div>' +
-        '<strong style="font-size:14px">'+escHtml(post.author_name||'사용자')+'</strong>'+typeBadge+
+        '<strong style="font-size:14px">'+escHtml(post.author_name||'사용자')+'</strong>'+typeBadge+cancelBadge+
         '<span class="text-xs text-muted" style="margin-left:6px">'+date+'</span>' +
         stars +
         '</div>' +
         '</div>' +
         txContext +
         '<h4 style="font-size:15px;font-weight:700;margin:8px 0 6px;color:var(--dark)">'+escHtml(post.title)+'</h4>' +
-        '<p class="text-sm" style="color:var(--gray);line-height:1.65;white-space:pre-wrap;word-break:break-word">'+escHtml(post.content)+'</p>' +
+        '<p class="text-sm" style="color:var(--gray);line-height:1.65;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">'+escHtml(post.content)+'</p>' +
+        thumbHtml +
         '</div>';
+}
+
+function renderPromoCard(post) {
+    var date = new Date(post.created_at).toLocaleDateString('ko-KR');
+    var imgs = (post.images && post.images.length > 0) ? post.images : [];
+    var cardId = 'promo-' + post.id;
+
+    var sliderHtml = '';
+    if (imgs.length === 1) {
+        sliderHtml = '<div style="margin-top:14px"><img src="'+escHtml(imgs[0])+'" style="width:100%;height:220px;object-fit:cover;border-radius:8px" alt="이미지"></div>';
+    } else if (imgs.length > 1) {
+        sliderHtml = '<div class="img-slider" id="slider-'+post.id+'">' +
+            '<div class="img-slider-track" id="track-'+post.id+'">' +
+            imgs.map(function(url){ return '<img src="'+escHtml(url)+'" alt="이미지">'; }).join('') +
+            '</div>' +
+            '<button class="img-slider-btn prev" onclick="event.stopPropagation();sliderMove(\''+post.id+'\',-1)">‹</button>' +
+            '<button class="img-slider-btn next" onclick="event.stopPropagation();sliderMove(\''+post.id+'\',1)">›</button>' +
+            '</div>' +
+            '<div class="img-slider-dots" id="dots-'+post.id+'">' +
+            imgs.map(function(_,i){ return '<span class="'+(i===0?'active':'')+'" onclick="event.stopPropagation();sliderGoTo(\''+post.id+'\','+i+')"></span>'; }).join('') +
+            '</div>';
+    }
+
+    return '<div class="promo-card" onclick="openPostDetail(\''+post.id+'\')" id="'+cardId+'">' +
+        '<div class="flex-between" style="margin-bottom:8px">' +
+        '<div>' +
+        '<strong style="font-size:15px">'+escHtml(post.author_name||'생산자')+'</strong>' +
+        '<span class="status-badge status-matched" style="margin-left:6px">생산자</span>' +
+        '<span class="text-xs text-muted" style="margin-left:8px">'+date+'</span>' +
+        '</div>' +
+        '</div>' +
+        '<h4 style="font-size:17px;font-weight:700;margin:4px 0 8px;color:var(--dark)">'+escHtml(post.title)+'</h4>' +
+        '<div class="promo-card-body" id="body-'+post.id+'">' +
+        '<p class="text-sm" style="color:var(--gray);line-height:1.7;white-space:pre-wrap;word-break:break-word">'+escHtml(post.content)+'</p>' +
+        '</div>' +
+        '<div class="promo-card-fade" id="fade-'+post.id+'">' +
+        '<button class="btn btn-sm btn-secondary" style="font-size:12px" onclick="event.stopPropagation();togglePromoExpand(\''+post.id+'\')">더보기 ▼</button>' +
+        '</div>' +
+        sliderHtml +
+        '</div>';
+}
+
+// 슬라이더 상태 맵
+var _sliderIdx = {};
+function sliderMove(postId, dir) {
+    var track = document.getElementById('track-'+postId);
+    if (!track) return;
+    var count = track.children.length;
+    if (!_sliderIdx[postId]) _sliderIdx[postId] = 0;
+    _sliderIdx[postId] = (_sliderIdx[postId] + dir + count) % count;
+    sliderGoTo(postId, _sliderIdx[postId]);
+}
+function sliderGoTo(postId, idx) {
+    var track = document.getElementById('track-'+postId);
+    var dots  = document.getElementById('dots-'+postId);
+    if (!track) return;
+    _sliderIdx[postId] = idx;
+    track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+    if (dots) {
+        Array.from(dots.children).forEach(function(d, i){ d.classList.toggle('active', i === idx); });
+    }
+}
+
+function togglePromoExpand(postId) {
+    var body = document.getElementById('body-'+postId);
+    var fade = document.getElementById('fade-'+postId);
+    if (!body) return;
+    var expanded = body.classList.toggle('expanded');
+    if (fade) fade.innerHTML = expanded
+        ? '<button class="btn btn-sm btn-secondary" style="font-size:12px" onclick="event.stopPropagation();togglePromoExpand(\''+postId+'\')">접기 ▲</button>'
+        : '<button class="btn btn-sm btn-secondary" style="font-size:12px" onclick="event.stopPropagation();togglePromoExpand(\''+postId+'\')">더보기 ▼</button>';
+}
+
+// 게시물 상세 팝업
+async function openPostDetail(postId) {
+    openModal('postDetailModal');
+    var body = document.getElementById('postDetailBody');
+    if (body) body.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var res = await window.supabaseClient.from('posts')
+            .select('*, manufacturer:profiles!manufacturer_id(nickname, specialty), request:requests!request_id(title, category)')
+            .eq('id', postId).single();
+        if (res.error && res.error.code === 'PGRST200') {
+            res = await window.supabaseClient.from('posts').select('*').eq('id', postId).single();
+        }
+        if (res.error) throw res.error;
+        var post = res.data;
+        var date = new Date(post.created_at).toLocaleString('ko-KR');
+        var stars = '';
+        if (post.rating) {
+            stars = '<div style="color:#f39c12;font-size:20px;margin:8px 0">';
+            for (var i = 0; i < 5; i++) stars += i < post.rating ? '★' : '☆';
+            stars += ' <span style="font-size:14px;color:var(--gray)">'+post.rating+'점</span></div>';
+        }
+        var mfgLine = '';
+        if (post.manufacturer && post.manufacturer.nickname) {
+            mfgLine = '<div class="text-sm" style="margin:6px 0;padding:8px 12px;background:var(--bg);border-radius:6px">🏭 생산자: <strong>'+escHtml(post.manufacturer.nickname)+'</strong>'+(post.manufacturer.specialty?' · '+escHtml(post.manufacturer.specialty):'')+'</div>';
+        }
+        var reqLine = '';
+        if (post.request && post.request.title) {
+            reqLine = '<div class="text-sm" style="margin:6px 0 12px;padding:8px 12px;background:var(--bg);border-radius:6px">📦 의뢰: <strong>'+escHtml(post.request.title)+'</strong>'+(post.request.category?' ('+escHtml(post.request.category)+')':'')+'</div>';
+        }
+        var cancelLine = post.cancel_reason
+            ? '<div class="alert alert-warning" style="margin:12px 0"><span>⚠️</span><span><strong>취소 사유:</strong> '+escHtml(post.cancel_reason)+'</span></div>'
+            : '';
+
+        // 이미지 슬라이더
+        var imgs = (post.images && post.images.length > 0) ? post.images : [];
+        var imgHtml = '';
+        if (imgs.length === 1) {
+            imgHtml = '<img src="'+escHtml(imgs[0])+'" style="width:100%;max-height:320px;object-fit:cover;border-radius:8px;margin:14px 0" alt="이미지">';
+        } else if (imgs.length > 1) {
+            imgHtml = '<div class="img-slider" id="slider-detail-'+post.id+'" style="margin:14px 0">' +
+                '<div class="img-slider-track" id="track-detail-'+post.id+'">' +
+                imgs.map(function(url){ return '<img src="'+escHtml(url)+'" alt="이미지" style="height:300px">'; }).join('') +
+                '</div>' +
+                '<button class="img-slider-btn prev" onclick="sliderMove(\'detail-'+post.id+'\',-1)">‹</button>' +
+                '<button class="img-slider-btn next" onclick="sliderMove(\'detail-'+post.id+'\',1)">›</button>' +
+                '</div>' +
+                '<div class="img-slider-dots" id="dots-detail-'+post.id+'">' +
+                imgs.map(function(_,i){ return '<span class="'+(i===0?'active':'')+'" onclick="sliderGoTo(\'detail-'+post.id+'\','+i+')"></span>'; }).join('') +
+                '</div>';
+        }
+
+        body.innerHTML =
+            '<div class="flex-between" style="margin-bottom:4px">' +
+            '<strong style="font-size:16px">'+escHtml(post.author_name||'사용자')+'</strong>' +
+            '<span class="text-xs text-muted">'+date+'</span>' +
+            '</div>' +
+            stars + mfgLine + reqLine + cancelLine +
+            '<h3 style="font-size:18px;font-weight:700;margin:10px 0 8px;color:var(--dark)">'+escHtml(post.title)+'</h3>' +
+            '<p class="text-sm" style="color:var(--gray);line-height:1.75;white-space:pre-wrap;word-break:break-word">'+escHtml(post.content)+'</p>' +
+            imgHtml +
+            '<div style="display:flex;justify-content:flex-end;margin-top:16px">' +
+            '<button class="btn btn-secondary" onclick="closeModal(\'postDetailModal\')">닫기</button></div>';
+    } catch(e) {
+        console.error(e);
+        if (body) body.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+    }
 }
 async function joinGroupPurchase(requestId) {
     if (!AppState.currentUser) { openModal('loginModal'); return; }
@@ -2068,6 +2339,167 @@ async function submitReview() {
         if (btn) { btn.disabled = false; btn.textContent = '✍️ 후기 등록'; }
     }
 }
+
+// ── 마켓플레이스 후기 작성: 의뢰 선택 모달 ──────────────
+async function openReviewSelectModal() {
+    if (!AppState.currentUser) { openModal('loginModal'); return; }
+    openModal('reviewSelectModal');
+    var listEl = document.getElementById('reviewSelectList');
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray)">⏳ 로딩 중...</div>';
+    try {
+        var all = await Requests.getMyRequests();
+        // 완료 또는 취소 건만
+        var eligible = all.filter(function(r){ return r.status === 'completed' || r.status === 'cancelled'; });
+        if (!eligible.length) {
+            listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>후기를 작성할 수 있는 거래가 없습니다.<br>(완료 또는 취소된 거래만 작성 가능)</p></div>';
+            return;
+        }
+        listEl.innerHTML = eligible.map(function(req) {
+            var isCancelled = req.status === 'cancelled';
+            var statusLabel = isCancelled ? '취소됨' : '거래완료';
+            var statusCls   = isCancelled ? 'status-draft' : 'status-completed';
+            var matchedBid  = (req.bids || []).find(function(b){ return b.status === 'selected'; });
+            var mfgName     = matchedBid
+                ? ((matchedBid.manufacturer && matchedBid.manufacturer.nickname) || matchedBid.manufacturer_name || '생산자')
+                : '-';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid #E2E8F0;border-radius:8px;background:var(--white)">' +
+                '<div>' +
+                '<div style="font-weight:600;font-size:14px">'+escHtml(req.title)+'</div>' +
+                '<div class="text-xs text-muted" style="margin-top:3px">🏭 '+escHtml(mfgName)+' · '+(req.category||'-')+'</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;align-items:center">' +
+                '<span class="status-badge '+statusCls+'">'+statusLabel+'</span>' +
+                (isCancelled
+                    ? '<button class="btn btn-sm btn-secondary" onclick="openCancelReviewModal(\''+req.id+'\')">후기 작성</button>'
+                    : '<button class="btn btn-sm btn-primary" onclick="closeModal(\'reviewSelectModal\');openReviewModal(\''+req.id+'\')">후기 작성</button>'
+                ) +
+                '</div></div>';
+        }).join('');
+    } catch(e) {
+        console.error(e);
+        if (listEl) listEl.innerHTML = '<div class="empty-state"><p>오류가 발생했습니다.</p></div>';
+    }
+}
+
+// ── 취소 건 후기 모달 ─────────────────────────────────────
+var _cancelReviewRating = 4;
+function setCancelReviewRating(n) {
+    _cancelReviewRating = n;
+    document.querySelectorAll('#cancelReviewStars span').forEach(function(s,i){ s.style.opacity = i<n ? '1' : '0.3'; });
+    var lbl = document.getElementById('cancelReviewRatingLabel');
+    if (lbl) lbl.textContent = '★ '+n+'점';
+}
+
+function previewCancelReviewImages(input) {
+    var pr = document.getElementById('cancelReviewImagePreview');
+    if (!pr) return;
+    pr.innerHTML = '';
+    Array.from(input.files).slice(0, 5).forEach(function(f) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #E2E8F0';
+            pr.appendChild(img);
+        };
+        reader.readAsDataURL(f);
+    });
+}
+
+async function openCancelReviewModal(requestId) {
+    closeModal('reviewSelectModal');
+    try {
+        if (await Reviews.hasReviewed(requestId)) {
+            showToast('이미 후기를 작성하셨습니다.', 'info'); return;
+        }
+        var req = await Requests.getById(requestId);
+        if (!req) { showToast('의뢰를 찾을 수 없습니다.', 'error'); return; }
+        var matchedBid = (req.bids || []).find(function(b){ return b.status === 'selected'; });
+        var mfgId   = matchedBid ? matchedBid.manufacturer_id : null;
+        var mfgName = matchedBid
+            ? ((matchedBid.manufacturer && matchedBid.manufacturer.nickname) || matchedBid.manufacturer_name || '생산자')
+            : '-';
+
+        var ridEl = document.getElementById('cancelReviewRequestId');
+        var midEl = document.getElementById('cancelReviewManufacturerId');
+        if (ridEl) ridEl.value = req.id;
+        if (midEl) midEl.value = mfgId || '';
+        setEl('cancelReviewMfgLabel', mfgName);
+        setEl('cancelReviewReqLabel', '['+(req.category||'기타')+'] '+req.title);
+        var rEl = document.getElementById('cancelReviewReason');   if (rEl) rEl.value = '';
+        var cEl = document.getElementById('cancelReviewContent');  if (cEl) cEl.value = '';
+        var pEl = document.getElementById('cancelReviewImagePreview'); if (pEl) pEl.innerHTML = '';
+        var fEl = document.getElementById('cancelReviewFileInput'); if (fEl) fEl.value = '';
+        setCancelReviewRating(4);
+        openModal('writeCancelReviewModal');
+    } catch(e) {
+        showToast('오류: '+e.message, 'error');
+    }
+}
+
+async function submitCancelReview() {
+    var requestId = (document.getElementById('cancelReviewRequestId')||{}).value || '';
+    var mfgId     = (document.getElementById('cancelReviewManufacturerId')||{}).value || '';
+    var reason    = ((document.getElementById('cancelReviewReason')||{}).value || '').trim();
+    var content   = ((document.getElementById('cancelReviewContent')||{}).value || '').trim();
+    if (!reason) { showToast('취소 사유를 입력해주세요.', 'error'); return; }
+    if (!requestId) { showToast('의뢰 정보가 없습니다.', 'error'); return; }
+    var btn = document.getElementById('cancelReviewSubmitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
+    try {
+        var p = AppState.currentProfile;
+        var insertRes = await window.supabaseClient.from('posts').insert([{
+            user_id:         AppState.currentUser.id,
+            post_type:       'review',
+            title:           reason.slice(0, 60),
+            content:         content || reason,
+            rating:          _cancelReviewRating,
+            cancel_reason:   reason,
+            author_name:     p ? (p.nickname || '의뢰자') : '의뢰자',
+            author_type:     p ? p.user_type : '',
+            request_id:      requestId,
+            manufacturer_id: mfgId || null
+        }]).select().single();
+        if (insertRes.error) throw insertRes.error;
+        var postId = insertRes.data.id;
+
+        // 이미지 업로드
+        var fileInput = document.getElementById('cancelReviewFileInput');
+        var imageUrls = [];
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            var files = Array.from(fileInput.files).slice(0, 5);
+            for (var i = 0; i < files.length; i++) {
+                try {
+                    var f = files[i];
+                    var safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    var path = postId + '/' + Date.now() + '_' + i + '_' + safeName;
+                    var upRes = await window.supabaseClient.storage.from('post-images').upload(path, f, { upsert: false });
+                    if (!upRes.error) {
+                        var urlData = window.supabaseClient.storage.from('post-images').getPublicUrl(upRes.data.path);
+                        imageUrls.push(urlData.data.publicUrl);
+                    }
+                } catch(fe){ console.warn('이미지 업로드 실패:', fe.message); }
+            }
+            if (imageUrls.length > 0) {
+                await window.supabaseClient.from('posts').update({ images: imageUrls }).eq('id', postId);
+            }
+        }
+
+        if (mfgId) {
+            try { await Reviews.recomputeProfileStats(mfgId); } catch(e){}
+        }
+        closeModal('writeCancelReviewModal');
+        showToast('후기가 등록되었습니다! 🎉', 'success');
+        loadMpReviews();
+    } catch(e) {
+        showToast('후기 등록 실패: '+e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '✍️ 후기 등록'; }
+    }
+}
+
+// ── 기존 완료 건 후기 모달에 이미지 업로드 추가 ──────────
+// writeReviewModal 이미지 업로드는 향후 확장 예정 (현재는 취소건 전용 모달에만 적용)
 
 document.addEventListener('click',function(e){
     var d=document.getElementById('profileDropdown');

@@ -2,8 +2,8 @@
 
 ## 굿즈 제작·유통 플랫폼: "굿즈 팩토리(가칭)"
 - URL: https://seaottersandpikas.github.io/2026Spring/
-  - user id: `test@test.com` 
-  - PW: `test123456`
+  - 생산자 user id: `test@test.com` // PW: `test123456`
+  - 소비자 user id: `test2@test.com` // PW: `test123456`
 - NGrok 활용: https://unicycle-retouch-morale.ngrok-free.dev
 
 ## 사업 내용
@@ -26,9 +26,7 @@
   - Claude Sonnet: main, 코딩 전반 및 troubleshooting 담당
   - Gemini Pro: 코드 검증
   - Github Codespace: 개발 내용 업로드
-    - miterm.test: 중간고사 범위
-    - FINAL.prd: 기말고사, 최종
-- AI automation (예정)
+- AI automation (희망)
   - Google API (free)
     - 의뢰 생성 및 견적 제출 자동화
     - 사업자 등록, 저작권 등록, 세무 처리 등 절차 자동화

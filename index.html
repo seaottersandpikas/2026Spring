@@ -43,12 +43,12 @@
             <h1>당신의 아이디어를 현실로</h1>
             <p>굿즈 제작부터 판매까지, 생산자와 의뢰자를 연결하는 스마트 플랫폼</p>
             <div class="role-cards" style="max-width:900px;grid-template-columns:repeat(3,1fr);margin:0 auto 40px;">
-                <div class="role-card" onclick="navigateTo('manufacturer-select')">
+                <div class="role-card" onclick="navigateAsRole('manufacturer')">
                     <div class="icon" style="background:rgba(108,92,231,0.1)">🏭</div>
                     <h3>생산자 (Manufacturer)</h3>
                     <p>공장 또는 개인 제작자로서<br>의뢰를 수주하세요</p>
                 </div>
-                <div class="role-card" onclick="navigateTo('client-select')">
+                <div class="role-card" onclick="navigateAsRole('client')">
                     <div class="icon" style="background:rgba(0,206,201,0.1)">📋</div>
                     <h3>의뢰자 (Client)</h3>
                     <p>사업자 또는 개인으로서<br>원하는 굿즈를 의뢰하세요</p>
@@ -749,7 +749,7 @@
         <div id="mp-reviews" class="tab-content">
             <div class="flex-between mb-16">
                 <h2 class="section-title" style="margin-bottom:0">✍️ 의뢰 후기</h2>
-                <button class="btn btn-primary btn-sm" onclick="openCreatePost('review')">✏️ 후기 작성</button>
+                <button class="btn btn-primary btn-sm" id="mp-write-review-btn" onclick="openReviewSelectModal()">✏️ 후기 작성</button>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
                 <div class="pill-filters" style="margin:0">
@@ -768,7 +768,7 @@
         <div id="mp-promo" class="tab-content">
             <div class="flex-between mb-16">
                 <h2 class="section-title" style="margin-bottom:0">🌟 생산자 홍보</h2>
-                <button class="btn btn-primary btn-sm" onclick="openCreatePost('promo')">✏️ 홍보 등록</button>
+                <button class="btn btn-primary btn-sm" id="mp-write-promo-btn" onclick="openCreatePost('promo')">✏️ 홍보 등록</button>
             </div>
             <p class="text-sm text-muted mb-16">생산자의 포트폴리오를 탐색하세요. 마음에 드는 생산자에게 직접 의뢰할 수 있습니다.</p>
             <div class="feed-grid" id="mp-promo-grid">
@@ -785,6 +785,7 @@
     <div class="modal" style="max-width:440px">
         <button class="modal-close" onclick="closeModal('loginModal')">×</button>
         <h3>🔐 로그인</h3>
+        <div id="loginRoleHint" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(108,92,231,0.07);border-radius:8px;font-size:13px;color:var(--primary)"></div>
         <div class="form-group">
             <label>이메일</label>
             <input type="email" id="loginEmail" placeholder="이메일 주소" onkeydown="if(event.key==='Enter')handleLogin()">
@@ -793,6 +794,7 @@
             <label>비밀번호</label>
             <input type="password" id="loginPassword" placeholder="비밀번호" onkeydown="if(event.key==='Enter')handleLogin()">
         </div>
+        <input type="hidden" id="loginPendingRole">
         <button class="btn btn-primary btn-block" id="loginSubmitBtn" onclick="handleLogin()">로그인</button>
         <div class="divider"></div>
         <p class="text-sm text-muted" style="text-align:center">
@@ -955,13 +957,14 @@
                 <span onclick="setPostRating(5)" style="opacity:0.3">⭐</span>
             </div>
         </div>
-        <div class="form-group">
-            <label>이미지 첨부 (선택)</label>
+        <div class="form-group" id="postImageGroup">
+            <label>이미지 첨부 (선택, 최대 5장)</label>
             <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:20px;text-align:center;cursor:pointer" onclick="document.getElementById('postFileInput').click()">
                 <div style="font-size:24px;margin-bottom:4px">📷</div>
-                <p class="text-xs text-muted">클릭하여 이미지 선택</p>
-                <input type="file" id="postFileInput" multiple accept="image/*" style="display:none">
+                <p class="text-xs text-muted">클릭하여 이미지 선택 (JPG/PNG/GIF)</p>
+                <input type="file" id="postFileInput" multiple accept="image/*" style="display:none" onchange="previewPostImages(this)">
             </div>
+            <div id="postImagePreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
         <div style="display:flex;gap:12px;justify-content:flex-end">
             <button class="btn btn-secondary" onclick="closeModal('createPostModal')">취소</button>
@@ -1063,6 +1066,74 @@
             <button class="btn btn-secondary" onclick="closeModal('shipModal')">취소</button>
             <button class="btn btn-primary" id="shipSubmitBtn" onclick="submitShipping()">🚚 배송 시작</button>
         </div>
+    </div>
+</div>
+
+<!-- 후기 의뢰 선택 모달 -->
+<div class="modal-overlay" id="reviewSelectModal">
+    <div class="modal" style="max-width:560px">
+        <button class="modal-close" onclick="closeModal('reviewSelectModal')">×</button>
+        <h3>✍️ 후기 작성 — 의뢰 선택</h3>
+        <p class="text-sm text-muted mb-16">후기를 작성할 의뢰를 선택하세요.</p>
+        <div id="reviewSelectList" style="max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+            <div style="text-align:center;padding:24px;color:var(--gray)">⏳ 로딩 중...</div>
+        </div>
+    </div>
+</div>
+
+<!-- 취소 건 후기 작성 모달 -->
+<div class="modal-overlay" id="writeCancelReviewModal">
+    <div class="modal" style="max-width:520px">
+        <button class="modal-close" onclick="closeModal('writeCancelReviewModal')">×</button>
+        <h3>✍️ 취소 거래 후기</h3>
+        <div class="form-group">
+            <label>생산자</label>
+            <div id="cancelReviewMfgLabel" style="font-weight:600;padding:8px 12px;background:var(--bg);border-radius:6px">-</div>
+        </div>
+        <div class="form-group">
+            <label>의뢰</label>
+            <div id="cancelReviewReqLabel" style="font-weight:600;padding:8px 12px;background:var(--bg);border-radius:6px">-</div>
+        </div>
+        <div class="form-group">
+            <label>취소 사유 *</label>
+            <textarea id="cancelReviewReason" placeholder="취소 사유를 입력해주세요." style="min-height:70px"></textarea>
+        </div>
+        <div class="form-group">
+            <label>후기 내용 (선택)</label>
+            <textarea id="cancelReviewContent" placeholder="거래 경험에 대한 후기를 남겨주세요." style="min-height:80px"></textarea>
+        </div>
+        <div class="form-group">
+            <label>만족도 *</label>
+            <div style="display:flex;gap:8px;font-size:28px;cursor:pointer;user-select:none" id="cancelReviewStars">
+                <span onclick="setCancelReviewRating(1)">⭐</span><span onclick="setCancelReviewRating(2)">⭐</span>
+                <span onclick="setCancelReviewRating(3)">⭐</span><span onclick="setCancelReviewRating(4)">⭐</span>
+                <span onclick="setCancelReviewRating(5)" style="opacity:0.3">⭐</span>
+            </div>
+            <div class="text-xs text-muted mt-8" id="cancelReviewRatingLabel">★ 4점</div>
+        </div>
+        <div class="form-group">
+            <label>이미지 첨부 (선택)</label>
+            <div style="border:2px dashed #E2E8F0;border-radius:8px;padding:16px;text-align:center;cursor:pointer" onclick="document.getElementById('cancelReviewFileInput').click()">
+                <div style="font-size:20px;margin-bottom:2px">📷</div>
+                <p class="text-xs text-muted">이미지 선택</p>
+                <input type="file" id="cancelReviewFileInput" multiple accept="image/*" style="display:none" onchange="previewCancelReviewImages(this)">
+            </div>
+            <div id="cancelReviewImagePreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+        </div>
+        <input type="hidden" id="cancelReviewRequestId">
+        <input type="hidden" id="cancelReviewManufacturerId">
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('writeCancelReviewModal')">취소</button>
+            <button class="btn btn-primary" id="cancelReviewSubmitBtn" onclick="submitCancelReview()">✍️ 후기 등록</button>
+        </div>
+    </div>
+</div>
+
+<!-- 게시물 상세 팝업 모달 -->
+<div class="modal-overlay" id="postDetailModal">
+    <div class="modal" style="max-width:600px">
+        <button class="modal-close" onclick="closeModal('postDetailModal')">×</button>
+        <div id="postDetailBody" style="padding:4px 0"></div>
     </div>
 </div>
 
