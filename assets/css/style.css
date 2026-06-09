@@ -21,7 +21,10 @@
             --shadow: 0 2px 15px rgba(0,0,0,0.08); --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
             --radius: 12px; --radius-sm: 8px;
         }
-        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; overflow-x: hidden; }
+/* 가로 스크롤 방지 — body 아닌 html에 적용해야 Safari margin 버그 없음 */
+html { overflow-x: hidden; }
+
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; }
 
         .main-header { background: var(--white); box-shadow: 0 1px 10px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 1000; }
         .header-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; }
@@ -574,12 +577,13 @@ body {
     font-weight: 700 !important;
 }
 
-/* 홈 페이지는 page-container 패딩/max-width 무력화 */
+/* 홈 페이지는 page-container 패딩 무력화 */
 #page-home {
     margin: -24px;
-    width: calc(100% + 48px);
-    max-width: none;
+    /* Safari/overflow-x:hidden 충돌 방지: padding으로 내부 보정 */
+    overflow: visible;
 }
+/* 홈 내부 섹션들은 자체 padding으로 여백 관리 — page-container 패딩 불필요 */
 
 @media (max-width: 900px) {
     .home-hero-inner { grid-template-columns: 1fr; }
