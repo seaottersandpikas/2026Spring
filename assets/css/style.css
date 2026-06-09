@@ -592,6 +592,14 @@ body {
     .home-feat-grid { grid-template-columns: 1fr; }
     .home-stats-bar { gap: 32px; flex-wrap: wrap; }
 }
+
+/* ── 영수증 인쇄 스타일 ── */
+@media print {
+    body > *:not(#receiptModal) { display: none !important; }
+    #receiptModal { display: block !important; position: static !important; background: none !important; }
+    #receiptModal .modal { box-shadow: none !important; max-width: 100% !important; }
+    .modal-close, button { display: none !important; }
+}
     .home-stats-bar { gap: 32px; flex-wrap: wrap; }
 }
     </style>

@@ -24,17 +24,18 @@ var Auth = {
         } catch(e) { return null; }
     },
 
-    async signUp(email, password, nickname, userType) {
+    async signUp(email, password, nickname, userType, manufacturerType) {
+        // userType: 'manufacturer'|'business'|'personal'
+        // manufacturerType: 'factory'|'personal'|undefined
         var res = await getSupabase().auth.signUp({
             email, password,
             options: { data: { nickname, user_type: userType } }
         });
         if (res.error) throw res.error;
         if (res.data.user) {
-            await getSupabase().from('profiles').upsert({
-                id: res.data.user.id,
-                email, nickname, user_type: userType
-            });
+            var profileData = { id: res.data.user.id, email, nickname, user_type: userType };
+            if (manufacturerType) profileData.manufacturer_type = manufacturerType;
+            await getSupabase().from('profiles').upsert(profileData);
         }
         return res.data;
     },
