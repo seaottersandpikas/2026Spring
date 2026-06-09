@@ -648,11 +648,10 @@ async function loadMatchHistoryBiz() {
     var tbody=document.getElementById('biz-match-tbody'); if(!tbody)return;
     try {
         var list=await Requests.getMatchHistory('business',20);
-        if(!list.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
+        if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
         tbody.innerHTML=list.map(function(h){
             var sv=h.target_price>0?Math.round((1-h.matched_price/h.target_price)*100):0;
-            var receiptBtn = h.request_id ? '<button class="btn btn-sm btn-secondary" style="font-size:11px;padding:3px 8px" onclick="openReceiptModal(\''+h.request_id+'\')">🧾 영수증</button>' : '-';
-            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.category||'-')+'</td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td class="text-success">▼'+sv+'%</td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td><td>'+receiptBtn+'</td></tr>';
+            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.category||'-')+'</td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td class="text-success">▼'+sv+'%</td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
         }).join('');
     }catch(e){console.error(e);}
 }
@@ -662,12 +661,11 @@ async function loadMatchHistoryPersonal() {
     try {
         var list=await Requests.getMatchHistory(null,20);
         var f=list.filter(function(h){return h.request_type!=='business';});
-        if(!f.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
+        if(!f.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">매칭 이력이 없습니다.</td></tr>';return;}
         var tMap={personal:'개인',group:'공동제작'};
         tbody.innerHTML=f.map(function(h){
             var cls=h.request_type==='group'?'status-recruiting':'status-completed';
-            var receiptBtn = h.request_id ? '<button class="btn btn-sm btn-secondary" style="font-size:11px;padding:3px 8px" onclick="openReceiptModal(\''+h.request_id+'\')">🧾 영수증</button>' : '-';
-            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td><span class="status-badge '+cls+'">'+(tMap[h.request_type]||h.request_type)+'</span></td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td><td>'+receiptBtn+'</td></tr>';
+            return '<tr><td><strong>'+escHtml(h.title)+'</strong></td><td>'+(h.quantity||0).toLocaleString()+'개</td><td>'+(h.target_price||0).toLocaleString()+'원</td><td class="text-success fw-bold">'+(h.matched_price||0).toLocaleString()+'원</td><td><span class="status-badge '+cls+'">'+(tMap[h.request_type]||h.request_type)+'</span></td><td>'+new Date(h.matched_at).toLocaleDateString('ko-KR')+'</td></tr>';
         }).join('');
     }catch(e){console.error(e);}
 }
@@ -2330,6 +2328,7 @@ async function loadClientPayments(bodyId) {
                 ? '<span class="badge" style="background:#fef3c7;color:#92400e">에스크로 보관 중</span>'
                 : '<span class="badge">'+escHtml(r.payment_status)+'</span>');
         var amt = r.payment_amount ? Number(r.payment_amount).toLocaleString()+'원' : '-';
+        var receiptBtn = r.id ? '<button class="btn btn-sm btn-secondary" style="font-size:11px;padding:3px 8px" onclick="openReceiptModal(\''+r.id+'\')">🧾 영수증</button>' : '-';
         return '<tr>' +
             '<td>'+(r.paid_at?new Date(r.paid_at).toLocaleDateString('ko-KR'):'-')+'</td>' +
             '<td>'+escHtml(r.title||'-')+'</td>' +
@@ -2337,10 +2336,11 @@ async function loadClientPayments(bodyId) {
             '<td class="text-primary fw-bold">'+amt+'</td>' +
             '<td>'+statusBadge+'</td>' +
             '<td>'+(r.completed_at?new Date(r.completed_at).toLocaleDateString('ko-KR'):'-')+'</td>' +
+            '<td>'+receiptBtn+'</td>' +
             '</tr>';
     }).join('');
     box.innerHTML = '<table class="data-table">' +
-        '<thead><tr><th>결제일</th><th>의뢰명</th><th>결제수단</th><th>금액</th><th>상태</th><th>거래완료일</th></tr></thead>' +
+        '<thead><tr><th>결제일</th><th>의뢰명</th><th>결제수단</th><th>금액</th><th>상태</th><th>거래완료일</th><th>영수증</th></tr></thead>' +
         '<tbody>'+rows+'</tbody></table>';
 }
 
