@@ -459,7 +459,10 @@ function renderRequestCard(req) {
     return '<div class="request-card" data-status="'+req.status+'" data-request-type="'+req.request_type+'" data-id="'+req.id+'" data-title="'+escHtml(req.title||'').toLowerCase()+'" data-category="'+escHtml(req.category||'')+'">' +
         '<div class="request-card-header">' +
         '<h4>'+(req.request_type==='group'?'👥 ':'')+escHtml(req.title)+'</h4>' +
+        '<div style="display:flex;gap:6px;align-items:center">' +
+        (req.bidding_type==='direct'?'<span class="status-badge" style="background:#fef3c7;color:#92400e;font-size:10px">⚡ 직접의뢰</span>':'')+
         '<span class="status-badge '+s.cls+'">'+s.label+(req.status==='bidding'?' ('+bidCount+'명)':'')+'</span>' +
+        '</div>' +
         '</div>' +
         '<div class="request-meta">' +
         '<div class="meta-item">📦 수량: <strong>'+req.quantity.toLocaleString()+'개</strong></div>' +
@@ -1135,7 +1138,11 @@ function renderMfgBidCard(bid) {
 
     return '<div class="mfg-bid-card" onclick="openMfgBidDetail(\''+bid.id+'\')">' +
         '<div class="flex-between">' +
-        '<div><strong>'+title+'</strong><p class="text-xs text-muted" style="margin-top:4px">'+escHtml(req.category||'')+(req.category?' | ':'')+'수량 '+qty+'개</p></div>' +
+        '<div>' +
+        '<strong>'+title+'</strong>' +
+        (req.bidding_type==='direct'?'<span class="status-badge" style="background:#fef3c7;color:#92400e;font-size:10px;margin-left:6px">⚡ 직접의뢰</span>':'')+
+        '<p class="text-xs text-muted" style="margin-top:4px">'+escHtml(req.category||'')+(req.category?' | ':'')+'수량 '+qty+'개</p>' +
+        '</div>' +
         '<div style="text-align:right"><div style="font-weight:700;color:var(--primary)">'+price+'원<span class="text-xs text-muted">/개</span></div><div class="text-xs text-muted">'+date+'</div></div>' +
         '</div>' +
         (actionBtn ? '<div style="display:flex;justify-content:flex-end;margin-top:10px">'+actionBtn+'</div>' : '') +
