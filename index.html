@@ -3,14 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoodsFactory - 굿즈 제작 및 판매 플랫폼</title>
+    <title>foaming — 굿즈 제작 및 판매 플랫폼</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Jua&family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
 <header class="main-header">
     <div class="header-inner">
-        <div class="logo" onclick="navigateTo('home')"><span>🏭 GoodsFactory</span></div>
+        <div class="logo" onclick="navigateTo('home')" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <svg width="48" height="37" viewBox="0 0 86 76" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <radialGradient id="lsb" cx="38%" cy="32%" r="68%"><stop offset="0%" stop-color="#e8e0ff" stop-opacity="0.4"/><stop offset="40%" stop-color="#c8e8ff" stop-opacity="0.2"/><stop offset="75%" stop-color="#ffe0f4" stop-opacity="0.25"/><stop offset="100%" stop-color="#d4f0ff" stop-opacity="0.1"/></radialGradient>
+                    <linearGradient id="lsr1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#b0a0ff" stop-opacity="0.85"/><stop offset="28%" stop-color="#78ccff" stop-opacity="0.72"/><stop offset="58%" stop-color="#ffaade" stop-opacity="0.78"/><stop offset="100%" stop-color="#9ae8d8" stop-opacity="0.68"/></linearGradient>
+                    <linearGradient id="lsr2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#baaeff" stop-opacity="0.8"/><stop offset="50%" stop-color="#80d8ff" stop-opacity="0.68"/><stop offset="100%" stop-color="#ffb0d8" stop-opacity="0.75"/></linearGradient>
+                    <linearGradient id="lsr3" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#88c8ff" stop-opacity="0.72"/><stop offset="100%" stop-color="#d8a8ff" stop-opacity="0.68"/></linearGradient>
+                </defs>
+                <circle cx="28" cy="42" r="22" fill="url(#lsb)" stroke="url(#lsr1)" stroke-width="2.4"/>
+                <ellipse cx="20" cy="32" rx="7" ry="5" fill="white" opacity="0.3" transform="rotate(-20,20,32)"/>
+                <circle cx="19" cy="30" r="2" fill="white" opacity="0.5"/>
+                <circle cx="51" cy="22" r="16" fill="url(#lsb)" stroke="url(#lsr2)" stroke-width="2.0"/>
+                <ellipse cx="45" cy="15" rx="5" ry="3.5" fill="white" opacity="0.3" transform="rotate(-15,45,15)"/>
+                <circle cx="44" cy="14" r="1.5" fill="white" opacity="0.52"/>
+                <circle cx="54" cy="52" r="12" fill="url(#lsb)" stroke="url(#lsr3)" stroke-width="1.8"/>
+                <circle cx="68" cy="35" r="7.5" fill="url(#lsb)" stroke="url(#lsr1)" stroke-width="1.4"/>
+                <circle cx="16" cy="24" r="4.5" fill="none" stroke="url(#lsr2)" stroke-width="1.1" opacity="0.68"/>
+            </svg>
+            <span>foaming</span>
+        </div>
         <nav class="nav-links" id="mainNav">
             <button class="active" onclick="navigateTo('home')">홈</button>
             <button onclick="navigateTo('manufacturer-select')">생산자</button>
@@ -39,33 +60,164 @@
 
     <!-- HOME -->
     <section id="page-home" class="page-section active">
+
+        <!-- 히어로 -->
         <div class="home-hero">
-            <h1>당신의 아이디어를 현실로</h1>
-            <p>굿즈 제작부터 판매까지, 생산자와 의뢰자를 연결하는 스마트 플랫폼</p>
-            <div class="role-cards" style="max-width:900px;grid-template-columns:repeat(3,1fr);margin:0 auto 40px;">
-                <div class="role-card" onclick="navigateAsRole('manufacturer')">
-                    <div class="icon" style="background:rgba(108,92,231,0.1)">🏭</div>
-                    <h3>생산자 (Manufacturer)</h3>
-                    <p>공장 또는 개인 제작자로서<br>의뢰를 수주하세요</p>
+            <div class="home-hero-inner">
+                <div class="home-hero-text">
+                    <div class="hero-badge-new">B2B · B2C · C2B Platform</div>
+                    <h1>당신의 아이디어를<br><em>제품으로</em><br>만드세요</h1>
+                    <p>생산자와 의뢰자를 직접 연결하는<br>스마트 굿즈 제작 플랫폼</p>
+                    <div class="hero-btns-new">
+                        <button class="btn-hero-main" onclick="navigateAsRole('client')">의뢰 시작하기 →</button>
+                        <button class="btn-hero-outline" onclick="navigateAsRole('manufacturer')">생산자로 참여</button>
+                    </div>
                 </div>
-                <div class="role-card" onclick="navigateAsRole('client')">
-                    <div class="icon" style="background:rgba(0,206,201,0.1)">📋</div>
-                    <h3>의뢰자 (Client)</h3>
-                    <p>사업자 또는 개인으로서<br>원하는 굿즈를 의뢰하세요</p>
+                <div class="hero-visual-panel">
+                    <div class="vis-panel-label">실시간 의뢰 현황</div>
+                    <div class="vis-panel-card">
+                        <div class="vis-panel-row">
+                            <span class="vis-panel-title">아크릴 키링 1,000개</span>
+                            <span class="vis-panel-tag vpt-bid">입찰 4건</span>
+                        </div>
+                        <div class="vis-panel-meta">희망단가 2,500원 · 마감 D-3</div>
+                        <div class="vis-panel-chips">
+                            <span class="vis-panel-chip top">🏆 2,100원</span>
+                            <span class="vis-panel-chip">2,300원</span>
+                            <span class="vis-panel-chip">2,400원</span>
+                        </div>
+                    </div>
+                    <div class="vis-panel-card">
+                        <div class="vis-panel-row">
+                            <span class="vis-panel-title">에코백 300장 인쇄</span>
+                            <span class="vis-panel-tag vpt-done">거래완료 ✓</span>
+                        </div>
+                        <div class="vis-panel-meta">확정단가 8,500원 · ⭐ 5.0</div>
+                        <div class="vis-panel-bar"><div class="vis-panel-fill" style="width:100%;background:#10b981"></div></div>
+                    </div>
+                    <div class="vis-panel-card">
+                        <div class="vis-panel-row">
+                            <span class="vis-panel-title">홀로그램 스티커 팩 👥</span>
+                            <span class="vis-panel-tag vpt-group">공동구매</span>
+                        </div>
+                        <div class="vis-panel-meta">148 / 200개 모집 중</div>
+                        <div class="vis-panel-bar"><div class="vis-panel-fill" style="width:74%;background:#60a5fa"></div></div>
+                    </div>
                 </div>
-                <div class="role-card" onclick="navigateTo('marketplace')">
-                    <div class="icon" style="background:rgba(253,121,168,0.1)">🛒</div>
-                    <h3>마켓플레이스</h3>
-                    <p>다양한 굿즈를 구매하고<br>공동구매에 참여하세요</p>
-                </div>
-            </div>
-            <div class="home-stats">
-                <div class="stat-card"><div class="stat-num">2,847</div><div class="stat-label">등록 생산자</div></div>
-                <div class="stat-card"><div class="stat-num">15,234</div><div class="stat-label">완료된 의뢰</div></div>
-                <div class="stat-card"><div class="stat-num">8,912</div><div class="stat-label">활성 의뢰자</div></div>
-                <div class="stat-card"><div class="stat-num">&#8361;3.2B</div><div class="stat-label">총 거래액</div></div>
             </div>
         </div>
+
+        <!-- 통계 바 -->
+        <div class="home-stats-bar">
+            <div class="stat-item"><div class="stat-num">2,847</div><div class="stat-lbl">등록 생산자</div></div>
+            <div class="stat-item"><div class="stat-num">15,234</div><div class="stat-lbl">완료된 의뢰</div></div>
+            <div class="stat-item"><div class="stat-num">₩3.2B</div><div class="stat-lbl">총 거래액</div></div>
+            <div class="stat-item"><div class="stat-num">4.8★</div><div class="stat-lbl">평균 만족도</div></div>
+        </div>
+
+        <!-- 역할 카드 -->
+        <div class="home-section">
+            <div class="home-sec-tag">How it works</div>
+            <div class="home-sec-title">원하는 방식으로 시작하세요</div>
+            <div class="home-sec-sub">생산자, 사업자, 개인 — 누구든 foaming으로 연결됩니다</div>
+            <div class="home-role-grid">
+                <div class="home-role-card" onclick="navigateAsRole('manufacturer')">
+                    <div class="home-role-icon hri-v">🏭</div>
+                    <h3>생산자 (Manufacturer)</h3>
+                    <p>전문 분야 의뢰를 골라 입찰하고 안정적인 수주 채널을 만드세요.</p>
+                    <div class="home-role-link">생산자로 참여 →</div>
+                </div>
+                <div class="home-role-card" onclick="navigateAsRole('client')">
+                    <div class="home-role-icon hri-b">🏢</div>
+                    <h3>사업자 의뢰 (B2B)</h3>
+                    <p>의뢰를 등록하면 검증된 생산자들이 경쟁 입찰로 최적가를 제시합니다.</p>
+                    <div class="home-role-link">사업자로 시작 →</div>
+                </div>
+                <div class="home-role-card" onclick="navigateTo('marketplace')">
+                    <div class="home-role-icon hri-p">🛒</div>
+                    <h3>마켓플레이스</h3>
+                    <p>소량도 OK. 공동구매로 대량 단가를 실현하세요.</p>
+                    <div class="home-role-link">마켓 둘러보기 →</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process -->
+        <div class="home-process-bg">
+            <div class="home-process-inner">
+                <div class="home-sec-tag">Process</div>
+                <div class="home-sec-title">4단계로 완성되는 거래</div>
+                <div class="home-sec-sub">의뢰부터 배송·정산까지 투명하게</div>
+                <div class="home-steps">
+                    <div class="home-step">
+                        <div class="home-step-circle hi">1</div>
+                        <h4>의뢰 등록</h4>
+                        <p>수량·단가·디자인 파일 업로드</p>
+                    </div>
+                    <div class="home-step">
+                        <div class="home-step-circle">2</div>
+                        <h4>입찰 수신</h4>
+                        <p>생산자 견적 비교 후 선택</p>
+                    </div>
+                    <div class="home-step">
+                        <div class="home-step-circle">3</div>
+                        <h4>제작·배송</h4>
+                        <p>에스크로 결제 후 제작 진행</p>
+                    </div>
+                    <div class="home-step">
+                        <div class="home-step-circle">4</div>
+                        <h4>거래 완료</h4>
+                        <p>수령 확인 후 자동 정산</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform 특장점 -->
+        <div class="home-feat-bg">
+            <div class="home-feat-inner">
+                <div class="home-sec-tag">Platform</div>
+                <div class="home-sec-title">왜 foaming인가요?</div>
+                <div class="home-sec-sub">단순 연결을 넘어, 거래 전 과정을 안전하게 지원합니다</div>
+                <div class="home-feat-grid">
+                    <div class="home-feat-left">
+                        <div class="home-feat-item">
+                            <div class="home-feat-icon">⚡</div>
+                            <div><h4>자동 매칭 시스템</h4><p>마감일 도래 시 최저가 입찰자에게 자동 매칭. 번거로운 선택 과정 없이 빠르게 진행됩니다.</p></div>
+                        </div>
+                        <div class="home-feat-item">
+                            <div class="home-feat-icon">🔒</div>
+                            <div><h4>에스크로 안전 결제</h4><p>수령 확인 전까지 결제금 보관. 생산자와 의뢰자 모두 안전하게 거래합니다.</p></div>
+                        </div>
+                        <div class="home-feat-item">
+                            <div class="home-feat-icon">👥</div>
+                            <div><h4>공동구매 집결</h4><p>소량 수요를 모아 대량 단가 실현. 원하는 굿즈를 더 저렴하게 만들 수 있습니다.</p></div>
+                        </div>
+                        <div class="home-feat-item">
+                            <div class="home-feat-icon">⭐</div>
+                            <div><h4>신뢰 기반 평점</h4><p>거래 완료 후 자동 리뷰 유도. 검증된 생산자를 쉽게 찾을 수 있습니다.</p></div>
+                        </div>
+                    </div>
+                    <div class="home-feat-right">
+                        <div class="home-mock">
+                            <div class="home-mock-h"><span class="home-mock-name">아크릴 키링 1,000개</span><span class="home-mock-badge">입찰중 4건</span></div>
+                            <div class="home-mock-body">희망단가 2,500원 · 최저가 2,100원 (16% 절감)</div>
+                        </div>
+                        <div class="home-mock">
+                            <div class="home-mock-h"><span class="home-mock-name">홀로그램 스티커 팩 👥</span><span class="home-mock-badge">공동구매</span></div>
+                            <div class="home-mock-body">148 / 200개 모집 (74%)</div>
+                            <div class="home-mock-bar"><div class="home-mock-fill" style="width:74%"></div></div>
+                        </div>
+                        <div class="home-mock">
+                            <div class="home-mock-h"><span class="home-mock-name">에코백 인쇄 300장</span><span class="home-mock-badge done">거래완료 ✓</span></div>
+                            <div class="home-mock-body">확정단가 8,500원 · 패브릭工房</div>
+                            <div class="home-mock-stars">★★★★★ 만족도 5.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </section>
 
     <!-- MANUFACTURER SELECT -->
