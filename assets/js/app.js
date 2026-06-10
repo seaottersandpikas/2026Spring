@@ -28,15 +28,35 @@ function initApp() {
     var loginBtn = document.getElementById('loginSubmitBtn');
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '로그인'; }
 
+    // 저장된 세션을 5초 내에 검증 — 실패 시 즉시 클리어 (VPN/네트워크 오류 대응)
+    var sessionCheckDone = false;
+    var sessionTimeout = setTimeout(function() {
+        if (!sessionCheckDone) {
+            console.warn('세션 검증 타임아웃 → 세션 클리어');
+            localStorage.removeItem('gf-auth-v1');
+            sessionCheckDone = true;
+        }
+    }, 5000);
+
     // 인증 상태 변경 감지
     Auth.onAuthStateChange(function(event, session) {
         console.log('🔔 Auth 이벤트:', event);
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-            AppState.currentUser = session.user;
-            if (event === 'SIGNED_IN') {
-                closeModal('loginModal');
-                closeModal('signupModal');
+        if (event === 'INITIAL_SESSION') {
+            clearTimeout(sessionTimeout);
+            sessionCheckDone = true;
+            if (session) {
+                AppState.currentUser = session.user;
+                Auth.getProfile().then(function(p) {
+                    AppState.currentProfile = p;
+                    updateUILoggedIn();
+                });
             }
+        } else if (event === 'SIGNED_IN' && session) {
+            clearTimeout(sessionTimeout);
+            sessionCheckDone = true;
+            AppState.currentUser = session.user;
+            closeModal('loginModal');
+            closeModal('signupModal');
             Auth.getProfile().then(function(p) {
                 AppState.currentProfile = p;
                 updateUILoggedIn();
@@ -46,11 +66,12 @@ function initApp() {
             AppState.currentProfile = null;
             updateUILoggedOut();
         } else if (event === 'TOKEN_REFRESHED') {
-            // 정상 토큰 갱신 — 아무것도 안 해도 됨
+            clearTimeout(sessionTimeout);
+            sessionCheckDone = true;
         }
     });
 
-    // refresh_token 연속 실패 감지 → 세션 자동 클리어
+    // refresh_token 연속 실패 → 세션 자동 클리어
     var _refreshFailCount = 0;
     var _origFetch = window.fetch;
     window.fetch = function() {
@@ -58,8 +79,8 @@ function initApp() {
         return _origFetch.apply(this, args).then(function(res) {
             if (String(args[0]).includes('grant_type=refresh_token') && !res.ok) {
                 _refreshFailCount++;
-                if (_refreshFailCount >= 3) {
-                    console.warn('세션 갱신 반복 실패 → 세션 초기화');
+                if (_refreshFailCount >= 2) {
+                    console.warn('세션 갱신 실패 → 세션 초기화');
                     localStorage.removeItem('gf-auth-v1');
                     _refreshFailCount = 0;
                     window.supabaseClient.auth.signOut({ scope: 'local' }).catch(function(){});
@@ -71,7 +92,7 @@ function initApp() {
         }).catch(function(err) {
             if (String(args[0]).includes('grant_type=refresh_token')) {
                 _refreshFailCount++;
-                if (_refreshFailCount >= 3) {
+                if (_refreshFailCount >= 2) {
                     console.warn('세션 갱신 네트워크 실패 → 세션 초기화');
                     localStorage.removeItem('gf-auth-v1');
                     _refreshFailCount = 0;
