@@ -29,13 +29,10 @@ function initApp() {
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '로그인'; }
 
     // 인증 상태 변경 감지
-    // INITIAL_SESSION: 페이지 로드 시 기존 세션 복원 (모달 닫지 않음)
-    // SIGNED_IN: 실제 로그인 액션 (모달 닫기)
     Auth.onAuthStateChange(function(event, session) {
         console.log('🔔 Auth 이벤트:', event);
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
             AppState.currentUser = session.user;
-            // 실제 로그인 버튼 클릭으로 발생한 경우만 모달 닫기
             if (event === 'SIGNED_IN') {
                 closeModal('loginModal');
                 closeModal('signupModal');
@@ -48,8 +45,42 @@ function initApp() {
             AppState.currentUser    = null;
             AppState.currentProfile = null;
             updateUILoggedOut();
+        } else if (event === 'TOKEN_REFRESHED') {
+            // 정상 토큰 갱신 — 아무것도 안 해도 됨
         }
     });
+
+    // refresh_token 연속 실패 감지 → 세션 자동 클리어
+    var _refreshFailCount = 0;
+    var _origFetch = window.fetch;
+    window.fetch = function() {
+        var args = arguments;
+        return _origFetch.apply(this, args).then(function(res) {
+            if (String(args[0]).includes('grant_type=refresh_token') && !res.ok) {
+                _refreshFailCount++;
+                if (_refreshFailCount >= 3) {
+                    console.warn('세션 갱신 반복 실패 → 세션 초기화');
+                    localStorage.removeItem('gf-auth-v1');
+                    _refreshFailCount = 0;
+                    window.supabaseClient.auth.signOut({ scope: 'local' }).catch(function(){});
+                }
+            } else if (String(args[0]).includes('grant_type=refresh_token') && res.ok) {
+                _refreshFailCount = 0;
+            }
+            return res;
+        }).catch(function(err) {
+            if (String(args[0]).includes('grant_type=refresh_token')) {
+                _refreshFailCount++;
+                if (_refreshFailCount >= 3) {
+                    console.warn('세션 갱신 네트워크 실패 → 세션 초기화');
+                    localStorage.removeItem('gf-auth-v1');
+                    _refreshFailCount = 0;
+                    window.supabaseClient.auth.signOut({ scope: 'local' }).catch(function(){});
+                }
+            }
+            throw err;
+        });
+    };
 
     // 매칭 이력 로드
     loadMatchHistoryBiz();
