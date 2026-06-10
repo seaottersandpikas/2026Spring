@@ -24,26 +24,15 @@ function initApp() {
     }
     console.log('✅ App 초기화');
 
-    // 버튼 상태 리셋
+    // 버튼 상태 리셋 (bfcache 대응)
     var loginBtn = document.getElementById('loginSubmitBtn');
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '로그인'; }
-
-    // 저장된 세션을 5초 내에 검증 — 실패 시 즉시 클리어 (VPN/네트워크 오류 대응)
-    var sessionCheckDone = false;
-    var sessionTimeout = setTimeout(function() {
-        if (!sessionCheckDone) {
-            console.warn('세션 검증 타임아웃 → 세션 클리어');
-            localStorage.removeItem('gf-auth-v1');
-            sessionCheckDone = true;
-        }
-    }, 5000);
 
     // 인증 상태 변경 감지
     Auth.onAuthStateChange(function(event, session) {
         console.log('🔔 Auth 이벤트:', event);
         if (event === 'INITIAL_SESSION') {
-            clearTimeout(sessionTimeout);
-            sessionCheckDone = true;
+            // 페이지 로드 시 기존 세션 복원 (모달 건드리지 않음)
             if (session) {
                 AppState.currentUser = session.user;
                 Auth.getProfile().then(function(p) {
@@ -52,8 +41,6 @@ function initApp() {
                 });
             }
         } else if (event === 'SIGNED_IN' && session) {
-            clearTimeout(sessionTimeout);
-            sessionCheckDone = true;
             AppState.currentUser = session.user;
             closeModal('loginModal');
             closeModal('signupModal');
@@ -65,43 +52,8 @@ function initApp() {
             AppState.currentUser    = null;
             AppState.currentProfile = null;
             updateUILoggedOut();
-        } else if (event === 'TOKEN_REFRESHED') {
-            clearTimeout(sessionTimeout);
-            sessionCheckDone = true;
         }
     });
-
-    // refresh_token 연속 실패 → 세션 자동 클리어
-    var _refreshFailCount = 0;
-    var _origFetch = window.fetch;
-    window.fetch = function() {
-        var args = arguments;
-        return _origFetch.apply(this, args).then(function(res) {
-            if (String(args[0]).includes('grant_type=refresh_token') && !res.ok) {
-                _refreshFailCount++;
-                if (_refreshFailCount >= 2) {
-                    console.warn('세션 갱신 실패 → 세션 초기화');
-                    localStorage.removeItem('gf-auth-v1');
-                    _refreshFailCount = 0;
-                    window.supabaseClient.auth.signOut({ scope: 'local' }).catch(function(){});
-                }
-            } else if (String(args[0]).includes('grant_type=refresh_token') && res.ok) {
-                _refreshFailCount = 0;
-            }
-            return res;
-        }).catch(function(err) {
-            if (String(args[0]).includes('grant_type=refresh_token')) {
-                _refreshFailCount++;
-                if (_refreshFailCount >= 2) {
-                    console.warn('세션 갱신 네트워크 실패 → 세션 초기화');
-                    localStorage.removeItem('gf-auth-v1');
-                    _refreshFailCount = 0;
-                    window.supabaseClient.auth.signOut({ scope: 'local' }).catch(function(){});
-                }
-            }
-            throw err;
-        });
-    };
 
     // 매칭 이력 로드
     loadMatchHistoryBiz();
