@@ -12,6 +12,7 @@ DECLARE
   g1_id uuid; g2_id uuid;
   r3_id uuid;
   b3_id uuid;
+  dummy_bid1 uuid; dummy_bid2 uuid; dummy_bid3 uuid; dummy_bid4 uuid;
   deadline   date := CURRENT_DATE + 14;
 BEGIN
 
@@ -52,12 +53,24 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
   -- ── 2. 매칭이력 추가 (마켓플레이스 최근 매칭 조회용) ──
+  dummy_bid1 := gen_random_uuid();
+  dummy_bid2 := gen_random_uuid();
+  dummy_bid3 := gen_random_uuid();
+  dummy_bid4 := gen_random_uuid();
+
+  INSERT INTO bids(id, request_id, manufacturer_id, manufacturer_name, unit_price, delivery_days, status)
+  VALUES
+    (dummy_bid1, g1_id,             mfg_id, '굿즈팩토리 공장', 720,   10, 'selected'),
+    (dummy_bid2, g2_id,             mfg_id, '굿즈팩토리 공장', 13500, 14, 'selected'),
+    (dummy_bid3, r3_id,             mfg_id, '굿즈팩토리 공장', 2800,  12, 'selected'),
+    (dummy_bid4, r3_id,             mfg_id, '굿즈팩토리 공장', 2100,  10, 'selected');
+
   INSERT INTO match_history(request_id, bid_id, category, title, quantity, target_price, matched_price, request_type)
   VALUES
-    (g1_id, gen_random_uuid(), '문구/스티커', '인디밴드 굿즈 - 포토카드 세트', 100, 800, 720, 'group'),
-    (g2_id, gen_random_uuid(), '의류/패브릭', '동아리 단체 티셔츠 제작', 50, 15000, 13500, 'group'),
-    (gen_random_uuid(), gen_random_uuid(), '아크릴굿즈', '아이돌 응원 아크릴 스탠드', 300, 3200, 2800, 'business'),
-    (gen_random_uuid(), gen_random_uuid(), '금속/뱃지', '기업 기념 배지 제작', 500, 2500, 2100, 'business');
+    (g1_id, dummy_bid1, '문구/스티커', '인디밴드 굿즈 - 포토카드 세트', 100, 800,   720,   'group'),
+    (g2_id, dummy_bid2, '의류/패브릭', '동아리 단체 티셔츠 제작',       50,  15000, 13500, 'group'),
+    (r3_id, dummy_bid3, '아크릴굿즈', '아이돌 응원 아크릴 스탠드',      300, 3200,  2800,  'business'),
+    (r3_id, dummy_bid4, '금속/뱃지',  '기업 기념 배지 제작',            500, 2500,  2100,  'business');
 
   -- ── 3. 후기 추가 3건 ──────────────────────────────
   INSERT INTO posts(user_id, post_type, title, content, rating, author_name, author_type, manufacturer_id)
