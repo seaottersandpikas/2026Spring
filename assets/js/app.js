@@ -2918,3 +2918,11 @@ document.addEventListener('click',function(e){
     if(d&&d.classList.contains('show')&&!e.target.closest('.nav-user'))d.classList.remove('show');
 });
 document.addEventListener('DOMContentLoaded', initApp);
+
+// bfcache(뒤로가기 캐시) 복원 시에도 버튼 리셋
+window.addEventListener('pageshow', function(e) {
+    var loginBtn = document.getElementById('loginSubmitBtn');
+    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '로그인'; }
+    var signupBtn = document.getElementById('signupSubmitBtn');
+    if (signupBtn) { signupBtn.disabled = false; signupBtn.textContent = '회원가입'; }
+});
