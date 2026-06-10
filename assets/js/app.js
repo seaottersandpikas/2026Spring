@@ -24,26 +24,12 @@ function initApp() {
     }
     console.log('✅ App 초기화');
 
-    // 버튼 상태 리셋 (bfcache 대응)
-    var loginBtn = document.getElementById('loginSubmitBtn');
-    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '로그인'; }
-
-    // 인증 상태 변경 감지
+    // 인증 상태 변경 → UI 즉시 반영
     Auth.onAuthStateChange(function(event, session) {
         console.log('🔔 Auth 이벤트:', event);
-        if (event === 'INITIAL_SESSION') {
-            // 페이지 로드 시 기존 세션 복원 (모달 건드리지 않음)
-            if (session) {
-                AppState.currentUser = session.user;
-                Auth.getProfile().then(function(p) {
-                    AppState.currentProfile = p;
-                    updateUILoggedIn();
-                });
-            }
-        } else if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && session) {
             AppState.currentUser = session.user;
-            closeModal('loginModal');
-            closeModal('signupModal');
+            // 프로필 비동기 로드 (UI 블로킹 없음)
             Auth.getProfile().then(function(p) {
                 AppState.currentProfile = p;
                 updateUILoggedIn();
@@ -52,6 +38,17 @@ function initApp() {
             AppState.currentUser    = null;
             AppState.currentProfile = null;
             updateUILoggedOut();
+        }
+    });
+
+    // 기존 세션 확인
+    Auth.getUser().then(function(user) {
+        if (user) {
+            AppState.currentUser = user;
+            Auth.getProfile().then(function(p) {
+                AppState.currentProfile = p;
+                updateUILoggedIn();
+            });
         }
     });
 
@@ -190,7 +187,8 @@ async function handleLogin() {
 
     try {
         await Auth.signIn(email, password);
-        // 모달 닫기 및 UI 업데이트는 onAuthStateChange(SIGNED_IN)에서 처리
+        // onAuthStateChange → SIGNED_IN 이벤트가 UI 처리
+        closeModal('loginModal');
         document.getElementById('loginEmail').value    = '';
         document.getElementById('loginPassword').value = '';
         var hintEl = document.getElementById('loginRoleHint');
@@ -2914,11 +2912,3 @@ document.addEventListener('click',function(e){
     if(d&&d.classList.contains('show')&&!e.target.closest('.nav-user'))d.classList.remove('show');
 });
 document.addEventListener('DOMContentLoaded', initApp);
-
-// bfcache(뒤로가기 캐시) 복원 시에도 버튼 리셋
-window.addEventListener('pageshow', function(e) {
-    var loginBtn = document.getElementById('loginSubmitBtn');
-    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '로그인'; }
-    var signupBtn = document.getElementById('signupSubmitBtn');
-    if (signupBtn) { signupBtn.disabled = false; signupBtn.textContent = '회원가입'; }
-});

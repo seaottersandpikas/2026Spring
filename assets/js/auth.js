@@ -41,6 +41,8 @@ var Auth = {
     },
 
     async signIn(email, password) {
+        // 기존 세션 완전히 정리 후 로그인
+        try { await getSupabase().auth.signOut({ scope: 'local' }); } catch(e) {}
         var res = await getSupabase().auth.signInWithPassword({ email, password });
         if (res.error) throw res.error;
         return res.data;
@@ -48,8 +50,7 @@ var Auth = {
 
     async signOut() {
         try {
-            // scope 생략 = 전체 로그아웃 (서버 세션도 무효화)
-            await getSupabase().auth.signOut();
+            await getSupabase().auth.signOut({ scope: 'local' });
         } catch(e) {
             console.warn('signOut 경고 (무시):', e.message);
         }
