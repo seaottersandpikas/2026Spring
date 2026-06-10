@@ -41,8 +41,8 @@ var Auth = {
     },
 
     async signIn(email, password) {
-        // 기존 세션 완전히 정리 후 로그인
-        try { await getSupabase().auth.signOut({ scope: 'local' }); } catch(e) {}
+        // 로컬 스토리지 세션 먼저 클리어 (깨진 세션 방지)
+        localStorage.removeItem('gf-auth-v1');
         var res = await getSupabase().auth.signInWithPassword({ email, password });
         if (res.error) throw res.error;
         return res.data;
@@ -50,7 +50,8 @@ var Auth = {
 
     async signOut() {
         try {
-            await getSupabase().auth.signOut({ scope: 'local' });
+            localStorage.removeItem('gf-auth-v1');
+            await getSupabase().auth.signOut();
         } catch(e) {
             console.warn('signOut 경고 (무시):', e.message);
         }

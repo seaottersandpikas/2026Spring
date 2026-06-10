@@ -27,9 +27,12 @@ function initApp() {
     // 인증 상태 변경 → UI 즉시 반영
     Auth.onAuthStateChange(function(event, session) {
         console.log('🔔 Auth 이벤트:', event);
-        if (event === 'SIGNED_IN' && session) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
             AppState.currentUser = session.user;
-            // 프로필 비동기 로드 (UI 블로킹 없음)
+            if (event === 'SIGNED_IN') {
+                closeModal('loginModal');
+                closeModal('signupModal');
+            }
             Auth.getProfile().then(function(p) {
                 AppState.currentProfile = p;
                 updateUILoggedIn();
@@ -41,9 +44,9 @@ function initApp() {
         }
     });
 
-    // 기존 세션 확인
+    // 기존 세션 확인 (INITIAL_SESSION 이벤트가 없는 구버전 SDK 대비)
     Auth.getUser().then(function(user) {
-        if (user) {
+        if (user && !AppState.currentUser) {
             AppState.currentUser = user;
             Auth.getProfile().then(function(p) {
                 AppState.currentProfile = p;
