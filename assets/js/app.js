@@ -24,18 +24,22 @@ function initApp() {
     }
     console.log('✅ App 초기화');
 
-    // 페이지 로드 시 버튼 상태 강제 리셋 (Safari 캐시 대응)
+    // 버튼 상태 리셋
     var loginBtn = document.getElementById('loginSubmitBtn');
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '로그인'; }
 
-    // 인증 상태 변경 → UI 즉시 반영
+    // 인증 상태 변경 감지
+    // INITIAL_SESSION: 페이지 로드 시 기존 세션 복원 (모달 닫지 않음)
+    // SIGNED_IN: 실제 로그인 액션 (모달 닫기)
     Auth.onAuthStateChange(function(event, session) {
         console.log('🔔 Auth 이벤트:', event);
-        if (event === 'SIGNED_IN' && session) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
             AppState.currentUser = session.user;
-            // 열려 있는 로그인/회원가입 모달 닫기
-            closeModal('loginModal');
-            closeModal('signupModal');
+            // 실제 로그인 버튼 클릭으로 발생한 경우만 모달 닫기
+            if (event === 'SIGNED_IN') {
+                closeModal('loginModal');
+                closeModal('signupModal');
+            }
             Auth.getProfile().then(function(p) {
                 AppState.currentProfile = p;
                 updateUILoggedIn();
@@ -44,17 +48,6 @@ function initApp() {
             AppState.currentUser    = null;
             AppState.currentProfile = null;
             updateUILoggedOut();
-        }
-    });
-
-    // 기존 세션 확인
-    Auth.getUser().then(function(user) {
-        if (user) {
-            AppState.currentUser = user;
-            Auth.getProfile().then(function(p) {
-                AppState.currentProfile = p;
-                updateUILoggedIn();
-            });
         }
     });
 
@@ -193,8 +186,7 @@ async function handleLogin() {
 
     try {
         await Auth.signIn(email, password);
-        // onAuthStateChange → SIGNED_IN 이벤트가 UI 처리
-        closeModal('loginModal');
+        // 모달 닫기 및 UI 업데이트는 onAuthStateChange(SIGNED_IN)에서 처리
         document.getElementById('loginEmail').value    = '';
         document.getElementById('loginPassword').value = '';
         var hintEl = document.getElementById('loginRoleHint');
