@@ -115,6 +115,7 @@ function applyRoleBasedUI() {
     var type = p ? p.user_type : '';
     var isManufacturer = (type === 'manufacturer');
     var isClient       = (type === 'personal' || type === 'business');
+    var isLoggedIn     = !!AppState.currentUser;
 
     // 네비 버튼 시각적 비활성화
     var navMfg    = document.querySelector('#mainNav button[onclick*="manufacturer-select"]');
@@ -124,21 +125,25 @@ function applyRoleBasedUI() {
         navClient.style.opacity = (!type || isClient)       ? '1' : '0.4';
     }
 
-    // 마켓플레이스: 후기작성=소비자전용, 홍보등록=생산자전용
+    // 후기 작성: 로그인 + 의뢰자만
     var reviewBtn = document.getElementById('mp-write-review-btn');
-    var promoBtn  = document.getElementById('mp-write-promo-btn');
-    if (reviewBtn) reviewBtn.style.display = (!type || isClient) ? '' : 'none';
-    if (promoBtn)  promoBtn.style.display  = (!type || isManufacturer) ? '' : 'none';
+    if (reviewBtn) reviewBtn.style.display = (isLoggedIn && isClient) ? '' : 'none';
 
-    // 공동제작 탭: 생산자는 "모집 중" 탭만, 등록/참여 탭 + 의뢰작성 버튼 숨김
-    var groupCreateBtn = document.querySelector('#mp-group .btn-primary.btn-sm');
+    // 홍보 등록: 로그인 + 생산자만
+    var promoBtn = document.getElementById('mp-write-promo-btn');
+    if (promoBtn) promoBtn.style.display = (isLoggedIn && isManufacturer) ? '' : 'none';
+
+    // 공동제작 탭: 생산자 또는 비로그인 → 모집 중 탭만
+    var groupCreateBtn = document.querySelector('#mp-group > div.flex-between .btn-primary');
     var subtabMine     = document.querySelector('#mp-group-subtabs .tab-btn:nth-child(2)');
     var subtabJoined   = document.querySelector('#mp-group-subtabs .tab-btn:nth-child(3)');
-    if (isManufacturer) {
+    var hideGroupExtra = isManufacturer || !isLoggedIn;
+
+    if (hideGroupExtra) {
         if (groupCreateBtn) groupCreateBtn.style.display = 'none';
         if (subtabMine)     subtabMine.style.display     = 'none';
         if (subtabJoined)   subtabJoined.style.display   = 'none';
-        // 혹시 mine/joined 탭이 열려있으면 all로 되돌리기
+        // 혹시 mine/joined 탭 열려있으면 all로 되돌리기
         var tabMine   = document.getElementById('mp-group-tab-mine');
         var tabJoined = document.getElementById('mp-group-tab-joined');
         var tabAll    = document.getElementById('mp-group-tab-all');
@@ -1643,6 +1648,25 @@ async function loadMpMassRequests(category) {
                 '</div>';
         }).join('');
     } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류가 발생했습니다.</p></div>'; }
+}
+
+// 공동제작 의뢰 작성 버튼 — 비로그인/생산자 차단
+function requestGroupCreate() {
+    if (!AppState.currentUser) {
+        var hintEl = document.getElementById('loginRoleHint');
+        var pendEl = document.getElementById('loginPendingRole');
+        if (hintEl) { hintEl.textContent = '📋 공동제작 의뢰를 작성하려면 의뢰자로 로그인하세요.'; hintEl.style.display = 'block'; }
+        if (pendEl) pendEl.value = 'client';
+        openModal('loginModal');
+        return;
+    }
+    var p = AppState.currentProfile;
+    if (p && p.user_type === 'manufacturer') {
+        showToast('의뢰자 계정으로 로그인 후 공동제작 의뢰를 작성할 수 있습니다.', 'error');
+        return;
+    }
+    navigateTo('client-personal');
+    showPersonalTab('group', null);
 }
 
 // 공동제작 서브탭 전환
