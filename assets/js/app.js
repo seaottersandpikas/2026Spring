@@ -1990,7 +1990,12 @@ function renderPromoCard(post, isMine) {
         (isMine ? '<span class="status-badge" style="background:var(--lavender);color:var(--primary);margin-left:6px;font-size:10px">내 글</span>' : '') +
         '<span class="text-xs text-muted" style="margin-left:8px">'+date+'</span>' +
         '</div>' +
-        (isMine ? '<button class="btn btn-sm btn-secondary" style="font-size:11px;padding:3px 10px;margin-right:4px" onclick="event.stopPropagation();openEditPromoModal(\''+post.id+'\')">수정</button><button class="btn btn-sm btn-danger" style="font-size:11px;padding:3px 10px" onclick="event.stopPropagation();deletePost(\''+post.id+'\',\'promo\')">삭제</button>' : '') +
+        (isMine
+            ? '<div style="display:flex;gap:6px">' +
+              '<button class="btn btn-sm btn-secondary" style="font-size:11px;padding:3px 10px" onclick="event.stopPropagation();openEditPromoModal(\''+post.id+'\')">수정</button>' +
+              '<button class="btn btn-sm" style="font-size:11px;padding:3px 10px;background:#e05c5c;color:#fff" onclick="event.stopPropagation();deletePost(\''+post.id+'\',\'promo\')">삭제</button>' +
+              '</div>'
+            : '') +
         '</div>' +
         '<h4 style="font-size:17px;font-weight:700;margin:4px 0 8px;color:var(--dark)">'+escHtml(post.title)+'</h4>' +
         '<div class="promo-card-body" id="body-'+post.id+'">' +
