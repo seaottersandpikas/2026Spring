@@ -809,18 +809,34 @@ async function submitGroupRequest() {
     var totalQty = parseInt(document.getElementById('group-total-qty').value)||0;
     var minQty   = parseInt(document.getElementById('group-min-qty').value)||0;
     var price    = parseInt(document.getElementById('group-price').value)||0;
+    var myQty    = parseInt(document.getElementById('group-my-qty').value)||0;
     if (!title||!category||!totalQty||!minQty||!price) { showToast('필수 항목을 모두 입력해주세요.','error'); return; }
     try {
         var gTypeEl = document.querySelector('input[name="group-type"]:checked');
-        await Requests.create({
+        var newReq = await Requests.create({
             request_type:'group', title, category,
             quantity:totalQty, min_quantity:minQty, target_price:price,
             recruit_deadline: document.getElementById('group-recruit-deadline').value||null,
             bid_deadline:     document.getElementById('group-bid-deadline').value||null,
             design_guide:     document.getElementById('group-design-guide').value,
             detail_note:      document.getElementById('group-detail-note').value,
-            current_quantity:0, status:'bidding',
+            current_quantity: myQty > 0 ? myQty : 0,
+            status:'bidding',
             bidding_type: gTypeEl ? gTypeEl.value : 'bidding'
+        });
+        // 본인 참여 수량 등록
+        if (myQty > 0) {
+            await window.supabaseClient.from('group_participants').insert([{
+                request_id: newReq.id,
+                user_id:    AppState.currentUser.id,
+                quantity:   myQty
+            }]).catch(function(e){ console.warn('참여 기록 실패:', e.message); });
+        }
+        // 폼 초기화
+        ['group-title','group-total-qty','group-min-qty','group-price',
+         'group-recruit-deadline','group-bid-deadline','group-design-guide',
+         'group-detail-note','group-my-qty'].forEach(function(id){
+            var el=document.getElementById(id); if(el) el.value='';
         });
         showToast('공동제작 의뢰가 등록되었습니다! 🎉','success');
         showPersonalTab('myorders', null);
@@ -919,15 +935,13 @@ function applyBizFilter() {
 function switchOrderType(type, btn) {
     document.querySelectorAll('.order-type-tab').forEach(function(b){ b.classList.remove('active'); });
     if (btn) btn.classList.add('active');
-    var ind = document.getElementById('individual-orders-section');
-    var grp = document.getElementById('group-orders-section');
-    if (type === 'individual') {
-        if (ind) ind.style.display = 'block';
-        if (grp) grp.style.display = 'none';
-    } else {
-        if (ind) ind.style.display = 'none';
-        if (grp) grp.style.display = 'block';
-    }
+    var ind    = document.getElementById('individual-orders-section');
+    var grp    = document.getElementById('group-orders-section');
+    var joined = document.getElementById('joined-orders-section');
+    if (ind)    ind.style.display    = (type === 'individual') ? 'block' : 'none';
+    if (grp)    grp.style.display    = (type === 'group')      ? 'block' : 'none';
+    if (joined) joined.style.display = (type === 'joined')     ? 'block' : 'none';
+    if (type === 'joined') loadMyJoinedGroups();
 }
 
 function filterIndividualStatus(status, btn) {
@@ -1589,21 +1603,22 @@ async function loadMpGroupRequests() {
 
         function renderGroupCard(req, isMine) {
             var pct = req.min_quantity ? Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
-            return '<div class="request-card">' +
+            return '<div class="request-card" style="cursor:pointer" onclick="openGroupDetail(\''+req.id+'\')">' +
                 '<div class="request-card-header">' +
                 '<h4>👥 '+escHtml(req.title)+(isMine?'<span class="status-badge" style="background:var(--lavender);color:var(--primary);margin-left:6px;font-size:10px">내 글</span>':'')+'</h4>' +
                 '<span class="status-badge status-recruiting">모집중</span></div>' +
                 '<div class="request-meta">' +
                 '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
                 '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+                (req.recruit_deadline?'<div class="meta-item">📅 마감: <strong>'+req.recruit_deadline+'</strong></div>':'')+
                 '</div>' +
                 '<div class="co-purchase-info">' +
                 '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</strong></div>' +
                 '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
                 '</div>' +
                 '<div class="request-actions">' +
-                '<button class="btn btn-primary btn-sm" onclick="joinGroupPurchase(\''+req.id+'\')">참여하기</button>' +
-                (isMine ? '<button class="btn btn-danger btn-sm" onclick="deleteGroupRequest(\''+req.id+'\')">삭제</button>' : '') +
+                '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();joinGroupPurchase(\''+req.id+'\')">참여하기</button>' +
+                (isMine ? '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteGroupRequest(\''+req.id+'\')">삭제</button>' : '') +
                 '</div></div>';
         }
 
@@ -1743,12 +1758,8 @@ async function loadMpReviews() {
         var myList    = uid ? list.filter(function(p){ return p.user_id === uid; }) : [];
         var otherList = uid ? list.filter(function(p){ return p.user_id !== uid; }) : list;
 
-        if (myList.length > 0 && mySection && myGrid) {
-            mySection.style.display = 'block';
-            myGrid.innerHTML = myList.map(function(post){ return renderFeedCard(post, true); }).join('');
-        } else if (mySection) {
-            mySection.style.display = 'none';
-        }
+        _myReviewsExpanded = false;
+        renderMyReviewsSection(myList);
 
         if (!otherList.length) {
             grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">✍️</div><p>첫 번째 후기를 작성해보세요!</p></div>';
@@ -1816,7 +1827,7 @@ function renderFeedCard(post, isMine) {
         ? '<span class="status-badge" style="background:var(--lavender);color:var(--primary);margin-left:6px;font-size:10px">내 글</span>'
         : '';
     var deleteBtn = isMine
-        ? '<button class="btn btn-sm btn-danger" style="font-size:11px;padding:3px 10px" onclick="event.stopPropagation();deletePost(\''+post.id+'\',\''+post.post_type === 'review' ? 'reviews' : 'promo'+'\')">삭제</button>'
+        ? '<button class="btn btn-sm btn-danger" style="font-size:11px;padding:3px 10px" onclick="event.stopPropagation();deletePost(\''+post.id+'\',\''+(post.post_type === 'review' ? 'reviews' : 'promo')+'\')">삭제</button>'
         : '';
 
     var txContext = '';
@@ -1920,9 +1931,28 @@ function togglePromoExpand(postId) {
     var fade = document.getElementById('fade-'+postId);
     if (!body) return;
     var expanded = body.classList.toggle('expanded');
-    if (fade) fade.innerHTML = expanded
-        ? '<button class="btn btn-sm btn-secondary" style="font-size:12px" onclick="event.stopPropagation();togglePromoExpand(\''+postId+'\')">접기 ▲</button>'
-        : '<button class="btn btn-sm btn-secondary" style="font-size:12px" onclick="event.stopPropagation();togglePromoExpand(\''+postId+'\')">더보기 ▼</button>';
+    if (fade) {
+        fade.style.display = expanded ? 'none' : 'flex';
+        fade.innerHTML = '<button class="btn btn-sm btn-secondary" style="font-size:12px" onclick="event.stopPropagation();togglePromoExpand(\''+postId+'\')">더보기 ▼</button>';
+    }
+    // 접기 버튼은 카드 하단에 별도 표시
+    var collapseBtn = document.getElementById('collapse-'+postId);
+    if (expanded) {
+        if (!collapseBtn) {
+            var card = document.getElementById('promo-'+postId);
+            if (card) {
+                var btn = document.createElement('div');
+                btn.id = 'collapse-'+postId;
+                btn.style.cssText = 'text-align:center;margin-top:10px';
+                btn.innerHTML = '<button class="btn btn-sm btn-secondary" style="font-size:12px" onclick="event.stopPropagation();togglePromoExpand(\''+postId+'\')">접기 ▲</button>';
+                card.appendChild(btn);
+            }
+        } else {
+            collapseBtn.style.display = 'block';
+        }
+    } else {
+        if (collapseBtn) collapseBtn.style.display = 'none';
+    }
 }
 
 // 게시물 상세 팝업
@@ -2908,6 +2938,153 @@ function copyMfgCode() {
     }).catch(function() {
         showToast('코드: ' + input.value, 'info');
     });
+}
+
+// ═══════════════════════════════════════════════════
+// Phase 11-2: 공동제작 개선
+// ═══════════════════════════════════════════════════
+
+// 공동제작 상세 팝업 (마켓플레이스 카드 클릭)
+async function openGroupDetail(requestId) {
+    openModal('requestDetailModal');
+    var body    = document.getElementById('detail-modal-body');
+    var titleEl = document.getElementById('detail-modal-title');
+    if (body) body.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:32px">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var res = await window.supabaseClient.from('requests')
+            .select('*').eq('id', requestId).single();
+        if (res.error) throw res.error;
+        var req = res.data;
+        if (titleEl) titleEl.textContent = '👥 ' + escHtml(req.title);
+        var pct = req.min_quantity ? Math.min(100, Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
+        body.innerHTML =
+            '<table class="data-table mb-16">' +
+            '<tr><td style="width:120px;font-weight:600">카테고리</td><td>'+escHtml(req.category||'-')+'</td></tr>' +
+            '<tr><td style="font-weight:600">총 목표 수량</td><td>'+req.quantity.toLocaleString()+'개</td></tr>' +
+            '<tr><td style="font-weight:600">최소 모집 수량</td><td>'+req.min_quantity.toLocaleString()+'개</td></tr>' +
+            '<tr><td style="font-weight:600">희망 단가</td><td>'+req.target_price.toLocaleString()+'원</td></tr>' +
+            (req.recruit_deadline?'<tr><td style="font-weight:600">모집 마감일</td><td>'+req.recruit_deadline+'</td></tr>':'')+
+            (req.bid_deadline?'<tr><td style="font-weight:600">입찰 마감일</td><td>'+req.bid_deadline+'</td></tr>':'')+
+            (req.design_guide?'<tr><td style="font-weight:600">디자인 가이드</td><td style="white-space:pre-wrap">'+escHtml(req.design_guide)+'</td></tr>':'')+
+            (req.detail_note?'<tr><td style="font-weight:600">상세 설명</td><td style="white-space:pre-wrap">'+escHtml(req.detail_note)+'</td></tr>':'')+
+            '</table>' +
+            '<div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:16px">' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span class="text-sm">모집 현황</span><strong>'+(req.current_quantity||0)+' / '+req.min_quantity.toLocaleString()+'개</strong></div>' +
+            '<div class="progress-bar"><div class="fill" style="width:'+pct+'%"></div></div>' +
+            '<p class="text-xs text-muted mt-8">최소 수량까지 '+Math.max(0,req.min_quantity-(req.current_quantity||0)).toLocaleString()+'개 남음</p>' +
+            '</div>' +
+            '<div style="display:flex;gap:12px;justify-content:flex-end">' +
+            '<button class="btn btn-secondary" onclick="closeModal(\'requestDetailModal\')">닫기</button>' +
+            '<button class="btn btn-primary" onclick="closeModal(\'requestDetailModal\');joinGroupPurchase(\''+requestId+'\')">참여하기</button>' +
+            '</div>';
+    } catch(e) {
+        if (body) body.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+    }
+}
+
+// 내가 참여한 공동제작 목록
+async function loadMyJoinedGroups() {
+    var container = document.getElementById('personal-joined-list');
+    if (!container) return;
+    if (!AppState.currentUser) {
+        container.innerHTML = '<div class="empty-state"><p>로그인이 필요합니다.</p></div>'; return;
+    }
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var res = await window.supabaseClient.from('group_participants')
+            .select('*, request:requests(id,title,category,min_quantity,current_quantity,target_price,status,recruit_deadline)')
+            .eq('user_id', AppState.currentUser.id)
+            .order('created_at', { ascending: false });
+        if (res.error) throw res.error;
+        var list = res.data || [];
+        if (!list.length) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-icon">🤝</div><p>참여한 공동제작이 없습니다.</p></div>'; return;
+        }
+        container.innerHTML = list.map(function(p) {
+            var req = p.request || {};
+            var pct = req.min_quantity ? Math.min(100, Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
+            var canCancel = req.status === 'bidding';
+            return '<div class="request-card" style="border-left:4px solid var(--secondary)">' +
+                '<div class="request-card-header">' +
+                '<h4>👥 '+escHtml(req.title||'-')+'</h4>' +
+                '<span class="status-badge status-recruiting">참여중</span>' +
+                '</div>' +
+                '<div class="request-meta">' +
+                '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
+                '<div class="meta-item">내 참여 수량: <strong>'+p.quantity.toLocaleString()+'개</strong></div>' +
+                '<div class="meta-item">💰 희망단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+                '</div>' +
+                '<div class="co-purchase-info">' +
+                '<div class="flex-between"><span>전체 모집 현황</span><strong>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</strong></div>' +
+                '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
+                '</div>' +
+                '<div class="request-actions">' +
+                '<button class="btn btn-sm btn-secondary" onclick="openGroupDetail(\''+req.id+'\')">📋 상세 보기</button>' +
+                (canCancel ? '<button class="btn btn-sm btn-danger" onclick="cancelGroupParticipation(\''+p.id+'\',\''+req.id+'\','+p.quantity+')">참여 취소</button>' : '') +
+                '</div></div>';
+        }).join('');
+    } catch(e) {
+        container.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
+    }
+}
+
+// 공동제작 참여 취소
+async function cancelGroupParticipation(participantId, requestId, qty) {
+    if (!confirm('참여를 취소하시겠습니까? 참여 수량이 모집 현황에서 차감됩니다.')) return;
+    try {
+        var delRes = await window.supabaseClient.from('group_participants')
+            .delete().eq('id', participantId).eq('user_id', AppState.currentUser.id);
+        if (delRes.error) throw delRes.error;
+        // current_quantity 차감
+        var reqRes = await window.supabaseClient.from('requests')
+            .select('current_quantity').eq('id', requestId).single();
+        if (!reqRes.error) {
+            var newQty = Math.max(0, (reqRes.data.current_quantity||0) - qty);
+            await window.supabaseClient.from('requests').update({ current_quantity: newQty }).eq('id', requestId);
+        }
+        showToast('참여가 취소되었습니다.', 'success');
+        loadMyJoinedGroups();
+    } catch(e) {
+        showToast('취소 실패: ' + e.message, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════
+// Phase 11-2: 내 후기 1열 고정 + 더보기
+// ═══════════════════════════════════════════════════
+var _myReviewsExpanded = false;
+var _myReviewsData = [];
+
+function renderMyReviewsSection(myList) {
+    var section = document.getElementById('mp-reviews-my');
+    var grid    = document.getElementById('mp-reviews-my-grid');
+    if (!section || !grid) return;
+    if (!myList || !myList.length) { section.style.display = 'none'; return; }
+    _myReviewsData = myList;
+    section.style.display = 'block';
+    var MAX_VISIBLE = 3;
+    var visible = _myReviewsExpanded ? myList : myList.slice(0, MAX_VISIBLE);
+    grid.innerHTML = visible.map(function(post){ return renderFeedCard(post, true); }).join('');
+    // 더보기 버튼
+    var moreBtn = document.getElementById('mp-reviews-my-more');
+    if (!moreBtn) {
+        moreBtn = document.createElement('div');
+        moreBtn.id = 'mp-reviews-my-more';
+        moreBtn.style.cssText = 'text-align:right;margin-top:8px';
+        section.appendChild(moreBtn);
+    }
+    if (myList.length > MAX_VISIBLE) {
+        moreBtn.innerHTML = _myReviewsExpanded
+            ? '<button class="btn btn-sm btn-secondary" onclick="toggleMyReviews()">접기 ▲</button>'
+            : '<button class="btn btn-sm btn-secondary" onclick="toggleMyReviews()">'+( myList.length - MAX_VISIBLE)+'개 더보기 ▼</button>';
+    } else {
+        moreBtn.innerHTML = '';
+    }
+}
+
+function toggleMyReviews() {
+    _myReviewsExpanded = !_myReviewsExpanded;
+    renderMyReviewsSection(_myReviewsData);
 }
 
 document.addEventListener('click',function(e){

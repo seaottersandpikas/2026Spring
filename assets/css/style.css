@@ -21,7 +21,12 @@
             --shadow: 0 2px 15px rgba(0,0,0,0.08); --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
             --radius: 12px; --radius-sm: 8px;
         }
-/* 가로 스크롤 방지 — body 아닌 html에 적용해야 Safari margin 버그 없음 */
+/* 내가 쓴 후기: 1열 고정 */
+#mp-reviews-my .feed-grid,
+#mp-promo-my .promo-grid {
+    grid-template-columns: 1fr !important;
+    max-width: 680px;
+}
 html { overflow-x: hidden; }
 
         body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; }
@@ -302,19 +307,32 @@ html { overflow-x: hidden; }
         .promo-grid { display:flex;flex-direction:column;align-items:center;gap:24px; }
         .promo-card {
             background:var(--white);border-radius:var(--radius);padding:28px 32px;
-            box-shadow:var(--shadow);transition:all 0.2s;width:100%;max-width:700px;
-            cursor:pointer;
+            box-shadow:var(--shadow);transition:transform 0.2s,box-shadow 0.2s;width:100%;max-width:700px;
+            cursor:pointer; position:relative;
         }
         .promo-card:hover { transform:translateY(-2px);box-shadow:var(--shadow-lg); }
         .promo-card-body { overflow:hidden;max-height:200px;position:relative; }
         .promo-card-body.expanded { max-height:none; }
         .promo-card-fade {
-            position:absolute;bottom:0;left:0;right:0;height:48px;
-            background:linear-gradient(transparent,var(--white));
-            display:flex;align-items:flex-end;justify-content:center;
-            padding-bottom:4px;
+            /* absolute → relative 로 변경해서 hover 깜박임 제거 */
+            position:relative;
+            height:auto;
+            background:none;
+            display:flex;align-items:center;justify-content:center;
+            padding:8px 0 0;
+            margin-top:-8px;
         }
         .promo-card-body.expanded + .promo-card-fade { display:none; }
+        /* 배경 그라디언트 별도 레이어 (배경색 변화에 무관) */
+        .promo-card-body:not(.expanded)::after {
+            content:'';
+            display:block;
+            position:absolute;
+            bottom:0;left:0;right:0;
+            height:56px;
+            background:linear-gradient(transparent, var(--white));
+            pointer-events:none;
+        }
 
         /* ── 이미지 슬라이더 ── */
         .img-slider { position:relative;overflow:hidden;border-radius:8px;margin-top:14px;background:#f0f0f0; }

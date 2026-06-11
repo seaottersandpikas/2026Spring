@@ -817,8 +817,13 @@
                         </div>
                         <div class="form-group"><label>디자인 가이드라인</label><textarea id="group-design-guide" placeholder="디자인 요구사항을 적어주세요."></textarea></div>
                         <div class="form-group"><label>상세 설명</label><textarea id="group-detail-note" placeholder="옵션, 사이즈, 색상 등 상세 계획을 적어주세요."></textarea></div>
+                        <div class="form-group">
+                            <label>내 참여 수량 (선택)</label>
+                            <input type="number" id="group-my-qty" placeholder="예: 1" min="1">
+                            <div class="form-hint">등록 후 모집 현황에 자동 반영됩니다.</div>
+                        </div>
                         <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
-                            <button class="btn btn-primary" onclick="submitGroupRequest()">🚀 공동구매 등록</button>
+                            <button class="btn btn-primary" onclick="submitGroupRequest()">🚀 공동제작 등록</button>
                         </div>
                     </div>
                 </div>
@@ -831,7 +836,8 @@
                     </div>
                     <div class="order-type-tabs">
                         <button class="order-type-tab active" onclick="switchOrderType('individual',this)">🎯 일반 의뢰</button>
-                        <button class="order-type-tab" onclick="switchOrderType('group',this)">👥 공동구매 의뢰</button>
+                        <button class="order-type-tab" onclick="switchOrderType('group',this)">👥 내가 등록한 공동제작</button>
+                        <button class="order-type-tab" onclick="switchOrderType('joined',this)">🤝 내가 참여한 공동제작</button>
                     </div>
                     <div id="individual-orders-section">
                         <div class="pill-filters" id="individual-status-pills">
@@ -853,6 +859,13 @@
                             <button class="pill-filter" onclick="filterGroupStatus('completed',this)">완료</button>
                         </div>
                         <div id="personal-group-list">
+                            <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
+                        </div>
+                    </div>
+                    <!-- 내가 참여한 공동제작 -->
+                    <div id="joined-orders-section" style="display:none">
+                        <h4 style="font-size:15px;font-weight:800;margin-bottom:16px">🤝 참여 중인 공동제작</h4>
+                        <div id="personal-joined-list">
                             <div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
                         </div>
                     </div>
