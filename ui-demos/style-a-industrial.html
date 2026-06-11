@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>billowy — Style A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Jua&family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* ── Style B 팔레트 그대로 ── */
+    --purple:  #7c3aed;
+    --purple2: #9f67f7;
+    --purple3: #c4b5fd;
+    --lavender:#ede9fe;
+    --mint:    #10b981;
+    --pink:    #ec4899;
+    --bg:      #f8f7ff;
+    --white:   #ffffff;
+    --text:    #1e1b4b;
+    --sub:     #6b7280;
+    --border:  #e5e7eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --info:    #60a5fa;
+    /* ── Style A 전용 (헤더/히어로 다크 배경) ── */
+    --dark-bg:   #1e1b4b;
+    --dark-card: #2d2a6e;
+    --dark-inner:#3730a3;
+    --accent:    #a78bfa;
+    /* ── 하위 호환 alias ── */
+    --navy:    #1e1b4b;
+    --navy2:   #2d2a6e;
+    --navy3:   #3730a3;
+    --light:   #f8f7ff;
+    --gray:    #6b7280;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Jua','Noto Sans KR',sans-serif; background:var(--bg); color:var(--text); }
+
+  /* ── 공통 버튼 ── */
+  .btn { border:none; border-radius:10px; font-family:inherit; font-weight:700; cursor:pointer; transition:all .2s; }
+  .btn-primary { background:var(--purple); color:#fff; padding:12px 24px; font-size:14px; box-shadow:0 4px 16px rgba(124,58,237,0.25); }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(124,58,237,0.35); background:#6d28d9; }
+  .btn-outline { background:transparent; color:var(--purple); border:1.5px solid var(--purple); padding:12px 24px; font-size:14px; }
+  .btn-outline:hover { background:rgba(124,58,237,0.08); }
+  .btn-sm { padding:7px 16px; font-size:13px; border-radius:8px; }
+  .btn-ghost { background:var(--lavender); color:var(--purple); padding:8px 18px; font-size:13px; border-radius:8px; }
+
+  /* ── 헤더 ── */
+  header {
+    background:#eef2f7; padding:0 44px; height:64px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:200;
+    border-bottom:1px solid #dde4ef;
+  }
+  .logo { font-family:'Fredoka One',sans-serif; font-size:22px; color:var(--purple); display:flex; align-items:center; gap:10px; }
+  .logo-box { display:flex; align-items:center; }
+  nav { display:flex; gap:2px; }
+  nav button {
+    background:none; border:none; color:#6d4fc2; font-size:14px; font-weight:700;
+    padding:8px 16px; border-radius:8px; cursor:pointer; font-family:inherit; transition:.2s;
+  }
+  nav button:hover { color:var(--purple); background:rgba(124,58,237,0.1); }
+  nav button.active { color:var(--purple); background:rgba(124,58,237,0.12); font-weight:800; }
+  .header-right { display:flex; gap:10px; align-items:center; }
+  .btn-login { background:var(--purple); color:#fff; border:none; border-radius:8px; padding:8px 20px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+
+  /* ── 페이지 전환 ── */
+  .page { display:none; }
+  .page.active { display:block; }
+
+  /* ══════════════════════════════════════
+     홈 페이지
+  ══════════════════════════════════════ */
+  .home-hero {
+    background:#f4f3f8;
+    padding:0 44px;
+  }
+  .hero-inner {
+    max-width:1160px; margin:0 auto;
+    display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:end;
+    padding:80px 0 0;
+  }
+  .hero-text { padding-bottom:80px; }
+  .hero-badge {
+    display:inline-block; background:rgba(124,58,237,0.12); color:var(--purple);
+    border:1px solid rgba(124,58,237,0.25); border-radius:20px;
+    padding:5px 14px; font-size:12px; font-weight:800; margin-bottom:24px;
+    text-transform:uppercase; letter-spacing:.8px;
+  }
+  .hero-text h1 {
+    font-family:'Jua',sans-serif; font-size:46px; font-weight:900; color:var(--text);
+    line-height:1.15; margin-bottom:18px; letter-spacing:-.5px;
+  }
+  .hero-text h1 em { font-style:normal; color:var(--purple); }
+  .hero-text p { color:var(--sub); font-size:16px; line-height:1.75; margin-bottom:32px; }
+  .hero-btns { display:flex; gap:12px; }
+
+  /* 히어로 비주얼 */
+  .hero-visual {
+    background:#fff; border-radius:18px 18px 0 0; padding:26px;
+    border:1px solid #d8d0f8; border-bottom:none;
+    box-shadow:0 4px 24px rgba(124,58,237,0.1);
+  }
+  .vis-label { font-size:11px; font-weight:800; color:var(--purple); text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
+  .vis-card {
+    background:var(--bg); border-radius:12px; padding:16px 18px; margin-bottom:10px;
+    border:1px solid var(--border);
+  }
+  .vis-card:last-child { margin-bottom:0; }
+  .vis-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .vis-title { color:var(--text); font-size:14px; font-weight:700; }
+  .vis-tag { font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; }
+  .vt-bid  { background:var(--lavender); color:var(--purple); }
+  .vt-done { background:rgba(16,185,129,0.1); color:var(--success); }
+  .vt-group{ background:rgba(96,165,250,0.1); color:var(--info); }
+  .vis-meta { color:var(--sub); font-size:12px; }
+  .vis-chips { display:flex; gap:7px; margin-top:10px; flex-wrap:wrap; }
+  .vis-chip { font-size:11px; padding:3px 9px; border-radius:6px; font-weight:700; background:var(--border); color:var(--sub); border:1px solid var(--border); }
+  .vis-chip.top { background:var(--lavender); color:var(--purple); border-color:#c4b5fd; }
+  .vis-bar { background:var(--border); border-radius:4px; height:5px; margin-top:10px; overflow:hidden; }
+  .vis-fill { height:100%; border-radius:4px; }
+
+  /* 통계 바 */
+  .stats-bar {
+    background:var(--purple);
+    padding:22px 44px; display:flex; justify-content:center; gap:80px;
+  }
+  .stat-item { text-align:center; }
+  .stat-num { font-family:'Nunito',sans-serif; font-size:28px; font-weight:900; color:#fff; }
+  .stat-lbl { font-size:12px; color:rgba(255,255,255,0.7); margin-top:2px; font-weight:600; }
+
+  /* 역할 카드 */
+  .section { max-width:1160px; margin:0 auto; padding:80px 44px; }
+  .sec-tag { font-size:12px; font-weight:800; color:var(--purple); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
+  .sec-title { font-size:34px; font-weight:900; margin-bottom:8px; letter-spacing:-.5px; }
+  .sec-sub { color:var(--gray); font-size:15px; margin-bottom:44px; }
+
+  .role-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .role-card {
+    background:var(--white); border-radius:18px; padding:28px 24px;
+    border:2px solid transparent; transition:all .25s; cursor:pointer;
+    box-shadow:0 2px 16px rgba(124,58,237,0.06);
+    position:relative; overflow:hidden;
+  }
+  .role-card:hover { border-color:var(--purple); transform:translateY(-4px); box-shadow:0 10px 32px rgba(124,58,237,0.14); }
+  .role-card::after {
+    content:''; position:absolute; top:0; left:0; right:0; height:4px;
+    background:var(--purple); opacity:0; transition:.25s;
+  }
+  .role-card:hover::after { opacity:1; }
+  .role-icon { width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:18px; }
+  .ri-v { background:rgba(124,58,237,0.1); }
+  .ri-b { background:rgba(96,165,250,0.1); }
+  .ri-p { background:rgba(16,185,129,0.1); }
+  .role-card h3 { font-size:18px; font-weight:800; margin-bottom:8px; }
+  .role-card p { color:var(--gray); font-size:14px; line-height:1.65; margin-bottom:16px; }
+  .role-link { color:var(--purple); font-size:13px; font-weight:800; }
+
+  /* 프로세스 */
+  .process-bg { background:#eef2f7; padding:80px 44px; }
+  .process-inner { max-width:1160px; margin:0 auto; }
+  .process-inner .sec-title { color:var(--text); }
+  .process-inner .sec-sub { color:var(--sub); }
+  .steps::before { content:''; position:absolute; top:28px; left:12.5%; right:12.5%; height:1px; background:#c4b5fd; }
+  .step h4 { color:var(--text); font-size:14px; font-weight:800; margin-bottom:6px; }
+  .step p { color:var(--sub); font-size:13px; line-height:1.5; padding:0 10px; }
+  .step-circle {
+    width:56px; height:56px; border-radius:50%; margin:0 auto 18px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:900; position:relative; z-index:1;
+    background:#ffffff; border:2px solid #c4b5fd; color:var(--purple);
+    font-family:'Nunito',sans-serif;
+  }
+  .step-circle.hi { background:var(--purple); color:#fff; border-color:var(--purple); }
+
+  /* ── 플랫폼 특장점 ── */
+  .feat-section { background:var(--white); padding:80px 44px; }  .feat-inner   { max-width:1160px; margin:0 auto; }
+  .feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; }
+  .feat-left { display:flex; flex-direction:column; gap:14px; }
+  .feat-item {
+    background:var(--bg); border-radius:16px; padding:20px 22px;
+    display:flex; gap:16px; align-items:flex-start;
+    border:1px solid var(--border);
+  }
+  .feat-icon {
+    width:46px; height:46px; border-radius:14px; background:var(--lavender);
+    display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;
+  }
+  .feat-item h4 { font-size:15px; font-weight:800; margin-bottom:4px; color:var(--navy); }
+  .feat-item p  { font-size:13px; color:var(--gray); line-height:1.55; }
+  /* 우측: 의뢰 목업 패널 */
+  .feat-right {
+    background:#ede9fe; border-radius:20px; padding:28px;
+    display:flex; flex-direction:column; gap:14px;
+    border:1px solid #d8d0f8;
+  }
+  .mock-f { background:#fff; border-radius:12px; padding:16px 18px; border:1px solid #d8d0f8; }
+  .mock-f-h { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .mock-f-name { color:var(--text); font-size:14px; font-weight:700; }
+  .mock-f-badge { background:var(--lavender); color:var(--purple); font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+  .mock-f-badge.done { background:rgba(16,185,129,0.1); color:var(--success); }
+  .mock-f-body { color:var(--sub); font-size:12px; line-height:1.5; }
+  .mock-f-bar { height:4px; background:#d8d0f8; border-radius:3px; margin-top:10px; overflow:hidden; }
+  .mock-f-fill { height:100%; background:var(--purple); border-radius:3px; }
+  .mock-f-stars { color:#f59e0b; font-size:13px; margin-top:7px; }
+  .steps { display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:40px; position:relative; }
+  .step { text-align:center; }
+  .step h4 { color:var(--text); font-size:14px; font-weight:800; margin-bottom:6px; }
+  .step p { color:var(--sub); font-size:13px; line-height:1.5; padding:0 10px; }
+
+  /* 의뢰 카드 */
+  .req-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .req-card { background:var(--white); border-radius:16px; padding:22px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(124,58,237,0.04); transition:.2s; }
+  .req-card:hover { box-shadow:0 6px 24px rgba(124,58,237,0.1); transform:translateY(-2px); }
+  .req-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+  .req-top h4 { font-size:15px; font-weight:800; }
+  .chip { font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; }
+  .chip-bid  { background:var(--lavender); color:var(--purple); }
+  .chip-ship { background:rgba(96,165,250,0.12); color:var(--info); }
+  .chip-done { background:rgba(16,185,129,0.1); color:var(--success); }
+  .chip-group{ background:rgba(251,191,36,0.12); color:var(--warning); }
+  .req-meta { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .req-meta-item { font-size:12px; color:var(--gray); }
+  .req-meta-item strong { display:block; font-size:15px; font-weight:800; color:var(--navy); }
+  .req-foot { border-top:1px solid var(--border); padding-top:12px; display:flex; justify-content:space-between; align-items:center; }
+  .req-lowest { font-size:13px; color:var(--gray); }
+  .req-lowest strong { color:var(--purple); font-weight:800; }
+
+  /* ══════════════════════════════════════
+     생산자 페이지
+  ══════════════════════════════════════ */
+  .inner-page { max-width:1160px; margin:0 auto; padding:48px 44px; }
+  .page-header { margin-bottom:36px; }
+  .page-header h2 { font-size:28px; font-weight:900; letter-spacing:-.5px; }
+  .page-header p { color:var(--gray); font-size:15px; margin-top:6px; }
+
+  .dash-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px; }
+  .dash-card { background:var(--white); border-radius:14px; padding:22px; border:1px solid var(--border); text-align:center; }
+  .dash-card .d-num { font-size:32px; font-weight:900; font-family:'Nunito',sans-serif; }
+  .dash-card .d-lbl { font-size:13px; color:var(--gray); margin-top:4px; font-weight:600; }
+  .c-purple { color:var(--purple); }
+  .c-warning { color:var(--warning); }
+  .c-info    { color:var(--info); }
+  .c-success { color:var(--success); }
+
+  .two-col-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .panel { background:var(--white); border-radius:16px; padding:24px; border:1px solid var(--border); }
+  .panel-title { font-size:16px; font-weight:800; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; }
+  .panel-title a { font-size:12px; color:var(--purple); font-weight:700; text-decoration:none; }
+
+  .bid-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); }
+  .bid-row:last-child { border-bottom:none; }
+  .bid-info h5 { font-size:14px; font-weight:700; }
+  .bid-info span { font-size:12px; color:var(--gray); }
+  .bid-price { font-size:15px; font-weight:900; color:var(--purple); font-family:'Nunito',sans-serif; }
+  .bid-status { font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; }
+
+  .req-list-item { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--border); }
+  .req-list-item:last-child { border-bottom:none; }
+  .rli-left h5 { font-size:14px; font-weight:700; }
+  .rli-left span { font-size:12px; color:var(--gray); }
+  .rli-right { display:flex; gap:10px; align-items:center; }
+  .price-tag { font-size:14px; font-weight:900; color:var(--navy); font-family:'Nunito',sans-serif; }
+
+  /* ══════════════════════════════════════
+     의뢰자 페이지
+  ══════════════════════════════════════ */
+  .request-form-card {
+    background:var(--white); border-radius:18px; padding:32px; border:1px solid var(--border);
+    max-width:640px;
+  }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .form-group { margin-bottom:18px; }
+  .form-group label { display:block; font-size:13px; font-weight:800; color:var(--navy); margin-bottom:7px; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px;
+    font-size:14px; font-family:inherit; color:var(--navy); outline:none; transition:.2s;
+    background:#fff;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(124,58,237,0.1); }
+  .form-group textarea { min-height:90px; resize:vertical; }
+  .upload-box {
+    border:2px dashed var(--border); border-radius:12px; padding:28px; text-align:center;
+    cursor:pointer; transition:.2s; background:var(--bg);
+  }
+  .upload-box:hover { border-color:var(--purple); background:var(--lavender); }
+  .upload-box p { font-size:13px; color:var(--gray); margin-top:6px; }
+
+  .my-requests { display:flex; flex-direction:column; gap:14px; max-width:800px; }
+  .mreq-card { background:var(--white); border-radius:14px; padding:20px 22px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .mreq-left h4 { font-size:15px; font-weight:800; margin-bottom:4px; }
+  .mreq-left span { font-size:13px; color:var(--gray); }
+  .mreq-right { display:flex; gap:12px; align-items:center; }
+  .mreq-price { font-size:16px; font-weight:900; color:var(--purple); font-family:'Nunito',sans-serif; }
+
+  /* ══════════════════════════════════════
+     마켓플레이스 페이지
+  ══════════════════════════════════════ */
+  .mp-tabs { display:flex; gap:4px; border-bottom:2px solid var(--border); margin-bottom:32px; }
+  .mp-tab { background:none; border:none; font-family:inherit; font-size:14px; font-weight:700; color:var(--gray); padding:12px 20px; border-bottom:2px solid transparent; margin-bottom:-2px; cursor:pointer; transition:.2s; }
+  .mp-tab:hover { color:var(--purple); }
+  .mp-tab.active { color:var(--purple); border-bottom-color:var(--purple); }
+
+  .mp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .mp-card { background:var(--white); border-radius:16px; overflow:hidden; border:1px solid var(--border); transition:.2s; cursor:pointer; }
+  .mp-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(124,58,237,0.1); }
+  .mp-card-top { height:100px; display:flex; align-items:center; justify-content:center; font-size:44px; }
+  .mp-card-top.a { background:linear-gradient(135deg,var(--lavender),#ddd6fe); }
+  .mp-card-top.b { background:linear-gradient(135deg,#d1fae5,#a7f3d0); }
+  .mp-card-top.c { background:linear-gradient(135deg,#fce7f3,#fbcfe8); }
+  .mp-card-top.d { background:linear-gradient(135deg,#fef3c7,#fde68a); }
+  .mp-card-body { padding:16px 18px; }
+  .mp-card-body h4 { font-size:14px; font-weight:800; margin-bottom:8px; }
+  .mp-card-row { display:flex; justify-content:space-between; font-size:13px; color:var(--gray); margin-bottom:3px; }
+  .mp-card-row strong { color:var(--navy); font-weight:700; }
+  .mp-card-foot { padding:11px 18px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+
+  /* 후기 카드 */
+  .review-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .review-card { background:var(--white); border-radius:14px; padding:20px; border:1px solid var(--border); }
+  .review-stars { color:#f59e0b; font-size:14px; margin-bottom:8px; }
+  .review-title { font-size:14px; font-weight:800; margin-bottom:6px; }
+  .review-body { font-size:13px; color:var(--gray); line-height:1.6; }
+  .review-meta { display:flex; justify-content:space-between; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--gray); }
+  .review-meta strong { color:var(--purple); }
+
+  /* 프로모 카드 */
+  .promo-list { display:flex; flex-direction:column; gap:18px; max-width:740px; margin:0 auto; }
+  .promo-card { background:var(--white); border-radius:16px; padding:24px 28px; border:1px solid var(--border); }
+  .promo-card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .promo-author { display:flex; align-items:center; gap:10px; }
+  .promo-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--purple),var(--purple2)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:15px; }
+  .promo-author-info strong { font-size:14px; font-weight:800; display:block; }
+  .promo-author-info span { font-size:12px; color:var(--gray); }
+  .promo-card h4 { font-size:16px; font-weight:800; margin-bottom:8px; }
+  .promo-card p { font-size:14px; color:var(--gray); line-height:1.65; }
+
+  /* 공동구매 카드 */
+  .group-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
+  .group-card { background:var(--white); border-radius:16px; padding:22px; border:1px solid var(--border); }
+  .group-card h4 { font-size:15px; font-weight:800; margin-bottom:14px; }
+  .progress-wrap { margin-bottom:12px; }
+  .progress-bar { background:var(--bg); border-radius:6px; height:8px; overflow:hidden; margin-top:6px; }
+  .progress-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--purple),var(--purple2)); }
+  .progress-label { display:flex; justify-content:space-between; font-size:12px; color:var(--gray); }
+  .group-foot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+
+  /* 탭 패널 */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* ── 푸터 ── */
+  footer { background:var(--navy); padding:36px 44px; text-align:center; margin-top:60px; }
+  footer p { color:rgba(255,255,255,0.3); font-size:13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-box">
+      <svg width="52" height="40" viewBox="0 0 86 76" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="hdb" cx="38%" cy="32%" r="68%"><stop offset="0%" stop-color="#c0b8ff" stop-opacity="0.24"/><stop offset="40%" stop-color="#98d4ff" stop-opacity="0.14"/><stop offset="75%" stop-color="#ffb8e8" stop-opacity="0.18"/><stop offset="100%" stop-color="#98e8d8" stop-opacity="0.07"/></radialGradient>
+          <linearGradient id="hdr1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#c8b8ff" stop-opacity="0.92"/><stop offset="28%" stop-color="#88d8ff" stop-opacity="0.8"/><stop offset="58%" stop-color="#ffb8e4" stop-opacity="0.85"/><stop offset="100%" stop-color="#a8f0e0" stop-opacity="0.75"/></linearGradient>
+          <linearGradient id="hdr2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#c4b0ff" stop-opacity="0.88"/><stop offset="100%" stop-color="#ffc0e0" stop-opacity="0.82"/></linearGradient>
+        </defs>
+        <circle cx="28" cy="42" r="22" fill="url(#hdb)" stroke="url(#hdr1)" stroke-width="2.4"/>
+        <ellipse cx="20" cy="32" rx="7" ry="5" fill="white" opacity="0.22" transform="rotate(-20,20,32)"/>
+        <circle  cx="19" cy="30" r="2" fill="white" opacity="0.42"/>
+        <circle cx="51" cy="22" r="16" fill="url(#hdb)" stroke="url(#hdr2)" stroke-width="2.0"/>
+        <ellipse cx="45" cy="15" rx="5" ry="3.5" fill="white" opacity="0.24" transform="rotate(-15,45,15)"/>
+        <circle  cx="44" cy="14" r="1.5" fill="white" opacity="0.48"/>
+        <circle cx="54" cy="52" r="12" fill="url(#hdb)" stroke="url(#hdr1)" stroke-width="1.8"/>
+        <circle cx="68" cy="35" r="7.5" fill="url(#hdb)" stroke="url(#hdr2)" stroke-width="1.4"/>
+        <circle cx="16" cy="24" r="4.5" fill="none" stroke="url(#hdr1)" stroke-width="1.1" opacity="0.65"/>
+      </svg>
+    </div>
+    billowy
+  </div>
+  <nav>
+    <button class="active" onclick="showPage('home',this)">홈</button>
+    <button onclick="showPage('manufacturer',this)">생산자</button>
+    <button onclick="showPage('client',this)">의뢰자</button>
+    <button onclick="showPage('marketplace',this)">마켓플레이스</button>
+  </nav>
+  <div class="header-right">
+    <button class="btn-login">로그인 / 회원가입</button>
+  </div>
+</header>
+
+<!-- ══════════ 홈 ══════════ -->
+<div id="page-home" class="page active">
+  <div class="home-hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="hero-badge">B2B · B2C · C2B Platform</div>
+        <h1>당신의 아이디어를<br><em>제품으로</em><br>만드세요</h1>
+        <p>생산자와 의뢰자를 직접 연결하는<br>스마트 굿즈 제작 플랫폼</p>
+        <div class="hero-btns">
+          <button class="btn btn-primary" onclick="showPage('client',null)">의뢰 시작하기 →</button>
+          <button class="btn btn-outline" onclick="showPage('manufacturer',null)">생산자로 참여</button>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="vis-label">실시간 의뢰 현황</div>
+        <div class="vis-card">
+          <div class="vis-row">
+            <span class="vis-title">아크릴 키링 1,000개</span>
+            <span class="vis-tag vt-bid">입찰 4건</span>
+          </div>
+          <div class="vis-meta">희망단가 2,500원 · 마감 D-3</div>
+          <div class="vis-chips">
+            <span class="vis-chip top">🏆 2,100원</span>
+            <span class="vis-chip">2,300원</span>
+            <span class="vis-chip">2,400원</span>
+          </div>
+        </div>
+        <div class="vis-card">
+          <div class="vis-row">
+            <span class="vis-title">에코백 300장 인쇄</span>
+            <span class="vis-tag vt-done">거래완료 ✓</span>
+          </div>
+          <div class="vis-meta">확정단가 8,500원 · ⭐ 5.0</div>
+          <div class="vis-bar"><div class="vis-fill" style="width:100%;background:var(--success)"></div></div>
+        </div>
+        <div class="vis-card">
+          <div class="vis-row">
+            <span class="vis-title">홀로그램 스티커 팩 👥</span>
+            <span class="vis-tag vt-group">공동구매</span>
+          </div>
+          <div class="vis-meta">148 / 200개 모집 중</div>
+          <div class="vis-bar"><div class="vis-fill" style="width:74%;background:var(--info)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-num">2,847</div><div class="stat-lbl">등록 생산자</div></div>
+    <div class="stat-item"><div class="stat-num">15,234</div><div class="stat-lbl">완료된 의뢰</div></div>
+    <div class="stat-item"><div class="stat-num">₩3.2B</div><div class="stat-lbl">총 거래액</div></div>
+    <div class="stat-item"><div class="stat-num">4.8★</div><div class="stat-lbl">평균 만족도</div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-tag">How it works</div>
+    <div class="sec-title">원하는 방식으로 시작하세요</div>
+    <div class="sec-sub">생산자, 사업자, 개인 — 누구든 billowy로 연결됩니다</div>
+    <div class="role-grid">
+      <div class="role-card" onclick="showPage('manufacturer',null)">
+        <div class="role-icon ri-v">🏭</div>
+        <h3>생산자 (Manufacturer)</h3>
+        <p>전문 분야 의뢰를 골라 입찰하고 안정적인 수주 채널을 만드세요.</p>
+        <div class="role-link">생산자로 참여 →</div>
+      </div>
+      <div class="role-card" onclick="showPage('client',null)">
+        <div class="role-icon ri-b">🏢</div>
+        <h3>사업자 의뢰 (B2B)</h3>
+        <p>의뢰를 등록하면 검증된 생산자들이 경쟁 입찰로 최적가를 제시합니다.</p>
+        <div class="role-link">사업자로 시작 →</div>
+      </div>
+      <div class="role-card" onclick="showPage('client',null)">
+        <div class="role-icon ri-p">👤</div>
+        <h3>개인 의뢰 (C2B)</h3>
+        <p>소량도 OK. 공동구매로 대량 단가를 실현하세요.</p>
+        <div class="role-link">개인으로 시작 →</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="process-bg">
+    <div class="process-inner">
+      <div class="sec-tag" style="color:var(--accent)">Process</div>
+      <div class="sec-title">4단계로 완성되는 거래</div>
+      <div class="sec-sub">의뢰부터 배송·정산까지 투명하게</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-circle hi">1</div>
+          <h4>의뢰 등록</h4><p>수량·단가·디자인 파일 업로드</p>
+        </div>
+        <div class="step">
+          <div class="step-circle">2</div>
+          <h4>입찰 수신</h4><p>생산자 견적 비교 후 선택</p>
+        </div>
+        <div class="step">
+          <div class="step-circle">3</div>
+          <h4>제작·배송</h4><p>에스크로 결제 후 제작 진행</p>
+        </div>
+        <div class="step">
+          <div class="step-circle">4</div>
+          <h4>거래 완료</h4><p>수령 확인 후 자동 정산</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 플랫폼 특장점 -->
+  <div class="feat-section">
+    <div class="feat-inner">
+      <div class="sec-tag">Platform</div>
+      <div class="sec-title">왜 billowy인가요?</div>
+      <div class="sec-sub">단순 연결을 넘어, 거래 전 과정을 안전하게 지원합니다</div>
+      <div class="feat-grid">
+        <div class="feat-left">
+          <div class="feat-item">
+            <div class="feat-icon">⚡</div>
+            <div><h4>자동 매칭 시스템</h4><p>마감일 도래 시 최저가 입찰자에게 자동 매칭. 번거로운 선택 과정 없이 빠르게 진행됩니다.</p></div>
+          </div>
+          <div class="feat-item">
+            <div class="feat-icon">🔒</div>
+            <div><h4>에스크로 안전 결제</h4><p>수령 확인 전까지 결제금 보관. 생산자와 의뢰자 모두 안전하게 거래합니다.</p></div>
+          </div>
+          <div class="feat-item">
+            <div class="feat-icon">👥</div>
+            <div><h4>공동구매 집결</h4><p>소량 수요를 모아 대량 단가 실현. 원하는 굿즈를 더 저렴하게 만들 수 있습니다.</p></div>
+          </div>
+          <div class="feat-item">
+            <div class="feat-icon">⭐</div>
+            <div><h4>신뢰 기반 평점</h4><p>거래 완료 후 자동 리뷰 유도. 검증된 생산자를 쉽게 찾을 수 있습니다.</p></div>
+          </div>
+        </div>
+        <div class="feat-right">
+          <div class="mock-f">
+            <div class="mock-f-h"><span class="mock-f-name">아크릴 키링 1,000개</span><span class="mock-f-badge">입찰중 4건</span></div>
+            <div class="mock-f-body">희망단가 2,500원 · 최저가 2,100원 (16% 절감)</div>
+          </div>
+          <div class="mock-f">
+            <div class="mock-f-h"><span class="mock-f-name">홀로그램 스티커 팩 👥</span><span class="mock-f-badge">공동구매</span></div>
+            <div class="mock-f-body">148 / 200개 모집 (74%)</div>
+            <div class="mock-f-bar"><div class="mock-f-fill" style="width:74%"></div></div>
+          </div>
+          <div class="mock-f">
+            <div class="mock-f-h"><span class="mock-f-name">에코백 인쇄 300장</span><span class="mock-f-badge done">거래완료 ✓</span></div>
+            <div class="mock-f-body">확정단가 8,500원 · 패브릭工房</div>
+            <div class="mock-f-stars">★★★★★ 만족도 5.0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-tag">Marketplace</div>
+    <div class="sec-title">지금 입찰 중인 의뢰</div>
+    <div class="sec-sub">생산자라면 바로 입찰 참여 가능합니다</div>
+    <div class="req-grid">
+      <div class="req-card">
+        <div class="req-top"><h4>캐릭터 아크릴 스탠딩</h4><span class="chip chip-bid">입찰중 4건</span></div>
+        <div class="req-meta">
+          <div class="req-meta-item"><strong>3,200원</strong>희망단가</div>
+          <div class="req-meta-item"><strong>2,000개</strong>수량</div>
+          <div class="req-meta-item"><strong>D-5</strong>마감</div>
+        </div>
+        <div class="req-foot"><span class="req-lowest">최저가 <strong>2,700원</strong></span><button class="btn btn-primary btn-sm">입찰하기</button></div>
+      </div>
+      <div class="req-card">
+        <div class="req-top"><h4>에코백 300장 인쇄</h4><span class="chip chip-ship">배송중</span></div>
+        <div class="req-meta">
+          <div class="req-meta-item"><strong>8,500원</strong>확정단가</div>
+          <div class="req-meta-item"><strong>300개</strong>수량</div>
+          <div class="req-meta-item"><strong>패브릭工房</strong>생산자</div>
+        </div>
+        <div class="req-foot"><span class="req-lowest">절감 <strong>6%</strong></span><button class="btn btn-ghost btn-sm">상세보기</button></div>
+      </div>
+      <div class="req-card">
+        <div class="req-top"><h4>금속 뱃지 로고 500개</h4><span class="chip chip-done">완료 ⭐4.9</span></div>
+        <div class="req-meta">
+          <div class="req-meta-item"><strong>4,100원</strong>확정단가</div>
+          <div class="req-meta-item"><strong>500개</strong>수량</div>
+          <div class="req-meta-item"><strong>▼18%</strong>절감</div>
+        </div>
+        <div class="req-foot"><span class="req-lowest">아크릴工房</span><button class="btn btn-ghost btn-sm">후기보기</button></div>
+      </div>
+    </div>
+  </div>
+  <footer><p>© 2026 billowy · Style A: Industrial Purple — 데모 파일</p></footer>
+</div>
+
+<!-- ══════════ 생산자 ══════════ -->
+<div id="page-manufacturer" class="page">
+  <div class="inner-page">
+    <div class="page-header">
+      <h2>🏭 생산자 대시보드</h2>
+      <p>현재 입찰·진행 중인 의뢰를 한눈에 확인하세요</p>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card"><div class="d-num c-purple">12</div><div class="d-lbl">전체 입찰</div></div>
+      <div class="dash-card"><div class="d-num c-warning">5</div><div class="d-lbl">입찰 진행중</div></div>
+      <div class="dash-card"><div class="d-num c-info">3</div><div class="d-lbl">제작 진행중</div></div>
+      <div class="dash-card"><div class="d-num c-success">4</div><div class="d-lbl">완료</div></div>
+    </div>
+    <div class="two-col-layout">
+      <div class="panel">
+        <div class="panel-title">내 입찰 현황 <a href="#">전체보기</a></div>
+        <div class="bid-row">
+          <div class="bid-info"><h5>아크릴 키링 1,000개</h5><span>입찰가 2,100원 · D-3</span></div>
+          <div style="text-align:right"><div class="bid-price">2,100원</div><span class="bid-status chip chip-bid">1위</span></div>
+        </div>
+        <div class="bid-row">
+          <div class="bid-info"><h5>후드 티셔츠 500벌</h5><span>입찰가 18,500원 · D-1</span></div>
+          <div style="text-align:right"><div class="bid-price">18,500원</div><span class="bid-status chip chip-bid">2위</span></div>
+        </div>
+        <div class="bid-row">
+          <div class="bid-info"><h5>에코백 300장</h5><span>매칭 완료 · 제작중</span></div>
+          <div style="text-align:right"><div class="bid-price">8,500원</div><span class="bid-status chip chip-ship">제작중</span></div>
+        </div>
+        <div class="bid-row">
+          <div class="bid-info"><h5>금속 뱃지 500개</h5><span>거래 완료</span></div>
+          <div style="text-align:right"><div class="bid-price">4,100원</div><span class="bid-status chip chip-done">완료</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">추천 의뢰 목록 <a href="#">전체보기</a></div>
+        <div class="req-list-item">
+          <div class="rli-left"><h5>캐릭터 아크릴 스탠딩 2,000개</h5><span>아크릴굿즈 · 희망단가 3,200원 · D-5</span></div>
+          <div class="rli-right"><span class="price-tag">3,200원</span><button class="btn btn-primary btn-sm">입찰</button></div>
+        </div>
+        <div class="req-list-item">
+          <div class="rli-left"><h5>홀로그램 스티커 팩 500장</h5><span>문구/스티커 · 희망단가 800원 · D-7</span></div>
+          <div class="rli-right"><span class="price-tag">800원</span><button class="btn btn-primary btn-sm">입찰</button></div>
+        </div>
+        <div class="req-list-item">
+          <div class="rli-left"><h5>봉제인형 단체 제작 200개</h5><span>봉제인형 · 희망단가 12,000원 · D-10</span></div>
+          <div class="rli-right"><span class="price-tag">12,000원</span><button class="btn btn-primary btn-sm">입찰</button></div>
+        </div>
+        <div class="req-list-item">
+          <div class="rli-left"><h5>금속 뱃지 로고 1,000개</h5><span>금속/뱃지 · 희망단가 4,500원 · D-4</span></div>
+          <div class="rli-right"><span class="price-tag">4,500원</span><button class="btn btn-primary btn-sm">입찰</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer style="margin-top:0"><p>© 2026 billowy · Style A: Industrial Purple</p></footer>
+</div>
+
+<!-- ══════════ 의뢰자 ══════════ -->
+<div id="page-client" class="page">
+  <div class="inner-page">
+    <div class="page-header">
+      <h2>📋 의뢰자 대시보드</h2>
+      <p>새 의뢰를 등록하거나 진행 중인 의뢰를 관리하세요</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start;">
+      <!-- 의뢰 등록 폼 -->
+      <div class="request-form-card">
+        <div style="font-size:17px; font-weight:900; margin-bottom:22px;">➕ 새 의뢰 등록</div>
+        <div class="form-group">
+          <label>아이템 명칭 *</label>
+          <input type="text" placeholder="예: 아크릴 키링">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>카테고리 *</label>
+            <select><option>아크릴굿즈</option><option>의류/패브릭</option><option>문구/스티커</option><option>금속/뱃지</option></select>
+          </div>
+          <div class="form-group">
+            <label>희망 수량 *</label>
+            <input type="number" placeholder="예: 1000">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>희망 단가 (원) *</label>
+            <input type="number" placeholder="예: 2500">
+          </div>
+          <div class="form-group">
+            <label>입찰 마감일 *</label>
+            <input type="date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>디자인 가이드</label>
+          <textarea placeholder="디자인 관련 요구사항을 적어주세요."></textarea>
+        </div>
+        <div class="upload-box">
+          <div style="font-size:28px;">📁</div>
+          <p>디자인 파일 첨부 (AI, PSD, PNG)</p>
+        </div>
+        <button class="btn btn-primary" style="width:100%; margin-top:18px; padding:14px;">🚀 의뢰 등록</button>
+      </div>
+
+      <!-- 내 의뢰 목록 -->
+      <div>
+        <div style="font-size:17px; font-weight:900; margin-bottom:18px;">📁 내 의뢰 현황</div>
+        <div class="my-requests">
+          <div class="mreq-card">
+            <div class="mreq-left"><h4>아크릴 키링 1,000개</h4><span>아크릴굿즈 · 입찰 4건 · D-3</span></div>
+            <div class="mreq-right"><span class="mreq-price">2,500원</span><span class="chip chip-bid">입찰중</span></div>
+          </div>
+          <div class="mreq-card">
+            <div class="mreq-left"><h4>에코백 인쇄 300장</h4><span>의류/패브릭 · 패브릭工房</span></div>
+            <div class="mreq-right"><span class="mreq-price">8,500원</span><span class="chip chip-ship">배송중</span></div>
+          </div>
+          <div class="mreq-card">
+            <div class="mreq-left"><h4>홀로그램 스티커 팩</h4><span>문구/스티커 · 공동구매 74%</span></div>
+            <div class="mreq-right"><span class="mreq-price">800원</span><span class="chip chip-group">공동구매</span></div>
+          </div>
+          <div class="mreq-card">
+            <div class="mreq-left"><h4>금속 뱃지 로고 500개</h4><span>금속/뱃지 · 아크릴工房 · ⭐4.9</span></div>
+            <div class="mreq-right"><span class="mreq-price">4,100원</span><span class="chip chip-done">완료</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer style="margin-top:60px"><p>© 2026 billowy · Style A: Industrial Purple</p></footer>
+</div>
+
+<!-- ══════════ 마켓플레이스 ══════════ -->
+<div id="page-marketplace" class="page">
+  <div class="inner-page">
+    <div class="page-header">
+      <h2>🛒 마켓플레이스</h2>
+      <p>의뢰·공동구매·후기·홍보를 탐색하세요</p>
+    </div>
+    <div class="mp-tabs">
+      <button class="mp-tab active" onclick="showMpTab('mass',this)">📦 대량생산 의뢰</button>
+      <button class="mp-tab" onclick="showMpTab('group',this)">👥 공동구매 모집</button>
+      <button class="mp-tab" onclick="showMpTab('reviews',this)">✍️ 의뢰 후기</button>
+      <button class="mp-tab" onclick="showMpTab('promo',this)">🌟 생산자 홍보</button>
+    </div>
+
+    <div id="mp-mass" class="tab-panel active">
+      <div class="mp-grid">
+        <div class="mp-card"><div class="mp-card-top a">🎨</div><div class="mp-card-body"><h4>캐릭터 아크릴 스탠딩 피규어</h4><div class="mp-card-row">희망단가<strong>3,200원</strong></div><div class="mp-card-row">수량<strong>2,000개</strong></div></div><div class="mp-card-foot"><span class="chip chip-bid">입찰중 4건</span><button class="btn btn-primary btn-sm">입찰하기</button></div></div>
+        <div class="mp-card"><div class="mp-card-top b">👕</div><div class="mp-card-body"><h4>후드 티셔츠 단체복 제작</h4><div class="mp-card-row">희망단가<strong>20,000원</strong></div><div class="mp-card-row">수량<strong>500벌</strong></div></div><div class="mp-card-foot"><span class="chip chip-bid">입찰중 2건</span><button class="btn btn-primary btn-sm">입찰하기</button></div></div>
+        <div class="mp-card"><div class="mp-card-top d">🏅</div><div class="mp-card-body"><h4>금속 뱃지 로고 1,000개</h4><div class="mp-card-row">희망단가<strong>4,500원</strong></div><div class="mp-card-row">수량<strong>1,000개</strong></div></div><div class="mp-card-foot"><span class="chip chip-bid">입찰중 1건</span><button class="btn btn-primary btn-sm">입찰하기</button></div></div>
+      </div>
+    </div>
+
+    <div id="mp-group" class="tab-panel">
+      <div class="group-grid">
+        <div class="group-card"><h4>✨ 홀로그램 스티커 팩</h4><div class="progress-wrap"><div class="progress-label"><span>모집 현황</span><strong>148 / 200개</strong></div><div class="progress-bar"><div class="progress-fill" style="width:74%"></div></div></div><div class="group-foot"><span class="chip chip-group">공동구매</span><button class="btn btn-primary btn-sm">참여하기</button></div></div>
+        <div class="group-card"><h4>🧸 미니 봉제인형 세트</h4><div class="progress-wrap"><div class="progress-label"><span>모집 현황</span><strong>42 / 100개</strong></div><div class="progress-bar"><div class="progress-fill" style="width:42%"></div></div></div><div class="group-foot"><span class="chip chip-group">공동구매</span><button class="btn btn-primary btn-sm">참여하기</button></div></div>
+        <div class="group-card"><h4>📓 엽서 세트 한정판</h4><div class="progress-wrap"><div class="progress-label"><span>모집 현황</span><strong>190 / 200장</strong></div><div class="progress-bar"><div class="progress-fill" style="width:95%"></div></div></div><div class="group-foot"><span class="chip chip-group">마감임박</span><button class="btn btn-primary btn-sm">참여하기</button></div></div>
+        <div class="group-card"><h4>🎀 패브릭 파우치 10종</h4><div class="progress-wrap"><div class="progress-label"><span>모집 현황</span><strong>15 / 150개</strong></div><div class="progress-bar"><div class="progress-fill" style="width:10%"></div></div></div><div class="group-foot"><span class="chip chip-group">공동구매</span><button class="btn btn-primary btn-sm">참여하기</button></div></div>
+      </div>
+    </div>
+
+    <div id="mp-reviews" class="tab-panel">
+      <div class="review-grid">
+        <div class="review-card"><div class="review-stars">★★★★★</div><div class="review-title">마감 전날 완성해줬어요!</div><div class="review-body">납기가 촉박했는데 빠르게 제작해주셨어요. 품질도 기대 이상입니다.</div><div class="review-meta"><span>🏭 <strong>아크릴工房</strong></span><span>아크릴 키링</span></div></div>
+        <div class="review-card"><div class="review-stars">★★★★☆</div><div class="review-title">퀄리티 대비 가격 최고</div><div class="review-body">단가 낮게 제안해주셔서 걱정했는데 결과물이 정말 좋았습니다. 재주문 예정!</div><div class="review-meta"><span>🏭 <strong>패브릭工房</strong></span><span>에코백 인쇄</span></div></div>
+        <div class="review-card"><div class="review-stars">★★★★★</div><div class="review-title">소통이 너무 잘 되어요</div><div class="review-body">수정 요청에도 빠르게 응해주시고, 최종 결과물 완벽합니다. 강추!</div><div class="review-meta"><span>🏭 <strong>금속工房</strong></span><span>금속 뱃지</span></div></div>
+      </div>
+    </div>
+
+    <div id="mp-promo" class="tab-panel">
+      <div class="promo-list">
+        <div class="promo-card">
+          <div class="promo-card-head">
+            <div class="promo-author"><div class="promo-avatar">아</div><div class="promo-author-info"><strong>아크릴工房</strong><span>아크릴굿즈 전문 · ⭐4.9 · 완료 87건</span></div></div>
+            <span class="chip chip-done">생산자</span>
+          </div>
+          <h4>투명 아크릴 전문 제작소 · MOQ 100개부터</h4>
+          <p>10년 경력의 아크릴 가공 전문 업체입니다. 키링, 스탠딩, 포토카드 홀더 등 모든 아크릴 굿즈를 제작합니다. 최소 주문 수량 100개, 샘플 제작 가능.</p>
+        </div>
+        <div class="promo-card">
+          <div class="promo-card-head">
+            <div class="promo-author"><div class="promo-avatar" style="background:linear-gradient(135deg,var(--success),#34d399)">패</div><div class="promo-author-info"><strong>패브릭工房</strong><span>의류/패브릭 전문 · ⭐4.8 · 완료 124건</span></div></div>
+            <span class="chip chip-done">생산자</span>
+          </div>
+          <h4>패브릭·에코백·의류 인쇄 전문 — 빠른 납기</h4>
+          <p>디지털 프린팅부터 실크스크린까지, 모든 패브릭 인쇄를 담당합니다. 평균 납기 7일, 긴급 주문도 협의 가능합니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer style="margin-top:0"><p>© 2026 billowy · Style A: Industrial Purple</p></footer>
+</div>
+
+<script>
+  function showPage(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-'+name).classList.add('active');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    else {
+      var map = {home:0,manufacturer:1,client:2,marketplace:3};
+      var btns = document.querySelectorAll('nav button');
+      if (btns[map[name]]) btns[map[name]].classList.add('active');
+    }
+    window.scrollTo(0,0);
+  }
+  function showMpTab(tab, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('mp-'+tab).classList.add('active');
+    document.querySelectorAll('.mp-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>

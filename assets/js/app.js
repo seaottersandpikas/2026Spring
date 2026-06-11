@@ -3023,7 +3023,7 @@ async function openReceiptModal(requestId) {
             (req.tracking_number?'<tr><td style="font-weight:600">송장번호</td><td><code>'+escHtml(req.tracking_number)+'</code></td></tr>':'')+
             (req.completed_at?'<tr><td style="font-weight:600">거래 완료일</td><td>'+new Date(req.completed_at).toLocaleString('ko-KR')+'</td></tr>':'')+
             '</table>' +
-            '<div style="text-align:center;color:var(--gray);font-size:12px;margin-top:16px">foaming — 굿즈 제작 플랫폼 | 가상 거래 내역서</div>' +
+            '<div style="text-align:center;color:var(--gray);font-size:12px;margin-top:16px">billowy — 굿즈 제작 플랫폼 | 가상 거래 내역서</div>' +
             '</div>';
     } catch(e) {
         if (body) body.innerHTML = '<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>';
