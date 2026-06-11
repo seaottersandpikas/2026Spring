@@ -285,6 +285,21 @@
                         <div>전문 분야 의뢰를 찾아 입찰해보세요!<br>
                         <a href="#" onclick="showMfgTab('requests',null);return false;" style="color:var(--primary)">추천 의뢰 보기 →</a></div>
                     </div>
+                    <div class="divider" style="margin:20px 0"></div>
+                    <div class="flex-between mb-12">
+                        <h3 style="font-size:16px;font-weight:700">📊 진행 중인 입찰</h3>
+                        <button class="btn btn-sm btn-secondary" onclick="showMfgTab('bids',null)">전체 보기 →</button>
+                    </div>
+                    <!-- 입찰 중 -->
+                    <div style="margin-bottom:12px">
+                        <div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:8px">📨 입찰 중</div>
+                        <div id="mfg-dash-bid-list"><div style="padding:12px;color:var(--gray);font-size:13px">로딩 중...</div></div>
+                    </div>
+                    <!-- 매칭완료/제작중 -->
+                    <div>
+                        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px">🔧 진행 중 (매칭/제작/배송)</div>
+                        <div id="mfg-dash-active-list"><div style="padding:12px;color:var(--gray);font-size:13px">로딩 중...</div></div>
+                    </div>
                 </div>
 
                 <!-- 추천 의뢰 목록 -->
@@ -494,6 +509,14 @@
                         <div>의뢰를 생성하면 생산자들이 입찰을 시작합니다.<br>
                         <a href="#" onclick="showBizTab('create',null);return false;" style="color:var(--primary)">첫 의뢰 만들기 →</a></div>
                     </div>
+                    <div class="divider" style="margin:20px 0"></div>
+                    <div class="flex-between mb-12">
+                        <h3 style="font-size:16px;font-weight:700">📁 내 의뢰 현황</h3>
+                        <button class="btn btn-sm btn-secondary" onclick="showBizTab('manage',null)">전체 보기 →</button>
+                    </div>
+                    <div id="biz-dashboard-requests">
+                        <div class="empty-state" style="padding:20px"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
+                    </div>
                 </div>
 
                 <!-- 의뢰 생성 -->
@@ -691,6 +714,14 @@
                         <span>💡</span>
                         <div>개인 의뢰 또는 공동제작 의뢰를 시작해보세요!<br>
                         <a href="#" onclick="showPersonalTab('individual',null);return false;" style="color:var(--primary)">개인 의뢰 만들기 →</a></div>
+                    </div>
+                    <div class="divider" style="margin:20px 0"></div>
+                    <div class="flex-between mb-12">
+                        <h3 style="font-size:16px;font-weight:700">📁 내 의뢰 현황</h3>
+                        <button class="btn btn-sm btn-secondary" onclick="showPersonalTab('myorders',null)">전체 보기 →</button>
+                    </div>
+                    <div id="per-dashboard-requests">
+                        <div class="empty-state" style="padding:20px"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>
                     </div>
                 </div>
 
@@ -921,14 +952,24 @@
         <!-- 공동제작 모집 탭 -->
         <div id="mp-group" class="tab-content">
             <div class="flex-between mb-16">
-                <h2 class="section-title" style="margin-bottom:0">👥 공동제작 모집 목록</h2>
+                <h2 class="section-title" style="margin-bottom:0">👥 공동제작 모집</h2>
                 <button class="btn btn-primary btn-sm" onclick="navigateTo('client-personal');showPersonalTab('group',null)">➕ 공동제작 의뢰 작성</button>
             </div>
-            <div id="mp-group-my" style="display:none;margin-bottom:20px">
-                <h4 style="font-size:14px;color:var(--gray);margin-bottom:10px">📌 내가 등록한 공동제작</h4>
-                <div id="mp-group-my-list"></div>
+            <!-- 공동제작 서브탭 -->
+            <div class="tabs" style="margin-bottom:20px" id="mp-group-subtabs">
+                <button class="tab-btn active" onclick="showMpGroupTab('all',this)">📋 모집 중</button>
+                <button class="tab-btn" onclick="showMpGroupTab('mine',this)">📌 내가 등록한</button>
+                <button class="tab-btn" onclick="showMpGroupTab('joined',this)">🤝 내가 참여한</button>
             </div>
-            <div id="mp-group-list"><div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div></div>
+            <div id="mp-group-tab-all">
+                <div id="mp-group-list"><div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div></div>
+            </div>
+            <div id="mp-group-tab-mine" style="display:none">
+                <div id="mp-group-my-list"><div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div></div>
+            </div>
+            <div id="mp-group-tab-joined" style="display:none">
+                <div id="mp-group-joined-list"><div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div></div>
+            </div>
         </div>
 
         <div id="mp-reviews" class="tab-content">
@@ -1455,6 +1496,42 @@
     <div class="modal" style="max-width:600px">
         <button class="modal-close" onclick="closeModal('postDetailModal')">×</button>
         <div id="postDetailBody" style="padding:4px 0"></div>
+    </div>
+</div>
+
+<!-- 공동제작 수정 모달 -->
+<div class="modal-overlay" id="editGroupModal">
+    <div class="modal" style="max-width:520px">
+        <button class="modal-close" onclick="closeModal('editGroupModal')">×</button>
+        <h3>✏️ 공동제작 의뢰 수정</h3>
+        <input type="hidden" id="editGroupId">
+        <div class="form-group"><label>아이템 명칭 *</label><input type="text" id="editGroupTitle"></div>
+        <div class="form-row">
+            <div class="form-group"><label>최소 모집 수량 *</label><input type="number" id="editGroupMinQty"></div>
+            <div class="form-group"><label>희망 단가 (원) *</label><input type="number" id="editGroupPrice"></div>
+        </div>
+        <div class="form-group"><label>모집 마감일</label><input type="date" id="editGroupDeadline"></div>
+        <div class="form-group"><label>디자인 가이드라인</label><textarea id="editGroupDesign" style="min-height:70px"></textarea></div>
+        <div class="form-group"><label>상세 설명</label><textarea id="editGroupDetail" style="min-height:70px"></textarea></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('editGroupModal')">취소</button>
+            <button class="btn btn-primary" id="editGroupBtn" onclick="submitEditGroup()">💾 저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 홍보글 수정 모달 -->
+<div class="modal-overlay" id="editPromoModal">
+    <div class="modal" style="max-width:520px">
+        <button class="modal-close" onclick="closeModal('editPromoModal')">×</button>
+        <h3>✏️ 홍보글 수정</h3>
+        <input type="hidden" id="editPromoId">
+        <div class="form-group"><label>제목 *</label><input type="text" id="editPromoTitle"></div>
+        <div class="form-group"><label>내용 *</label><textarea id="editPromoContent" style="min-height:120px"></textarea></div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('editPromoModal')">취소</button>
+            <button class="btn btn-primary" id="editPromoBtn" onclick="submitEditPromo()">💾 저장</button>
+        </div>
     </div>
 </div>
 

@@ -172,11 +172,15 @@ function updateUILoggedOut() {
     var avatar   = document.getElementById('userAvatar');
     if (loginBtn) loginBtn.style.display = 'flex';
     if (avatar)   avatar.style.display   = 'none';
-    // 프로필 드롭다운도 닫기
     var dd = document.getElementById('profileDropdown');
     if (dd) dd.classList.remove('show');
     // 역할 분리 UI 리셋
     applyRoleBasedUI();
+    // 마켓플레이스 캐시 초기화 (계정 전환 시 이전 데이터 남지 않도록)
+    var grids = ['mp-reviews-grid','mp-promo-grid','mp-group-list','mp-group-my-list','mp-group-joined-list','mp-reviews-my-grid','mp-promo-my-grid'];
+    grids.forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML=''; });
+    var mySec = ['mp-reviews-my','mp-promo-my','mp-group-my','mp-group-tab-mine','mp-group-tab-joined'];
+    mySec.forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
 }
 
 // ── 로그인 ─────────────────────────────────────────────
@@ -335,6 +339,13 @@ async function loadBizDashboard() {
         setEl('biz-count-bidding',   b.filter(function(x){ return x.status==='bidding'; }).length);
         setEl('biz-count-producing', b.filter(function(x){ return x.status==='producing'; }).length);
         setEl('biz-count-completed', b.filter(function(x){ return x.status==='matched'||x.status==='producing'||x.status==='shipping'||x.status==='completed'; }).length);
+        // 대시보드 미리보기 (최근 5건)
+        var box = document.getElementById('biz-dashboard-requests');
+        if (box) {
+            var preview = b.slice(0, 5);
+            if (!preview.length) { box.innerHTML = '<div class="empty-state" style="padding:16px"><p>등록된 의뢰가 없습니다.</p></div>'; }
+            else { box.innerHTML = preview.map(renderRequestCard).join(''); }
+        }
     } catch(e){ console.error(e); }
     autoMatchOverdueBids();
     Requests.autoCompleteOverdueShipping().catch(function(e){ console.warn('auto-complete 실패:', e.message); });
@@ -349,6 +360,13 @@ async function loadPersonalDashboard() {
         setEl('per-count-bidding',   p.filter(function(x){ return x.status==='bidding'&&x.request_type==='personal'; }).length);
         setEl('per-count-group',     p.filter(function(x){ return x.request_type==='group'; }).length);
         setEl('per-count-completed', p.filter(function(x){ return x.status==='matched'||x.status==='producing'||x.status==='shipping'||x.status==='completed'; }).length);
+        // 대시보드 미리보기 (최근 5건)
+        var box = document.getElementById('per-dashboard-requests');
+        if (box) {
+            var preview = p.slice(0, 5);
+            if (!preview.length) { box.innerHTML = '<div class="empty-state" style="padding:16px"><p>등록된 의뢰가 없습니다.</p></div>'; }
+            else { box.innerHTML = preview.map(renderRequestCard).join(''); }
+        }
     } catch(e){ console.error(e); }
     autoMatchOverdueBids();
     Requests.autoCompleteOverdueShipping().catch(function(e){ console.warn('auto-complete 실패:', e.message); });
@@ -1085,6 +1103,21 @@ async function loadMfgDashboard() {
         setEl('mfg-dash-bidding',    bids.filter(function(b){ return b.status==='pending'||b.status==='submitted'; }).length);
         setEl('mfg-dash-producing',  bids.filter(function(b){ return b.requests&&b.requests.status==='producing'; }).length);
         setEl('mfg-dash-completed',  bids.filter(function(b){ return b.status==='selected'&&b.requests&&b.requests.status==='completed'; }).length);
+        // 대시보드 미리보기 — 입찰 중
+        var bidBox = document.getElementById('mfg-dash-bid-list');
+        if (bidBox) {
+            var bidding = bids.filter(function(b){ return b.status==='pending'||b.status==='submitted'; }).slice(0, 3);
+            bidBox.innerHTML = bidding.length ? bidding.map(renderMfgBidCard).join('') : '<div style="padding:12px;color:var(--gray);font-size:13px">진행 중인 입찰이 없습니다.</div>';
+        }
+        // 대시보드 미리보기 — 매칭/제작/배송 중
+        var activeBox = document.getElementById('mfg-dash-active-list');
+        if (activeBox) {
+            var active = bids.filter(function(b){
+                var rs = b.requests ? b.requests.status : '';
+                return b.status==='selected' && (rs==='matched'||rs==='producing'||rs==='shipping');
+            }).slice(0, 3);
+            activeBox.innerHTML = active.length ? active.map(renderMfgBidCard).join('') : '<div style="padding:12px;color:var(--gray);font-size:13px">진행 중인 거래가 없습니다.</div>';
+        }
     } catch(e) { console.error(e); }
     Requests.autoCompleteOverdueShipping().catch(function(e){ console.warn('auto-complete 실패:', e.message); });
 }
@@ -1585,56 +1618,119 @@ async function loadMpMassRequests(category) {
     } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류가 발생했습니다.</p></div>'; }
 }
 
+// 공동제작 서브탭 전환
+function showMpGroupTab(tab, btn) {
+    document.querySelectorAll('#mp-group-subtabs .tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    document.getElementById('mp-group-tab-all').style.display    = (tab === 'all')    ? 'block' : 'none';
+    document.getElementById('mp-group-tab-mine').style.display   = (tab === 'mine')   ? 'block' : 'none';
+    document.getElementById('mp-group-tab-joined').style.display = (tab === 'joined') ? 'block' : 'none';
+    if (tab === 'joined') loadMpJoinedGroups();
+    if (tab === 'mine')   loadMpMyGroups();
+}
+
+// 전체 공동제작 목록 로드 (모집 중 탭)
 async function loadMpGroupRequests() {
-    var container   = document.getElementById('mp-group-list');
-    var mySection   = document.getElementById('mp-group-my');
-    var myContainer = document.getElementById('mp-group-my-list');
+    var container = document.getElementById('mp-group-list');
     if (!container) return;
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
     try {
-        var res = await window.supabaseClient.from('requests').select('*').eq('request_type','group').in('status',['bidding','recruiting']).order('created_at',{ascending:false}).limit(20);
+        var uid = AppState.currentUser ? AppState.currentUser.id : null;
+        var res = await window.supabaseClient.from('requests').select('*')
+            .eq('request_type','group').in('status',['bidding','recruiting'])
+            .order('created_at',{ascending:false}).limit(20);
         if (res.error) throw res.error;
         var list = res.data || [];
-        var uid  = AppState.currentUser ? AppState.currentUser.id : null;
-
-        // 본인 글 분리
-        var myList    = uid ? list.filter(function(r){ return r.user_id === uid; }) : [];
+        // 본인 글 제외 (모집 중 탭에서는 타인 글만)
         var otherList = uid ? list.filter(function(r){ return r.user_id !== uid; }) : list;
-
-        function renderGroupCard(req, isMine) {
-            var pct = req.min_quantity ? Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
-            return '<div class="request-card" style="cursor:pointer" onclick="openGroupDetail(\''+req.id+'\')">' +
-                '<div class="request-card-header">' +
-                '<h4>👥 '+escHtml(req.title)+(isMine?'<span class="status-badge" style="background:var(--lavender);color:var(--primary);margin-left:6px;font-size:10px">내 글</span>':'')+'</h4>' +
-                '<span class="status-badge status-recruiting">모집중</span></div>' +
-                '<div class="request-meta">' +
-                '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
-                '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
-                (req.recruit_deadline?'<div class="meta-item">📅 마감: <strong>'+req.recruit_deadline+'</strong></div>':'')+
-                '</div>' +
-                '<div class="co-purchase-info">' +
-                '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</strong></div>' +
-                '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
-                '</div>' +
-                '<div class="request-actions">' +
-                '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();joinGroupPurchase(\''+req.id+'\')">참여하기</button>' +
-                (isMine ? '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteGroupRequest(\''+req.id+'\')">삭제</button>' : '') +
-                '</div></div>';
-        }
-
-        if (myList.length > 0 && mySection && myContainer) {
-            mySection.style.display = 'block';
-            myContainer.innerHTML = myList.map(function(r){ return renderGroupCard(r, true); }).join('');
-        } else if (mySection) {
-            mySection.style.display = 'none';
-        }
-
         if (!otherList.length) {
             container.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><p>모집 중인 공동제작이 없습니다.</p></div>';
         } else {
             container.innerHTML = otherList.map(function(r){ return renderGroupCard(r, false); }).join('');
         }
     } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류가 발생했습니다.</p></div>'; }
+}
+
+// 내가 등록한 공동제작 (마켓플레이스)
+async function loadMpMyGroups() {
+    var container = document.getElementById('mp-group-my-list');
+    if (!container) return;
+    if (!AppState.currentUser) { container.innerHTML='<div class="empty-state"><p>로그인이 필요합니다.</p></div>'; return; }
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var res = await window.supabaseClient.from('requests').select('*')
+            .eq('request_type','group').eq('user_id', AppState.currentUser.id)
+            .order('created_at',{ascending:false}).limit(20);
+        if (res.error) throw res.error;
+        var list = res.data || [];
+        if (!list.length) {
+            container.innerHTML='<div class="empty-state"><div class="empty-icon">📌</div><p>등록한 공동제작이 없습니다.</p></div>';
+        } else {
+            container.innerHTML = list.map(function(r){ return renderGroupCard(r, true); }).join('');
+        }
+    } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류가 발생했습니다.</p></div>'; }
+}
+
+// 내가 참여한 공동제작 (마켓플레이스)
+async function loadMpJoinedGroups() {
+    var container = document.getElementById('mp-group-joined-list');
+    if (!container) return;
+    if (!AppState.currentUser) { container.innerHTML='<div class="empty-state"><p>로그인이 필요합니다.</p></div>'; return; }
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>로딩 중...</p></div>';
+    try {
+        var res = await window.supabaseClient.from('group_participants')
+            .select('*, request:requests(id,title,category,min_quantity,current_quantity,target_price,status,recruit_deadline)')
+            .eq('user_id', AppState.currentUser.id);
+        if (res.error) throw res.error;
+        var list = res.data || [];
+        if (!list.length) {
+            container.innerHTML='<div class="empty-state"><div class="empty-icon">🤝</div><p>참여한 공동제작이 없습니다.</p></div>';
+            return;
+        }
+        container.innerHTML = list.map(function(p) {
+            var req = p.request || {};
+            var pct = req.min_quantity ? Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
+            return '<div class="request-card" style="cursor:pointer;border-left:4px solid var(--secondary)" onclick="openGroupDetail(\''+req.id+'\')">' +
+                '<div class="request-card-header"><h4>👥 '+escHtml(req.title||'-')+'</h4><span class="status-badge status-recruiting">참여중</span></div>' +
+                '<div class="request-meta">' +
+                '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
+                '<div class="meta-item">내 수량: <strong>'+p.quantity.toLocaleString()+'개</strong></div>' +
+                '<div class="meta-item">💰 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+                '</div>' +
+                '<div class="co-purchase-info">' +
+                '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</strong></div>' +
+                '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
+                '</div>' +
+                '<div class="request-actions">' +
+                (req.status==='bidding'?'<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();cancelGroupParticipation(\''+p.id+'\',\''+req.id+'\','+p.quantity+')">참여 취소</button>':'')+
+                '</div></div>';
+        }).join('');
+    } catch(e) { console.error(e); container.innerHTML='<div class="empty-state"><p>오류: '+escHtml(e.message)+'</p></div>'; }
+}
+
+// 공동제작 카드 렌더 (전역)
+function renderGroupCard(req, isMine) {
+    var pct = req.min_quantity ? Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
+    return '<div class="request-card" style="cursor:pointer" onclick="openGroupDetail(\''+req.id+'\')">' +
+        '<div class="request-card-header">' +
+        '<h4>👥 '+escHtml(req.title)+(isMine?'<span class="status-badge" style="background:var(--lavender);color:var(--primary);margin-left:6px;font-size:10px">내 글</span>':'')+'</h4>' +
+        '<span class="status-badge status-recruiting">모집중</span></div>' +
+        '<div class="request-meta">' +
+        '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
+        '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
+        (req.recruit_deadline?'<div class="meta-item">📅 마감: <strong>'+req.recruit_deadline+'</strong></div>':'')+
+        '</div>' +
+        '<div class="co-purchase-info">' +
+        '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</strong></div>' +
+        '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
+        '</div>' +
+        '<div class="request-actions">' +
+        (isMine
+            ? '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openEditGroupModal(\''+req.id+'\')">✏️ 수정</button>' +
+              '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteGroupRequest(\''+req.id+'\')">삭제</button>'
+            : '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();joinGroupPurchase(\''+req.id+'\')">참여하기</button>'
+        ) +
+        '</div></div>';
 }
 
 var _postType = '', _postRating = 4;
@@ -1789,20 +1885,22 @@ async function loadMpPromo() {
         var myList    = uid ? list.filter(function(p){ return p.user_id === uid; }) : [];
         var otherList = uid ? list.filter(function(p){ return p.user_id !== uid; }) : list;
 
+        // 내가 등록한 홍보글 섹션
         if (myList.length > 0 && mySection && myGrid) {
             mySection.style.display = 'block';
-            if (myGrid) myGrid.innerHTML = myList.map(function(post){ return renderPromoCard(post, true); }).join('');
+            myGrid.className = 'promo-grid';
+            myGrid.innerHTML = myList.map(function(post){ return renderPromoCard(post, true); }).join('');
         } else if (mySection) {
             mySection.style.display = 'none';
         }
 
+        // 타인 홍보글 (중복 없이 otherList만)
         if (!otherList.length) {
             grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🌟</div><p>등록된 홍보가 없습니다.</p></div>';
             return;
         }
-        // 홍보글은 promo-grid (세로 중앙 정렬, 큰 카드)
         grid.className = 'promo-grid';
-        grid.innerHTML = list.map(function(post){ return renderPromoCard(post); }).join('');
+        grid.innerHTML = otherList.map(function(post){ return renderPromoCard(post, false); }).join('');
     } catch(e) {
         console.error(e);
         grid.innerHTML = '<div class="empty-state"><p>오류가 발생했습니다.</p></div>';
@@ -1892,7 +1990,7 @@ function renderPromoCard(post, isMine) {
         (isMine ? '<span class="status-badge" style="background:var(--lavender);color:var(--primary);margin-left:6px;font-size:10px">내 글</span>' : '') +
         '<span class="text-xs text-muted" style="margin-left:8px">'+date+'</span>' +
         '</div>' +
-        (isMine ? '<button class="btn btn-sm btn-danger" style="font-size:11px;padding:3px 10px" onclick="event.stopPropagation();deletePost(\''+post.id+'\',\'promo\')">삭제</button>' : '') +
+        (isMine ? '<button class="btn btn-sm btn-secondary" style="font-size:11px;padding:3px 10px;margin-right:4px" onclick="event.stopPropagation();openEditPromoModal(\''+post.id+'\')">수정</button><button class="btn btn-sm btn-danger" style="font-size:11px;padding:3px 10px" onclick="event.stopPropagation();deletePost(\''+post.id+'\',\'promo\')">삭제</button>' : '') +
         '</div>' +
         '<h4 style="font-size:17px;font-weight:700;margin:4px 0 8px;color:var(--dark)">'+escHtml(post.title)+'</h4>' +
         '<div class="promo-card-body" id="body-'+post.id+'">' +
@@ -2993,8 +3091,7 @@ async function loadMyJoinedGroups() {
     try {
         var res = await window.supabaseClient.from('group_participants')
             .select('*, request:requests(id,title,category,min_quantity,current_quantity,target_price,status,recruit_deadline)')
-            .eq('user_id', AppState.currentUser.id)
-            .order('created_at', { ascending: false });
+            .eq('user_id', AppState.currentUser.id);
         if (res.error) throw res.error;
         var list = res.data || [];
         if (!list.length) {
@@ -3085,6 +3182,84 @@ function renderMyReviewsSection(myList) {
 function toggleMyReviews() {
     _myReviewsExpanded = !_myReviewsExpanded;
     renderMyReviewsSection(_myReviewsData);
+}
+
+// ═══════════════════════════════════════════════════
+// 공동제작 수정
+// ═══════════════════════════════════════════════════
+async function openEditGroupModal(requestId) {
+    try {
+        var res = await window.supabaseClient.from('requests').select('*').eq('id', requestId).single();
+        if (res.error) throw res.error;
+        var req = res.data;
+        document.getElementById('editGroupId').value      = req.id;
+        document.getElementById('editGroupTitle').value   = req.title || '';
+        document.getElementById('editGroupMinQty').value  = req.min_quantity || '';
+        document.getElementById('editGroupPrice').value   = req.target_price || '';
+        document.getElementById('editGroupDeadline').value= req.recruit_deadline || '';
+        document.getElementById('editGroupDesign').value  = req.design_guide || '';
+        document.getElementById('editGroupDetail').value  = req.detail_note || '';
+        openModal('editGroupModal');
+    } catch(e) { showToast('수정 정보 로드 실패: '+e.message,'error'); }
+}
+
+async function submitEditGroup() {
+    var id      = document.getElementById('editGroupId').value;
+    var title   = document.getElementById('editGroupTitle').value.trim();
+    var minQty  = parseInt(document.getElementById('editGroupMinQty').value)||0;
+    var price   = parseInt(document.getElementById('editGroupPrice').value)||0;
+    if (!title||!minQty||!price) { showToast('필수 항목을 입력해주세요.','error'); return; }
+    var btn = document.getElementById('editGroupBtn');
+    if (btn) { btn.disabled=true; btn.textContent='저장 중...'; }
+    try {
+        var res = await window.supabaseClient.from('requests').update({
+            title:            title,
+            min_quantity:     minQty,
+            target_price:     price,
+            recruit_deadline: document.getElementById('editGroupDeadline').value||null,
+            design_guide:     document.getElementById('editGroupDesign').value,
+            detail_note:      document.getElementById('editGroupDetail').value
+        }).eq('id', id).eq('user_id', AppState.currentUser.id);
+        if (res.error) throw res.error;
+        closeModal('editGroupModal');
+        showToast('수정되었습니다.','success');
+        loadMpMyGroups();
+        loadMpGroupRequests();
+    } catch(e) { showToast('수정 실패: '+e.message,'error'); }
+    finally { if (btn) { btn.disabled=false; btn.textContent='💾 저장'; } }
+}
+
+// ═══════════════════════════════════════════════════
+// 홍보글 수정
+// ═══════════════════════════════════════════════════
+async function openEditPromoModal(postId) {
+    try {
+        var res = await window.supabaseClient.from('posts').select('*').eq('id', postId).single();
+        if (res.error) throw res.error;
+        var post = res.data;
+        document.getElementById('editPromoId').value      = post.id;
+        document.getElementById('editPromoTitle').value   = post.title || '';
+        document.getElementById('editPromoContent').value = post.content || '';
+        openModal('editPromoModal');
+    } catch(e) { showToast('수정 정보 로드 실패: '+e.message,'error'); }
+}
+
+async function submitEditPromo() {
+    var id      = document.getElementById('editPromoId').value;
+    var title   = document.getElementById('editPromoTitle').value.trim();
+    var content = document.getElementById('editPromoContent').value.trim();
+    if (!title||!content) { showToast('제목과 내용을 입력해주세요.','error'); return; }
+    var btn = document.getElementById('editPromoBtn');
+    if (btn) { btn.disabled=true; btn.textContent='저장 중...'; }
+    try {
+        var res = await window.supabaseClient.from('posts').update({ title, content })
+            .eq('id', id).eq('user_id', AppState.currentUser.id);
+        if (res.error) throw res.error;
+        closeModal('editPromoModal');
+        showToast('수정되었습니다.','success');
+        loadMpPromo();
+    } catch(e) { showToast('수정 실패: '+e.message,'error'); }
+    finally { if (btn) { btn.disabled=false; btn.textContent='💾 저장'; } }
 }
 
 document.addEventListener('click',function(e){
