@@ -128,10 +128,10 @@
                     <div class="home-role-link">생산자로 참여 →</div>
                 </div>
                 <div class="home-role-card" onclick="navigateAsRole('client')">
-                    <div class="home-role-icon hri-b">🏢</div>
-                    <h3>사업자 의뢰 (B2B)</h3>
-                    <p>의뢰를 등록하면 검증된 생산자들이 경쟁 입찰로 최적가를 제시합니다.</p>
-                    <div class="home-role-link">사업자로 시작 →</div>
+                    <div class="home-role-icon hri-b">📋</div>
+                    <h3>의뢰자 (Client)</h3>
+                    <p>사업자 또는 개인으로 의뢰를 등록하면 검증된 생산자들이 최적가를 제시합니다.</p>
+                    <div class="home-role-link">의뢰 시작하기 →</div>
                 </div>
                 <div class="home-role-card" onclick="navigateTo('marketplace')">
                     <div class="home-role-icon hri-p">🛒</div>
@@ -1536,6 +1536,24 @@
         <div style="display:flex;gap:12px;justify-content:flex-end">
             <button class="btn btn-secondary" onclick="closeModal('editPromoModal')">취소</button>
             <button class="btn btn-primary" id="editPromoBtn" onclick="submitEditPromo()">💾 저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 공동제작 취소 사유 모달 -->
+<div class="modal-overlay" id="cancelGroupModal">
+    <div class="modal" style="max-width:460px">
+        <button class="modal-close" onclick="closeModal('cancelGroupModal')">×</button>
+        <h3>🗑️ 공동제작 모집 취소</h3>
+        <div class="alert alert-warning mb-16"><span>⚠️</span><span>취소 시 참여자들에게 취소 사유가 공개되며, 모집이 중단됩니다.</span></div>
+        <input type="hidden" id="cancelGroupRequestId">
+        <div class="form-group">
+            <label>취소 사유 *</label>
+            <textarea id="cancelGroupReason" placeholder="취소 사유를 입력해주세요. (참여자들에게 공개됩니다)" style="min-height:90px"></textarea>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="btn btn-secondary" onclick="closeModal('cancelGroupModal')">뒤로</button>
+            <button class="btn btn-danger" id="cancelGroupBtn" onclick="submitCancelGroup()">모집 취소</button>
         </div>
     </div>
 </div>

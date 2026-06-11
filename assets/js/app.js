@@ -1694,7 +1694,7 @@ async function loadMpGroupRequests() {
     try {
         var uid = AppState.currentUser ? AppState.currentUser.id : null;
         var res = await window.supabaseClient.from('requests').select('*')
-            .eq('request_type','group').in('status',['bidding','recruiting'])
+            .eq('request_type','group').in('status',['bidding','recruiting','cancelled'])
             .order('created_at',{ascending:false}).limit(20);
         if (res.error) throw res.error;
         var list = res.data || [];
@@ -1767,27 +1767,51 @@ async function loadMpJoinedGroups() {
 
 // 공동제작 카드 렌더 (전역)
 function renderGroupCard(req, isMine) {
+    var isCancelled = req.status === 'cancelled';
     var pct = req.min_quantity ? Math.min(100,Math.round((req.current_quantity||0)/req.min_quantity*100)) : 0;
-    return '<div class="request-card" style="cursor:pointer" onclick="openGroupDetail(\''+req.id+'\')">' +
+
+    // 취소된 글: 흐리게 + 취소됨 배지 + 사유 표시
+    var cancelStyle = isCancelled ? 'opacity:0.6;' : '';
+    var statusBadge = isCancelled
+        ? '<span class="status-badge status-draft">🚫 취소됨</span>'
+        : '<span class="status-badge status-recruiting">모집중</span>';
+
+    // 취소 사유 추출 (detail_note에서 [취소 사유] 이후 내용)
+    var cancelReasonHtml = '';
+    if (isCancelled && req.detail_note) {
+        var match = req.detail_note.match(/\[취소 사유\]\s*([\s\S]+)$/);
+        if (match) {
+            cancelReasonHtml = '<div class="alert alert-warning" style="margin-top:10px;padding:8px 12px;font-size:12px"><span>⚠️</span><span><strong>취소 사유:</strong> '+escHtml(match[1].trim())+'</span></div>';
+        }
+    }
+
+    return '<div class="request-card" style="cursor:pointer;'+cancelStyle+'" onclick="openGroupDetail(\''+req.id+'\')">' +
         '<div class="request-card-header">' +
         '<h4>👥 '+escHtml(req.title)+(isMine?'<span class="status-badge" style="background:var(--lavender);color:var(--primary);margin-left:6px;font-size:10px">내 글</span>':'')+'</h4>' +
-        '<span class="status-badge status-recruiting">모집중</span></div>' +
+        statusBadge+'</div>' +
         '<div class="request-meta">' +
         '<div class="meta-item">📦 '+escHtml(req.category||'-')+'</div>' +
         '<div class="meta-item">💰 희망 단가: <strong>'+(req.target_price||0).toLocaleString()+'원</strong></div>' +
         (req.recruit_deadline?'<div class="meta-item">📅 마감: <strong>'+req.recruit_deadline+'</strong></div>':'')+
         '</div>' +
-        '<div class="co-purchase-info">' +
-        '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</strong></div>' +
-        '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
-        '</div>' +
-        '<div class="request-actions">' +
-        (isMine
-            ? '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openEditGroupModal(\''+req.id+'\')">✏️ 수정</button>' +
-              '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteGroupRequest(\''+req.id+'\')">삭제</button>'
-            : '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();joinGroupPurchase(\''+req.id+'\')">참여하기</button>'
+        (isCancelled
+            ? cancelReasonHtml
+            : '<div class="co-purchase-info">' +
+              '<div class="flex-between"><span>모집 현황</span><strong>'+(req.current_quantity||0)+' / '+(req.min_quantity||0)+'개</strong></div>' +
+              '<div class="progress-bar mt-8"><div class="fill" style="width:'+pct+'%"></div></div>' +
+              '</div>'
         ) +
-        '</div></div>';
+        (!isCancelled
+            ? '<div class="request-actions">' +
+              (isMine
+                  ? '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openEditGroupModal(\''+req.id+'\')">✏️ 수정</button>' +
+                    '<button class="btn btn-sm" style="background:#e05c5c;color:#fff" onclick="event.stopPropagation();deleteGroupRequest(\''+req.id+'\')">모집 취소</button>'
+                  : '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();joinGroupPurchase(\''+req.id+'\')">참여하기</button>'
+              ) +
+              '</div>'
+            : ''
+        ) +
+        '</div>';
 }
 
 var _postType = '', _postRating = 4;
@@ -3042,16 +3066,42 @@ async function deletePost(postId, gridId) {
     } catch(e) { showToast('삭제 실패: ' + e.message, 'error'); }
 }
 
-async function deleteGroupRequest(requestId) {
+// 공동제작 취소 모달 열기 (삭제 대신 취소 처리)
+function deleteGroupRequest(requestId) {
     if (!AppState.currentUser) return;
-    if (!confirm('이 공동제작 의뢰를 삭제하시겠습니까?')) return;
+    var ridEl = document.getElementById('cancelGroupRequestId');
+    var reasonEl = document.getElementById('cancelGroupReason');
+    if (ridEl) ridEl.value = requestId;
+    if (reasonEl) reasonEl.value = '';
+    openModal('cancelGroupModal');
+}
+
+// 공동제작 취소 처리 — 삭제 대신 status='cancelled' + cancel_reason 저장
+async function submitCancelGroup() {
+    var requestId = (document.getElementById('cancelGroupRequestId') || {}).value || '';
+    var reason    = ((document.getElementById('cancelGroupReason') || {}).value || '').trim();
+    if (!reason) { showToast('취소 사유를 입력해주세요.', 'error'); return; }
+    var btn = document.getElementById('cancelGroupBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '처리 중...'; }
     try {
-        var res = await window.supabaseClient.from('requests').delete()
-            .eq('id', requestId).eq('user_id', AppState.currentUser.id).eq('status', 'bidding');
+        var res = await window.supabaseClient.from('requests')
+            .update({ status: 'cancelled', detail_note: (await (async function() {
+                var r = await window.supabaseClient.from('requests').select('detail_note').eq('id', requestId).single();
+                var prev = (r.data && r.data.detail_note) ? r.data.detail_note + '\n\n' : '';
+                return prev + '[취소 사유] ' + reason;
+            })()) })
+            .eq('id', requestId)
+            .eq('user_id', AppState.currentUser.id);
         if (res.error) throw res.error;
-        showToast('삭제되었습니다.', 'success');
+        closeModal('cancelGroupModal');
+        showToast('공동제작 모집이 취소되었습니다.', 'info');
         loadMpGroupRequests();
-    } catch(e) { showToast('삭제 실패: ' + e.message, 'error'); }
+        loadMpMyGroups();
+    } catch(e) {
+        showToast('취소 처리 실패: ' + e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '모집 취소'; }
+    }
 }
 
 // ═══════════════════════════════════════════════════
