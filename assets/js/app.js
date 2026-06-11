@@ -1870,9 +1870,10 @@ async function loadMpReviews() {
 }
 
 async function loadMpPromo() {
-    var grid      = document.getElementById('mp-promo-grid');
-    var mySection = document.getElementById('mp-promo-my');
-    var myGrid    = document.getElementById('mp-promo-my-grid');
+    var grid         = document.getElementById('mp-promo-grid');
+    var mySection    = document.getElementById('mp-promo-my');
+    var myGrid       = document.getElementById('mp-promo-my-grid');
+    var othersHeader = document.getElementById('mp-promo-others-header');
     if (!grid) return;
     grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray)">⏳ 로딩 중...</div>';
     try {
@@ -1885,7 +1886,7 @@ async function loadMpPromo() {
         var myList    = uid ? list.filter(function(p){ return p.user_id === uid; }) : [];
         var otherList = uid ? list.filter(function(p){ return p.user_id !== uid; }) : list;
 
-        // 내가 등록한 홍보글 섹션
+        // 내가 등록한 홍보글
         if (myList.length > 0 && mySection && myGrid) {
             mySection.style.display = 'block';
             myGrid.className = 'promo-grid';
@@ -1894,9 +1895,17 @@ async function loadMpPromo() {
             mySection.style.display = 'none';
         }
 
-        // 타인 홍보글 (중복 없이 otherList만)
+        // 다른 생산자 홍보글 헤더 — 내 글이 있고 타인 글도 있을 때만 표시
+        if (othersHeader) {
+            othersHeader.style.display = (myList.length > 0 && otherList.length > 0) ? 'block' : 'none';
+        }
+
+        // 타인 홍보글
         if (!otherList.length) {
-            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🌟</div><p>등록된 홍보가 없습니다.</p></div>';
+            grid.innerHTML = myList.length
+                ? ''  // 내 글만 있으면 빈 상태 숨김
+                : '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🌟</div><p>등록된 홍보가 없습니다.</p></div>';
+            grid.className = 'promo-grid';
             return;
         }
         grid.className = 'promo-grid';

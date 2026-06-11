@@ -1001,9 +1001,14 @@
                 <button class="btn btn-primary btn-sm" id="mp-write-promo-btn" onclick="openCreatePost('promo')">✏️ 홍보 등록</button>
             </div>
             <p class="text-sm text-muted mb-16">생산자의 포트폴리오를 탐색하세요. 마음에 드는 생산자에게 직접 의뢰할 수 있습니다.</p>
-            <div id="mp-promo-my" style="display:none;margin-bottom:20px">
-                <h4 style="font-size:14px;color:var(--gray);margin-bottom:10px">📌 내가 등록한 홍보</h4>
+            <!-- 내가 등록한 홍보 -->
+            <div id="mp-promo-my" style="display:none;margin-bottom:32px">
+                <h4 style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--lavender)">📌 내가 등록한 홍보</h4>
                 <div class="promo-grid" id="mp-promo-my-grid"></div>
+            </div>
+            <!-- 다른 생산자 홍보 -->
+            <div id="mp-promo-others-header" style="display:none;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border)">
+                <h4 style="font-size:15px;font-weight:800;color:var(--text)">🌟 다른 생산자 홍보</h4>
             </div>
             <div class="feed-grid" id="mp-promo-grid">
                 <div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🌟</div><p>등록된 홍보가 없습니다.</p></div>
