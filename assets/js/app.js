@@ -3062,7 +3062,7 @@ function renderMyReviewsSection(myList) {
     if (!myList || !myList.length) { section.style.display = 'none'; return; }
     _myReviewsData = myList;
     section.style.display = 'block';
-    var MAX_VISIBLE = 3;
+    var MAX_VISIBLE = 3; // 가로 1줄 분량
     var visible = _myReviewsExpanded ? myList : myList.slice(0, MAX_VISIBLE);
     grid.innerHTML = visible.map(function(post){ return renderFeedCard(post, true); }).join('');
     // 더보기 버튼

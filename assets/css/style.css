@@ -21,11 +21,9 @@
             --shadow: 0 2px 15px rgba(0,0,0,0.08); --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
             --radius: 12px; --radius-sm: 8px;
         }
-/* 내가 쓴 후기: 1열 고정 */
-#mp-reviews-my .feed-grid,
-#mp-promo-my .promo-grid {
-    grid-template-columns: 1fr !important;
-    max-width: 680px;
+/* 내가 쓴 후기: 가로 그리드 유지, 1줄 초과 시 더보기 처리는 JS */
+#mp-reviews-my .feed-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 html { overflow-x: hidden; }
 
