@@ -3272,3 +3272,16 @@ document.addEventListener('click',function(e){
     if(d&&d.classList.contains('show')&&!e.target.closest('.nav-user'))d.classList.remove('show');
 });
 document.addEventListener('DOMContentLoaded', initApp);
+
+// 모바일: 테이블 수평 스크롤 wrapper 자동 추가
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.innerWidth > 480) return;
+    document.querySelectorAll('table.data-table').forEach(function(tbl) {
+        if (tbl.parentElement.classList.contains('data-table-wrap')) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'data-table-wrap';
+        wrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;';
+        tbl.parentNode.insertBefore(wrap, tbl);
+        wrap.appendChild(tbl);
+    });
+});
