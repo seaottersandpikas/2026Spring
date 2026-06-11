@@ -129,6 +129,33 @@ function applyRoleBasedUI() {
     var promoBtn  = document.getElementById('mp-write-promo-btn');
     if (reviewBtn) reviewBtn.style.display = (!type || isClient) ? '' : 'none';
     if (promoBtn)  promoBtn.style.display  = (!type || isManufacturer) ? '' : 'none';
+
+    // 공동제작 탭: 생산자는 "모집 중" 탭만, 등록/참여 탭 + 의뢰작성 버튼 숨김
+    var groupCreateBtn = document.querySelector('#mp-group .btn-primary.btn-sm');
+    var subtabMine     = document.querySelector('#mp-group-subtabs .tab-btn:nth-child(2)');
+    var subtabJoined   = document.querySelector('#mp-group-subtabs .tab-btn:nth-child(3)');
+    if (isManufacturer) {
+        if (groupCreateBtn) groupCreateBtn.style.display = 'none';
+        if (subtabMine)     subtabMine.style.display     = 'none';
+        if (subtabJoined)   subtabJoined.style.display   = 'none';
+        // 혹시 mine/joined 탭이 열려있으면 all로 되돌리기
+        var tabMine   = document.getElementById('mp-group-tab-mine');
+        var tabJoined = document.getElementById('mp-group-tab-joined');
+        var tabAll    = document.getElementById('mp-group-tab-all');
+        if ((tabMine && tabMine.style.display !== 'none') ||
+            (tabJoined && tabJoined.style.display !== 'none')) {
+            if (tabAll)    tabAll.style.display    = 'block';
+            if (tabMine)   tabMine.style.display   = 'none';
+            if (tabJoined) tabJoined.style.display = 'none';
+            document.querySelectorAll('#mp-group-subtabs .tab-btn').forEach(function(b, i){
+                b.classList.toggle('active', i === 0);
+            });
+        }
+    } else {
+        if (groupCreateBtn) groupCreateBtn.style.display = '';
+        if (subtabMine)     subtabMine.style.display     = '';
+        if (subtabJoined)   subtabJoined.style.display   = '';
+    }
 }
 
 // 홈 role-card 클릭: 비로그인이면 로그인 유도, 로그인이면 바로 이동
@@ -1620,6 +1647,12 @@ async function loadMpMassRequests(category) {
 
 // 공동제작 서브탭 전환
 function showMpGroupTab(tab, btn) {
+    // 생산자는 모집 중 탭만 접근 가능
+    var p = AppState.currentProfile;
+    if (p && p.user_type === 'manufacturer' && tab !== 'all') {
+        showToast('생산자 계정은 모집 중 탭만 이용할 수 있습니다.', 'error');
+        return;
+    }
     document.querySelectorAll('#mp-group-subtabs .tab-btn').forEach(function(b){ b.classList.remove('active'); });
     if (btn) btn.classList.add('active');
     document.getElementById('mp-group-tab-all').style.display    = (tab === 'all')    ? 'block' : 'none';
