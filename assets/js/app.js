@@ -876,11 +876,12 @@ async function submitGroupRequest() {
         });
         // 본인 참여 수량 등록
         if (myQty > 0) {
-            await window.supabaseClient.from('group_participants').insert([{
+            var partRes = await window.supabaseClient.from('group_participants').insert([{
                 request_id: newReq.id,
                 user_id:    AppState.currentUser.id,
                 quantity:   myQty
-            }]).catch(function(e){ console.warn('참여 기록 실패:', e.message); });
+            }]);
+            if (partRes.error) console.warn('참여 기록 실패:', partRes.error.message);
         }
         // 폼 초기화
         ['group-title','group-total-qty','group-min-qty','group-price',
