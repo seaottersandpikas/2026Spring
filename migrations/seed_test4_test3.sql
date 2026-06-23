@@ -27,7 +27,7 @@ BEGIN
     '사무실 로고 머그컵 제작', '생활용품', 200, 8000,
     '회사 로고 실크스크린, 백색 세라믹, 용량 350ml',
     '납기 2주 이내, 개별 박스 포장 필요',
-    'bidding', 'personal', 'bidding', deadline)
+    'bidding', 'business', 'bidding', deadline)
   RETURNING id INTO r1_id;
 
   INSERT INTO requests(id, user_id, title, category, quantity, target_price, design_guide, detail_note, status, request_type, bidding_type, bid_deadline)
@@ -35,7 +35,7 @@ BEGIN
     '신입사원 환영 굿즈 세트', '아크릴굿즈', 150, 5500,
     '아크릴 키링 + 스티커 세트, 회사 캐릭터 디자인',
     '입사 키트 포함용, 납기 3주',
-    'bidding', 'personal', 'bidding', deadline)
+    'bidding', 'business', 'bidding', deadline)
   RETURNING id INTO r2_id;
 
   -- 개별의뢰 더미 입찰 (test3가 입찰한 것처럼)
